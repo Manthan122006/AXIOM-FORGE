@@ -18,5 +18,5 @@ await runTests({
   extensionDevelopmentPath: repo,
   extensionTestsPath: path.join(repo, 'tests/integration/suite/index.cjs'),
   launchArgs: [ws, '--disable-extensions', ...(process.env.AXIOM_TEST_DISABLE ?? '').split(',').filter(Boolean).flatMap((id) => ['--disable-extension', id]), '--skip-welcome', '--skip-release-notes', `--user-data-dir=${mkdtempSync(path.join(os.tmpdir(), 'axiom-ud-'))}`],
-  extensionTestsEnv: { AXIOM_TEST_WORKSPACE: ws, AXIOM_TEST_NO_START: process.env.AXIOM_TEST_NO_START ?? '' },
+  extensionTestsEnv: { AXIOM_TEST_WORKSPACE: ws, AXIOM_TEST_NO_START: process.env.AXIOM_TEST_NO_START ?? '', AXIOM_PROFILE: process.env.AXIOM_PROFILE ?? '' },
 });

@@ -49,7 +49,19 @@ export function onMentionResults(fn: typeof mentionListener) {
 
 export function handleHostMessage(msg: HostToWebview): void {
   if (msg.type === 'state') setState(reconcile(state, msg.state));
+  else if (msg.type === 'patch') setState(reconcile(state, applyPatch(state, msg)));
   else if (msg.type === 'mentionResults') mentionListener?.(msg.items);
+}
+
+/** Apply an incremental host update: replace changed slices, then set changed timeline rows by index. */
+export function applyPatch(cur: AxiomState, msg: Extract<HostToWebview, { type: 'patch' }>): AxiomState {
+  const next: AxiomState = { ...cur, ...msg.patch };
+  if (msg.timeline) {
+    const tl = cur.timeline.slice(0, msg.timeline.length);
+    for (const [i, ev] of msg.timeline.set) tl[i] = ev;
+    next.timeline = tl;
+  }
+  return next;
 }
 
 // ── Host bridge ────────────────────────────────────────────────

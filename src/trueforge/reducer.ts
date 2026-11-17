@@ -60,6 +60,20 @@ export class TurnTracker {
   private readonly timelineIndex = new Map<string, number>();
   /** toolCallId → source model.message id. */
   private readonly callSource = new Map<string, string>();
+  /** Timeline ids changed since the last drainDirty(): the host copies and posts only these. */
+  private readonly dirty = new Set<string>();
+
+  /** Ids of timeline entries added or changed since the last call. */
+  drainDirty(): string[] {
+    const out = [...this.dirty];
+    this.dirty.clear();
+    return out;
+  }
+
+  eventById(id: string): AgentEvent | undefined {
+    const i = this.timelineIndex.get(id);
+    return i === undefined ? undefined : this.timeline[i];
+  }
 
   /** Returns true when something user-visible changed. */
   apply(ev: Ev): boolean {
@@ -95,6 +109,7 @@ export class TurnTracker {
       case 'tool.response': {
         const call = this.toolCalls.get(ev.toolCallId);
         if (call) {
+          this.dirty.add(`tool:${call.toolCallId}`);
           call.resultPreview = scrubSecrets(ev.content.slice(0, 2000));
           if (call.phase !== 'denied') call.phase = FAILURE_PREFIX.test(ev.content) ? 'failed' : 'succeeded';
           call.finishedAt = ev.createdAt;
@@ -106,7 +121,10 @@ export class TurnTracker {
         return true;
       case 'thread.done': {
         const i = this.timeline.findIndex((e) => e.kind === 'subagent' && e.threadId === ev.threadId);
-        if (i >= 0) this.timeline[i] = { ...(this.timeline[i] as Extract<AgentEvent, { kind: 'subagent' }>), status: 'done' };
+        if (i >= 0) {
+          this.timeline[i] = { ...(this.timeline[i] as Extract<AgentEvent, { kind: 'subagent' }>), status: 'done' };
+          this.dirty.add(this.timeline[i]!.id);
+        }
         return true;
       }
       case 'thread.context_compaction_started':
@@ -119,9 +137,17 @@ export class TurnTracker {
         if (st.status === 'error') this.error = scrubSecrets(st.message);
         if (st.status === 'cancelled') this.cancelReason = st.reason;
         for (const c of this.toolCalls.values()) {
-          if (c.phase === 'awaiting_approval' || c.phase === 'requested' || c.phase === 'running') c.phase = st.status === 'done' ? c.phase : 'failed';
+          if (c.phase === 'awaiting_approval' || c.phase === 'requested' || c.phase === 'running') {
+            c.phase = st.status === 'done' ? c.phase : 'failed';
+            this.dirty.add(`tool:${c.toolCallId}`);
+          }
         }
-        for (const e of this.timeline) if (e.kind === 'assistant_text') e.streaming = false;
+        for (const e of this.timeline) {
+          if (e.kind === 'assistant_text' && e.streaming) {
+            e.streaming = false;
+            this.dirty.add(e.id);
+          }
+        }
         this.push({ kind: 'turn_end', id: ev.id, status: st.status, ...(st.status === 'error' ? { message: this.error } : {}), at: ev.createdAt ?? new Date().toISOString() });
         return true;
       }
@@ -146,12 +172,16 @@ export class TurnTracker {
 
   private setPhase(id: string, phase: ToolCallState['phase']) {
     const c = this.toolCalls.get(id);
-    if (c) c.phase = phase;
+    if (c) {
+      c.phase = phase;
+      this.dirty.add(`tool:${id}`);
+    }
   }
 
   private push(e: AgentEvent) {
     this.timelineIndex.set(e.id, this.timeline.length);
     this.timeline.push(e);
+    this.dirty.add(e.id);
   }
 
   private syncMessage(msg: TrueForge.ModelMessageEvent, streaming: boolean) {
@@ -161,14 +191,21 @@ export class TurnTracker {
       const at = this.timelineIndex.get(key);
       const ev: AgentEvent = { kind: 'assistant_text', id: key, threadId: msg.threadId, text, streaming: streaming && msg.finishReason == null, at: msg.createdAt };
       if (at === undefined) this.push(ev);
-      else this.timeline[at] = ev;
+      else {
+        this.timeline[at] = ev;
+        this.dirty.add(key);
+      }
     }
     for (const call of msg.toolCalls ?? []) {
       if (!call.id) continue;
       const { name, server } = toolIdentity(call);
-      const args = parseArgs(call.function.arguments);
+      const raw = call.function.arguments;
       const existing = this.toolCalls.get(call.id);
+      // While arguments stream in, the JSON is incomplete: only attempt a parse when it could be
+      // complete (ends with "}"), so a 40 KB argument isn't re-parsed (and thrown on) per delta.
+      const args = !raw ? {} : raw.trimEnd().endsWith('}') ? parseArgs(raw) : null;
       if (existing) {
+        if (existing.toolName !== name || existing.server !== server || args) this.dirty.add(`tool:${call.id}`);
         existing.toolName = name;
         existing.server = server;
         if (args) existing.args = scrubDeep(args);

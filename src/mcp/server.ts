@@ -4,6 +4,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
 import type { ContextEngine } from '../context/engine';
+import { perf } from '../shared/perf';
 import type { ContextReceipt } from '../shared/contracts';
 import type { ApprovalRegistry } from '../safety/approvals';
 import { proposeEditShape } from '../safety/proposeEditArgs';
@@ -49,8 +50,11 @@ const runCommandShape = {
  * Normalise gated-tool arguments exactly as the MCP server will see them (zod strips unknown keys),
  * so the approval fingerprint made from the model's tool call matches the invocation TrueForge sends.
  */
+// Built once: zod v4 compiles a fast path per schema instance, so re-creating schemas per call is wasted work.
+const GATED_SCHEMAS: Record<string, z.ZodType> = { [TOOL.proposeEdit]: z.object(proposeEditShape), [TOOL.runCommand]: z.object(runCommandShape) };
+
 export function normalizeGatedArgs(tool: string, args: unknown): Record<string, unknown> | null {
-  const schema = tool === TOOL.proposeEdit ? z.object(proposeEditShape) : tool === TOOL.runCommand ? z.object(runCommandShape) : null;
+  const schema = GATED_SCHEMAS[tool] ?? null;
   if (!schema) return null;
   const r = schema.safeParse(args);
   return r.success ? (r.data as Record<string, unknown>) : null;
@@ -264,14 +268,20 @@ export interface RunningMcpServer {
   url: string;
   port: number;
   close(): Promise<void>;
+  /** Servers built vs requests served (pooling evidence for the performance log). */
+  stats(): { built: number; requests: number; idle: number };
 }
 
+const POOL_MAX = 8;
+
 /**
- * Serve the MCP server over Streamable HTTP on 127.0.0.1 only. Stateless: a fresh server+transport
- * per request. Rejects browser-originated requests (Origin header) and foreign Host headers
+ * Serve the MCP server over Streamable HTTP on 127.0.0.1 only. Stateless: a fresh transport per
+ * request, connected to a pooled server instance (built once, reused). Rejects browser-originated requests (Origin header) and foreign Host headers
  * (DNS-rebinding protection).
  */
 export function startMcpHttpServer(deps: McpDeps, port = 0): Promise<RunningMcpServer> {
+  const idle: McpServer[] = [];
+  const stats = { built: 0, requests: 0 };
   return new Promise((resolve, reject) => {
     const httpServer = http.createServer(async (req, res) => {
       const actualPort = (httpServer.address() as AddressInfo).port;
@@ -301,13 +311,19 @@ export function startMcpHttpServer(deps: McpDeps, port = 0): Promise<RunningMcpS
             }
             chunks.push(c as Buffer);
           }
-          body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : undefined;
+          body = chunks.length ? perf.span('mcp.parseBody', () => JSON.parse(Buffer.concat(chunks).toString('utf8'))) : undefined;
         }
-        const server = buildMcpServer(deps);
+        // Stateless HTTP needs one connected server per request, but building one (7 tools, zod
+        // schemas, the SDK's validators) is the expensive part, so built servers are pooled and
+        // reconnected to each request's transport. Measured in scripts/bench-mcp.ts.
+        const server = idle.pop() ?? (stats.built++, perf.span('mcp.buildServer', () => buildMcpServer(deps)));
+        stats.requests++;
         const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
         res.on('close', () => {
           void transport.close();
-          void server.close();
+          void server.close().then(() => {
+            if (idle.length < POOL_MAX) idle.push(server);
+          });
         });
         await server.connect(transport);
         await transport.handleRequest(req, res, body);
@@ -322,6 +338,7 @@ export function startMcpHttpServer(deps: McpDeps, port = 0): Promise<RunningMcpS
       resolve({
         url: `http://127.0.0.1:${p}/mcp`,
         port: p,
+        stats: () => ({ ...stats, idle: idle.length }),
         close: () =>
           new Promise((r) => {
             httpServer.close(() => r());

@@ -1,3 +1,4 @@
+import { perf } from '../shared/perf';
 import { assembleContext, type AssembleInput, type AssembleOutput } from './assemble';
 import { buildIndex, updateIndexedFile, type RepoIndex } from './indexer';
 import { buildRelations, neighbours, type Edge, type RelationGraph } from './relations';
@@ -10,11 +11,16 @@ export class ContextEngine {
   private symbols: SymbolIndex | null = null;
   private graph: RelationGraph | null = null;
   private building: Promise<void> | null = null;
+  /** Set when a file changed; derived indexes are rebuilt once, at the next query (not per write). */
+  private stale = false;
 
   constructor(readonly root: string) {}
 
   async ready(): Promise<void> {
-    if (this.index) return;
+    if (this.index) {
+      if (this.stale) this.derive();
+      return;
+    }
     this.building ??= (async () => {
       this.index = await buildIndex(this.root);
       this.derive();
@@ -23,15 +29,16 @@ export class ContextEngine {
   }
 
   private derive() {
-    this.symbols = buildSymbolIndex(this.index!);
-    this.graph = buildRelations(this.index!, this.symbols);
+    this.stale = false;
+    this.symbols = perf.span('context.symbols', () => buildSymbolIndex(this.index!));
+    this.graph = perf.span('context.relations', () => buildRelations(this.index!, this.symbols!));
   }
 
   /** Called after SafeChange writes so retrieval sees the new code. */
   noteFileChanged(rel: string, text: string | null): void {
     if (!this.index) return;
     updateIndexedFile(this.index, rel, text);
-    this.derive();
+    this.stale = true;
   }
 
   async invalidate(): Promise<void> {
@@ -64,7 +71,7 @@ export class ContextEngine {
 
   async assemble(input: AssembleInput): Promise<AssembleOutput> {
     await this.ready();
-    return assembleContext(this.index!, this.symbols!, this.graph!, input);
+    return perf.span('context.assemble', () => assembleContext(this.index!, this.symbols!, this.graph!, input));
   }
 
   /** File and symbol suggestions for the composer's @-mention popup. */

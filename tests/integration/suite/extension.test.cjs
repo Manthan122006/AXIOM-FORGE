@@ -8,6 +8,12 @@ const ws = process.env.AXIOM_TEST_WORKSPACE;
 let api;
 const { monitorEventLoopDelay, performance } = require('node:perf_hooks');
 const lag = monitorEventLoopDelay({ resolution: 10 });
+// Per-test lag (attribution) and, with AXIOM_PROFILE=<file.cpuprofile>, a CPU profile of the whole
+// extension host for scripts/analyze-cpuprofile.mjs. Test-only instrumentation.
+const perTest = monitorEventLoopDelay({ resolution: 10 });
+let profiler = null;
+let profT0 = 0;
+const marks = [];
 
 describe('AXIOM Forge in VS Code', () => {
   before(async () => {
@@ -20,7 +26,29 @@ describe('AXIOM Forge in VS Code', () => {
     for (let i = 0; i < 60 && api.controller.state.connection.kind === 'connecting'; i++) await new Promise((r) => setTimeout(r, 250));
     console.log(`      [timing] connection: ${api.controller.state.connection.kind} after ${Math.round(performance.now() - t0)} ms`);
     lag.enable();
+    if (process.env.AXIOM_PROFILE) {
+      const inspector = require('node:inspector');
+      profiler = new inspector.Session();
+      profiler.connect();
+      const post = (m, p) => new Promise((res, rej) => profiler.post(m, p ?? {}, (e, r) => (e ? rej(e) : res(r))));
+      await post('Profiler.enable');
+      await post('Profiler.setSamplingInterval', { interval: 1000 });
+      await post('Profiler.start');
+      profT0 = performance.now();
+      profiler.postP = post;
+    }
     assert.ok(api && api.controller, 'activate() returned the controller');
+  });
+
+  beforeEach(function () {
+    marks.push({ title: this.currentTest.title.slice(0, 70), start: performance.now() - profT0 });
+    perTest.reset();
+    perTest.enable();
+  });
+  afterEach(function () {
+    perTest.disable();
+    marks[marks.length - 1].end = performance.now() - profT0;
+    console.log(`      [lag] max ${Math.round(perTest.max / 1e6)} ms, p99 ${Math.round(perTest.percentile(99) / 1e6)} ms — ${this.currentTest.title.slice(0, 60)}`);
   });
 
   it('registers its commands', async () => {
@@ -265,8 +293,16 @@ describe('AXIOM Forge in VS Code', () => {
     await conf.update('models.backup', undefined, vscode.ConfigurationTarget.Workspace);
   });
 
-  after(() => {
+  after(async () => {
+    if (profiler) {
+      const { profile } = await profiler.postP('Profiler.stop');
+      fs.writeFileSync(process.env.AXIOM_PROFILE, JSON.stringify(profile));
+      fs.writeFileSync(process.env.AXIOM_PROFILE + '.marks.json', JSON.stringify(marks));
+      console.log(`      [profile] wrote ${process.env.AXIOM_PROFILE}`);
+      profiler.disconnect();
+    }
     lag.disable();
+    console.log(api.controller.perfSummary().split('\n').map((l) => `      [perf] ${l}`).join('\n'));
     console.log(`      [event-loop] extension host lag during AXIOM operations: p50 ${Math.round(lag.percentile(50) / 1e6)} ms, p99 ${Math.round(lag.percentile(99) / 1e6)} ms, max ${Math.round(lag.max / 1e6)} ms`);
   });
 

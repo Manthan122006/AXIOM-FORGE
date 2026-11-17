@@ -267,6 +267,11 @@ export interface AxiomState {
 /** Extension → webview. The webview is a pure function of AxiomState. */
 export type HostToWebview =
   | { type: 'state'; state: AxiomState }
+  /**
+   * Incremental update after the first full state: only top-level slices whose reference changed,
+   * and only timeline entries that were added or replaced (by index). Keeps streaming posts small.
+   */
+  | { type: 'patch'; patch: Partial<Omit<AxiomState, 'timeline'>>; timeline?: { length: number; set: Array<[number, AgentEvent]> } }
   | { type: 'mentionResults'; query: string; items: Array<{ kind: 'file' | 'symbol'; label: string; detail: string }> };
 
 /** Webview → extension. Every mutating intent goes through here; the webview never writes files. */

@@ -7,6 +7,7 @@ import { ApprovalRegistry } from '../safety/approvals';
 import { SafeChange } from '../safety/safeChange';
 import { stageProposeEdits } from '../safety/stage';
 import type { AgentEvent, AxiomState, HostToWebview, ProposedEdit, VerificationResult, WebviewToHost } from '../shared/contracts';
+import { perf } from '../shared/perf';
 import { scrubSecrets } from '../shared/secrets';
 import { describeFailure } from '../trueforge/classify';
 import { TrueForgeConnection } from '../trueforge/client';
@@ -58,6 +59,11 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
   private timeline: AgentEvent[] = [];
   private timelineIdx = new Map<string, number>();
   private postTimer: NodeJS.Timeout | null = null;
+  /** Patch protocol: what the webview already has (by reference) and which timeline rows changed. */
+  private posted: Partial<Record<keyof AxiomState, unknown>> = {};
+  private dirtyRows = new Set<number>();
+  private needFullPost = true;
+  private postStats = { full: 0, patches: 0, bytes: 0, maxMs: 0 };
   private healthTimer: NodeJS.Timeout | null = null;
   private agentModel: string | null = null;
   /** Number of AXIOM MCP tool executions currently running (used by the stream watchdog). */
@@ -97,15 +103,48 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
 
   // ───────────────────────── lifecycle ─────────────────────────
 
-  /** Logs extension-host event-loop stalls (> 250 ms) with the operation in progress. Evidence for A3. */
+  /** `axiomForge.perfLog`: log every instrumented operation over 50 ms (src/shared/perf.ts). */
+  private get perfLog(): boolean {
+    return cfg().get<boolean>('perfLog', false);
+  }
+
+  /**
+   * Logs extension-host event-loop stalls (> 250 ms) together with the instrumented AXIOM work that
+   * ran during the stall window (perf spans). If no AXIOM span overlaps, the stall came from other
+   * code in the same extension host (VS Code or another extension): we say so rather than guess.
+   */
   private startStallDetector(): void {
-    let expected = Date.now() + 500;
+    perf.onSlow = (sp) => {
+      if (this.perfLog) this.log(`[perf] ${sp.label} took ${sp.ms.toFixed(1)} ms`);
+    };
+    let expected = performance.now() + 500;
     this.stallTimer = setInterval(() => {
-      const drift = Date.now() - expected;
-      if (drift > 250) this.log(`event loop stalled ~${drift} ms (during: ${this.lastOp})`);
-      expected = Date.now() + 500;
+      const now = performance.now();
+      const drift = now - expected;
+      if (drift > 250) {
+        const ours = perf.during(expected - 500, now).filter((x) => x.ms > 10);
+        const blame = ours.length ? `AXIOM work in that window: ${ours.slice(0, 4).map((x) => `${x.label} ${x.ms.toFixed(0)} ms`).join(', ')}` : 'no instrumented AXIOM work in that window (VS Code or another extension)';
+        this.log(`event loop stalled ~${Math.round(drift)} ms (during: ${this.lastOp}); ${blame}`);
+      }
+      expected = now + 500;
     }, 500);
     this.stallTimer.unref();
+  }
+
+  /** Text of the performance report (also printed by the VS Code integration tests). */
+  perfSummary(): string {
+    const mcp = this.mcp?.stats();
+    return (
+      `${perf.report()}\n` +
+      `webview posts: ${this.postStats.full} full, ${this.postStats.patches} patches, slowest post ${this.postStats.maxMs.toFixed(1)} ms${this.perfLog ? `, ${(this.postStats.bytes / 1e6).toFixed(2)} MB sent` : ''}\n` +
+      (mcp ? `MCP: ${mcp.requests} requests served by ${mcp.built} built server instance(s)` : 'MCP: not running')
+    );
+  }
+
+  /** "AXIOM Forge: Show Performance Report": per-operation counts and timings since activation. */
+  showPerfReport(): void {
+    this.log(`performance report\n${this.perfSummary()}`);
+    this.output.show(true);
   }
 
   async start(): Promise<void> {
@@ -144,6 +183,7 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
       );
       this.state.mcp = { kind: 'listening', url: this.mcp.url };
       this.log(`MCP server listening on ${this.mcp.url}`);
+      this.scheduleMcpWarmup(this.mcp.url);
     } catch (e) {
       this.state.mcp = { kind: 'error', message: `Could not listen on 127.0.0.1:${port}: ${(e as Error).message}` };
     }
@@ -151,6 +191,22 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
     void this.checkHealth(true);
     this.healthTimer = setInterval(() => void this.checkHealth(false), 5000);
     this.lastOp = 'idle';
+  }
+
+  /**
+   * The first tools/list costs ~0.4 s of CPU in a cold extension host (the MCP SDK converts our zod
+   * schemas to JSON Schema and V8 compiles them; measured with scripts/analyze-cpuprofile.mjs).
+   * Pay it once, a few seconds after activation, instead of when the user presses Run.
+   */
+  private scheduleMcpWarmup(url: string): void {
+    const t = setTimeout(() => {
+      const t0 = performance.now();
+      void fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream', host: new URL(url).host }, body: JSON.stringify({ jsonrpc: '2.0', id: 'warmup', method: 'tools/list', params: {} }) })
+        .then((r) => r.text())
+        .then(() => perf.record('mcp.warmup', t0, performance.now() - t0))
+        .catch((e: Error) => this.log(`MCP warm-up failed: ${e.message}`));
+    }, 3000);
+    t.unref();
   }
 
   dispose(): void {
@@ -233,6 +289,8 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
   private async onMessage(m: WebviewToHost): Promise<void> {
     switch (m.type) {
       case 'ready':
+        // a new or reloaded webview has nothing yet: send everything once, then patches
+        this.needFullPost = true;
         return this.postNow();
       case 'send':
         return this.runTask({ text: m.text, mentions: m.mentions });
@@ -423,9 +481,9 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
       }
       if (next.done) return 'ended';
       const ev = next.value;
-      if (tracker.apply(ev)) {
+      if (perf.span('stream.apply', () => tracker.apply(ev))) {
         run.turnId = tracker.turnId ?? undefined;
-        this.syncTracker(tracker);
+        perf.span('stream.syncTimeline', () => this.syncTracker(tracker));
       }
       if (ev.type === 'turn.done') return 'ended';
       if (ev.type === 'turn.update' && tracker.status === 'paused') {
@@ -626,15 +684,21 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
     const at = this.timelineIdx.get(ev.id);
     if (at === undefined) {
       this.timelineIdx.set(ev.id, this.timeline.length);
+      this.dirtyRows.add(this.timeline.length);
       this.timeline.push(ev);
-    } else this.timeline[at] = ev;
+    } else {
+      this.timeline[at] = ev;
+      this.dirtyRows.add(at);
+    }
     this.schedulePost();
   }
 
   private syncTracker(tracker: TurnTracker) {
-    for (const ev of tracker.timeline) {
+    // Only rows the tracker changed since the last sync (was: every row, on every streamed event).
+    for (const id of tracker.drainDirty()) {
+      const ev = tracker.eventById(id);
       // Tool-call state objects are mutated in place by the tracker; copy so the webview sees a new value.
-      this.pushEvent(ev.kind === 'tool_call' ? { ...ev, call: { ...ev.call } } : { ...ev });
+      if (ev) this.pushEvent(ev.kind === 'tool_call' ? { ...ev, call: { ...ev.call } } : { ...ev });
     }
     this.state.session = { ...this.state.session, turnId: tracker.turnId, status: tracker.status, ...(tracker.error ? { error: tracker.error } : {}), ...(tracker.lastEventId ? { lastEventId: tracker.lastEventId } : {}) };
   }
@@ -655,9 +719,34 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
   }
 
   private postNow() {
-    this.state.timeline = [...this.timeline];
+    this.state.timeline = this.timeline;
     this.updateStatusBar();
-    void this.view?.webview.postMessage({ type: 'state', state: this.state } satisfies HostToWebview);
+    if (!this.view) return;
+    const t0 = performance.now();
+    let msg: HostToWebview;
+    if (this.needFullPost) {
+      msg = { type: 'state', state: this.state };
+      for (const k of Object.keys(this.state) as Array<keyof AxiomState>) this.posted[k] = this.state[k];
+      this.needFullPost = false;
+      this.postStats.full++;
+    } else {
+      const patch: Record<string, unknown> = {};
+      for (const k of Object.keys(this.state) as Array<keyof AxiomState>) {
+        if (k === 'timeline' || this.state[k] === this.posted[k]) continue;
+        patch[k] = this.state[k];
+        this.posted[k] = this.state[k];
+      }
+      const set = [...this.dirtyRows].sort((a, b) => a - b).map((i): [number, AgentEvent] => [i, this.timeline[i]!]);
+      if (!set.length && !Object.keys(patch).length) return;
+      msg = { type: 'patch', patch: patch as Partial<Omit<AxiomState, 'timeline'>>, ...(set.length ? { timeline: { length: this.timeline.length, set } } : {}) };
+      this.postStats.patches++;
+    }
+    this.dirtyRows.clear();
+    void this.view.webview.postMessage(msg);
+    const ms = performance.now() - t0;
+    perf.record('webview.post', t0, ms);
+    this.postStats.maxMs = Math.max(this.postStats.maxMs, ms);
+    if (this.perfLog) this.postStats.bytes += JSON.stringify(msg).length;
   }
 
   private updateStatusBar() {

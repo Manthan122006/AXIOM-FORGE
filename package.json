@@ -54,6 +54,11 @@
         "category": "AXIOM Forge"
       },
       {
+        "command": "axiomForge.perfReport",
+        "title": "AXIOM Forge: Show Performance Report",
+        "category": "AXIOM Forge"
+      },
+      {
         "command": "axiomForge.setupTrueForge",
         "title": "AXIOM Forge: Register MCP Server and Agent in TrueForge",
         "category": "AXIOM Forge"
@@ -115,6 +120,11 @@
           "type": "boolean",
           "default": false,
           "description": "Show developer commands (review harness that stages a sample, non-model proposal)."
+        },
+        "axiomForge.perfLog": {
+          "type": "boolean",
+          "default": false,
+          "description": "Log every AXIOM operation that blocks the extension host for more than 50 ms, and webview traffic, to the AXIOM Forge output channel."
         }
       }
     },

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { DiffHunk, HunkDecision, ProposedEdit, UndoEntry } from '../shared/contracts';
 import { sha256, type WorkspaceHost } from '../workspace/host';
+import { perf } from '../shared/perf';
 import { applyHunks, computeHunks, HunkConflictError, type RawHunk } from './hunks';
 
 export interface StageInput {
@@ -61,7 +62,7 @@ export class SafeChange {
 
   stage(input: StageInput): ProposedEdit {
     const base = input.baseText ?? '';
-    const hunksRaw = computeHunks(base, input.proposedText);
+    const hunksRaw = perf.span('safechange.diff', () => computeHunks(base, input.proposedText));
     const id = randomUUID();
     const hunks: DiffHunk[] = hunksRaw.map((h) => ({
       id: `${id}:${h.index}`,
@@ -171,7 +172,7 @@ export class SafeChange {
 
     let next: string;
     try {
-      next = applyHunks(raw.base, raw.proposed, raw.hunks, accepted);
+      next = perf.span('safechange.applyHunks', () => applyHunks(raw.base, raw.proposed, raw.hunks, accepted));
     } catch (err) {
       p.status = err instanceof HunkConflictError ? 'conflict' : 'failed';
       this.emit();
@@ -274,7 +275,7 @@ export class SafeChange {
       }
       try {
         const accepted = new Set(p.hunks.filter((h) => h.decision === 'accepted').map((h) => h.index));
-        plan.push({ p, existed, pre, next: applyHunks(raw.base, raw.proposed, raw.hunks, accepted) });
+        plan.push({ p, existed, pre, next: perf.span('safechange.applyHunks', () => applyHunks(raw.base, raw.proposed, raw.hunks, accepted)) });
       } catch (err) {
         p.status = err instanceof HunkConflictError ? 'conflict' : 'failed';
         finish(p, p.status === 'conflict' ? 'conflict' : 'failed', `${(err as Error).message}; nothing in this change set was written.`);

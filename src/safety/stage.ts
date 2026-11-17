@@ -2,6 +2,7 @@ import type { ProposedEdit } from '../shared/contracts';
 import { resolveWorkspacePath } from '../mcp/pathJail';
 import type { WorkspaceHost } from '../workspace/host';
 import { computeProposedText, proposeEditSchema, type ProposeEditArgs } from './proposeEditArgs';
+import { perf } from '../shared/perf';
 import { mergeFileVersions } from './merge';
 import type { SafeChange } from './safeChange';
 
@@ -107,7 +108,7 @@ export async function stageProposeEdits(
       }
     }
     if (versions.length === 0) continue;
-    const m = mergeFileVersions(current ?? '', versions);
+    const m = perf.span('safechange.merge', () => mergeFileVersions(current ?? '', versions));
     for (const c of m.refused) {
       const other = c.with === c.source ? '' : ` (call ${c.with})`;
       results.push({ toolCallId: c.source, ok: false, error: `Not staged: this edit to ${rel} was not combined with the other edit${other} because ${c.reason} (around lines ${c.lines[0]}–${c.lines[1]}). Re-read the file after the other change and propose one edit for that region.` });
