@@ -18,7 +18,7 @@ import { ContextEngine } from '../src/context/engine';
 import { startMcpHttpServer, TOOL } from '../src/mcp/server';
 import { ApprovalRegistry } from '../src/safety/approvals';
 import { SafeChange } from '../src/safety/safeChange';
-import { stageProposeEdit } from '../src/safety/stage';
+import { stageProposeEdits } from '../src/safety/stage';
 import { classifyFailure } from '../src/trueforge/classify';
 import { TrueForgeConnection } from '../src/trueforge/client';
 import { TurnTracker } from '../src/trueforge/reducer';
@@ -95,22 +95,36 @@ async function main() {
 
   let state = await consume(await tf.streamTurn(sessionId, { text: prompt }));
   while (state === 'paused') {
-    const decisions = [];
-    for (const id of tracker.pendingApprovals()) {
+    const decisions: Array<{ toolCallId: string; threadId: string; allow: boolean; reason?: string }> = [];
+    const allowAll = !flag('deny');
+    // Same path as the extension: all propose_edit calls of this pause are staged together (same-file
+    // edits merged into one proposal), and everything approved is one all-or-nothing change set.
+    const ids = tracker.pendingApprovals();
+    const edits = ids.map((id) => tracker.lookup(id)!).filter((c) => c.toolName === TOOL.proposeEdit);
+    const staged = await stageProposeEdits(edits.map((c) => ({ toolCallId: c.toolCallId, rawArgs: c.args })), { sessionId, turnId: tracker.turnId! }, host, safeChange);
+    const approved = new Set<string>();
+    for (const r of staged) {
+      if (!r.ok) {
+        console.log(`[stage] ${r.toolCallId} not staged: ${r.error}`);
+        continue;
+      }
+      if (r.mergedWith.length) console.log(`[stage] ${r.toolCallId} merged with ${r.mergedWith.join(', ')} into one proposal`);
+      if (!approved.has(r.proposal.id) && r.proposal.status === 'staged') {
+        console.log(`[stage] ${r.proposal.path}: ${r.proposal.hunks.length} hunk(s)\n${r.proposal.hunks.map((h) => h.lines.join('\n')).join('\n---\n')}`);
+        safeChange.decideAll(r.proposal.id, allowAll ? 'accepted' : 'rejected');
+        safeChange.closeReview(r.proposal.id);
+        if (allowAll) approved.add(r.proposal.id);
+      }
+    }
+    if (approved.size) safeChange.createChangeSet([...approved]);
+    for (const id of ids) {
       const call = tracker.lookup(id)!;
       console.log(`[approval] ${call.toolName} ${call.rawArgs.slice(0, 300)}`);
-      let allow = !flag('deny');
+      let allow = allowAll;
       if (call.toolName === TOOL.proposeEdit) {
-        const staged = await stageProposeEdit(call.args, { toolCallId: id, sessionId, turnId: tracker.turnId! }, host, safeChange);
-        if (!staged.ok) {
-          console.log(`[stage] invalid: ${staged.error}`);
-          allow = false;
-        } else {
-          console.log(`[stage] ${staged.proposal.path}: ${staged.proposal.hunks.length} hunk(s)\n${staged.proposal.hunks.map((h) => h.lines.join('\n')).join('\n---\n')}`);
-          safeChange.decideAll(staged.proposal.id, allow ? 'accepted' : 'rejected');
-          safeChange.closeReview(staged.proposal.id);
-          if (allow) approvals.grant(TOOL.proposeEdit, call.args, id, { proposalId: staged.proposal.id });
-        }
+        const r = staged.find((x) => x.toolCallId === id);
+        allow = allow && !!r?.ok;
+        if (allow && r?.ok) approvals.grant(TOOL.proposeEdit, call.args, id, { proposalId: r.proposal.id });
       } else if (call.toolName === TOOL.runCommand && allow) {
         approvals.grant(TOOL.runCommand, call.args, id, null);
       }
