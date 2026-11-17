@@ -1,6 +1,6 @@
 # AXIOM Forge — Task Board
 
-Statuses: **Not started · In progress · Blocked · Implemented · Tested · Verified**. *Verified* = evidence from a real run (not mocks). Updated Tue 17 Nov 21:00 IST.
+Statuses: **Not started · In progress · Blocked · Implemented · Tested · Verified**. *Verified* = evidence from a real run (not mocks). Updated Tue 17 Nov, Phase 2 (see PHASE_2_AUDIT.md).
 
 | ID | Task | Owner | Pri | Status | Evidence / next step |
 |---|---|---|---|---|---|
@@ -18,24 +18,28 @@ Statuses: **Not started · In progress · Blocked · Implemented · Tested · Ve
 | M-4 | run_command allowlist/no shell/timeout/abort/scrub | Toheed | P0 | Tested | 27 tests |
 | S-1 | Hunking, conflict detection | Toheed | P0 | Tested | `safeChange.test.ts` |
 | S-2 | Per-hunk apply via WorkspaceEdit + undo | Toheed | P0 | Verified | VS Code integration test (real editor buffer + disk) |
-| S-3 | Native diff + per-hunk CodeLens | Toheed | P0 | Implemented | needs a live proposal to check by hand |
+| S-3 | Native diff + per-hunk CodeLens | Toheed | P0 | Tested | VS Code test drives the real CodeLens commands; human visual check pending |
+| S-4 | M5: two edits to one file in one pause | Toheed | P1 | Not started | currently safe (conflict), not smooth |
 | C-1..4 | Index, symbols, imports, pairing, ranking, budget, receipt | Kunjal | P0 | Tested | 9 golden tests on Flask 3.1.3 |
 | C-5 | @mentions (engine + composer) | Kunjal/Vivan | P1 | Tested | golden test + browser preview |
-| C-6 | Retrieval eval beyond fixed tasks | Kunjal | P1 | Not started | packet in TEAM_ASSIGNMENTS |
+| C-6 | Retrieval eval beyond fixed tasks | Kunjal | P1 | Tested | 13 tasks, in-context 0.90, R@5 0.74 (`RETRIEVAL_EVAL.md`); Kunjal to raise R@5 |
 | T-1 | TurnTracker reducer | Manthan | P0 | Tested | synthetic streams; recorded streams pending |
 | T-2 | Approval bridge (pause → review → grant → allow/deny) | Manthan | P0 | Implemented | live BLOCKED |
-| T-3 | Cancellation | Manthan | P0 | Implemented | live BLOCKED |
-| T-4 | ModelShield | Manthan | P1 | Tested | 7 policy tests; live fallback BLOCKED |
+| T-3 | Cancellation | Manthan | P0 | Tested (partial) | cancel kills running command (tested); live sessions.cancel BLOCKED |
+| T-4 | ModelShield | Manthan | P1 | Verified (failure path) | real TrueForge 422 → both models tried → exhausted, workspace clean (VS Code test); successful fallback BLOCKED |
+| T-7 | trueforge_error class; inline agent fallback; non-blocking activation | Manthan | P0 | Tested | audit H3–H5 |
 | T-5 | Agent definition + setup | Manthan | P0 | Implemented | TrueForge 422 until a provider exists |
 | T-6 | IPv6 loopback fix | Manthan | P0 | Verified | VS Code test connects |
 | U-1..5 | Webview: tokens, timeline, receipt, review, proof, recovery, composer | Vivan | P0 | Tested (preview) | screenshots 360/420/520 px, dark/light |
-| U-6 | Live-data polish, session link, contrast test, a11y pass | Vivan | P1 | Not started | packet |
+| U-6 | Rerender fix, session link, contrast test | Claude/Vivan | P0 | Tested | reconcile measured; AA test (fixed 3 light colours) |
+| U-7 | Live-data polish, profiler, keyboard pass | Vivan | P1 | Not started | TEAM_PROGRESS |
 | I-1 | Inline edit command (⌘I) | Manthan | P0 | Implemented | Task A BLOCKED |
 | V-1 | Proof of Change (results, stale) | Toheed | P1 | Implemented | live BLOCKED |
 | Q-1 | Flask fixture + pinned test deps | Kunjal | P0 | Verified | test_cli 58/58 on clean tree |
 | Q-2 | Task A/B/C verify scripts | Kunjal | P0 | Verified | fail on clean, pass on reference fix, reset clean |
 | Q-3 | Tasks A/B/C live | All | P0 | Blocked | keys |
-| Q-4 | Extension-host responsiveness evidence | Manthan | P1 | In progress | stall detector added; check in F5 |
+| Q-4 | Extension-host responsiveness evidence | Manthan | P1 | In progress | p99 64–78 ms in test instance; ~1.4 s spike unattributed |
+| D-0 | Demo script, test matrix, submission checklist, key checklist | Manthan | P0 | Implemented | docs/ |
 | D-1 | README, LICENSE, example config | Manthan | P0 | Implemented | clean-clone test pending |
 | D-2 | Video | Manthan/Vivan | P0 | Not started | Fri |
 | D-3 | Write-up PDF | Manthan/Kunjal | P0 | Not started | Fri |

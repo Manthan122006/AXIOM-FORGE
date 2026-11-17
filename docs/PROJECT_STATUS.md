@@ -1,6 +1,8 @@
 # AXIOM Forge — Project Status
 
-_Last updated: Tue 17 Nov 2026, 21:00 IST. Repo: local git, branch `main`, 5 commits. No remote yet (by decision)._
+_Last updated: Tue 17 Nov 2026, Phase 2. Repo: local git, `main` + 4 feature branches (no teammate commits yet). No remote yet (by decision)._
+
+> **Phase 2 changes:** see `PHASE_2_AUDIT.md` (13-question audit, findings H1–H5/M1–M9/L1–L5, integration paths A–J). Current numbers: `npm run check` → **123 tests pass**; `npm run test:vscode` → **10/10** in real VS Code (incl. per-hunk CodeLens review, conflict, real TrueForge failure path); retrieval eval on 13 tasks → in-context recall **0.90**, R@5 0.74; activation 0.7 s.
 
 ## Summary
 All model-independent parts are implemented and tested: MCP server and tools, workspace safety, SafeChange, context engine with Context Receipt, TrueForge client/reducer/ModelShield, extension host, webview UI, and the Task A/B/C verification scripts. Every **model-driven** behaviour is **BLOCKED** until model keys are entered in TrueForge; those are listed with exact verification steps in `TRUEFORGE_INTEGRATION_STATUS.md`.
@@ -16,7 +18,7 @@ All model-independent parts are implemented and tested: MCP server and tools, wo
 | Approval enforcement (no write without the user's grant) | COMPLETE (extension side) | MCP + VS Code tests: `propose_edit`/`run_command` refuse without a single-use grant |
 | Command execution safety (allowlist, no shell, timeout, abort, scrub) | COMPLETE | `tests/verification/commandRunner.test.ts` (27 tests) |
 | SafeChange (stage, per-hunk, conflict, apply, undo, discard on cancel) | COMPLETE | `tests/safety/safeChange.test.ts` (18 tests) + VS Code integration test |
-| Native diff + per-hunk CodeLens in the editor | NEEDS VERIFICATION | implemented (`src/extension/diffView.ts`); needs a model-produced proposal to view by hand |
+| Native diff + per-hunk CodeLens in the editor | COMPLETE (programmatic) / NEEDS VERIFICATION (human visual, model output) | VS Code test: diff tab opens with our schemes; VS Code renders Accept/Reject per hunk; clicking them writes only the accepted hunk. Dev harness (`axiomForge.devTools`) lets anyone inspect it by hand without a model |
 | Context engine + Context Receipt | COMPLETE | `tests/context/flaskGolden.test.ts` (9 tests on Flask 3.1.3): Task B prompt puts `cli.py`, `test_cli.py`, `docs/cli.rst` in the top 5; budget respected; reasons for every item; ~285k-token repo → 24k budget in ~50 ms |
 | `@file` / `@symbol` mentions | COMPLETE (engine) / NEEDS VERIFICATION (UI with live host) | golden test; composer popup tested in browser preview |
 | TrueForge client: sessions, streaming, approvals, subscribe, cancel | NEEDS VERIFICATION | type-checked against SDK 0.185.0; reducer tested on synthetic streams; live: health + 422 path verified |
@@ -29,7 +31,7 @@ All model-independent parts are implemented and tested: MCP server and tools, wo
 | Agent definition | COMPLETE (file) / BLOCKED (saved in TrueForge) | `agents/axiom-agent.json`; TrueForge rejects saving until a provider exists (422) |
 | Task A/B/C verification scripts | COMPLETE | on clean fixture: A FAIL, B FAIL, C PASS (correct); with a hand-written reference fix: A PASS, B PASS (pytest 59 passed, masked JSON, ≥3 files); reset → 0 changed files |
 | README / LICENSE / example config | COMPLETE (draft) | `README.md`, `LICENSE` (MIT), `config/models.example.json`, `.env.example` |
-| Event-loop responsiveness (A3) | NEEDS VERIFICATION | see KNOWN_LIMITATIONS (unattributed ~2 s spike in test instance; stall detector added) |
+| Event-loop responsiveness (A3) | NEEDS VERIFICATION | webview rerender bug fixed + measured; activation 0.7 s; extension-host p99 64–78 ms, max ~1.4 s spike still unattributed |
 | Video, write-up, public repo | NOT STARTED | after live runs |
 
 ## Blockers

@@ -121,6 +121,7 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
           approvals: this.approvals,
           safeChange: this.safeChange,
           budgetTokens: () => cfg().get<number>('contextBudgetTokens', 24_000),
+          runSignal: () => this.run?.abort.signal,
           onReceipt: (r) => {
             this.state.receipts = { ...this.state.receipts, [r.id]: r };
             this.pushEvent({ kind: 'context_receipt', id: `receipt:${r.id}`, receiptId: r.id, at: r.createdAt });

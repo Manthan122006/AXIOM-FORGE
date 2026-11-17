@@ -128,6 +128,22 @@ describe('MCP server over HTTP', () => {
     expect(textOf(r)).toContain('ok');
   });
 
+  it('run_command is killed when the run is cancelled', async () => {
+    const ac = new AbortController();
+    const srv2 = await startMcpHttpServer({ host, engine: new ContextEngine(root), approvals, safeChange, runSignal: () => ac.signal });
+    const c2 = new Client({ name: 'axiom-test-2', version: '0' });
+    await c2.connect(new StreamableHTTPClientTransport(new URL(srv2.url)));
+    const args = { command: `python3 -c "import time; time.sleep(20)"` };
+    approvals.grant(TOOL.runCommand, args, 'call-sleep', null);
+    const t0 = Date.now();
+    setTimeout(() => ac.abort(), 300);
+    const r = await c2.callTool({ name: TOOL.runCommand, arguments: args });
+    expect(Date.now() - t0).toBeLessThan(5000);
+    expect(r.isError).toBe(true);
+    await c2.close();
+    await srv2.close();
+  });
+
   it('run_command refuses disallowed programs even with a grant', async () => {
     const args = { command: 'rm -rf pkg' };
     approvals.grant(TOOL.runCommand, args, 'call-3', null);

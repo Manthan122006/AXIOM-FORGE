@@ -36,6 +36,8 @@ export interface McpDeps {
   onCommandStart?: (command: string) => void;
   onCommandResult?: (r: CommandResult) => void;
   commandTimeoutMs?: number;
+  /** Abort signal of the active run; a cancelled run kills its running command. */
+  runSignal?: () => AbortSignal | undefined;
 }
 
 const runCommandShape = {
@@ -227,7 +229,8 @@ export function buildMcpServer(deps: McpDeps): McpServer {
       if (!grant) return text('Not run: this command was not approved by the user in AXIOM Forge.', true);
       const cwd = args.cwd ? resolveWorkspacePath(deps.host.root, args.cwd, 'read').abs : deps.host.root;
       deps.onCommandStart?.(args.command);
-      const r = await runCommand(args.command, { workspaceRoot: deps.host.root, cwd, timeoutMs: deps.commandTimeoutMs ?? 120_000 });
+      const signal = deps.runSignal?.();
+      const r = await runCommand(args.command, { workspaceRoot: deps.host.root, cwd, timeoutMs: deps.commandTimeoutMs ?? 120_000, ...(signal ? { signal } : {}) });
       deps.onCommandResult?.(r);
       const status = r.timedOut ? 'TIMED OUT' : r.exitCode === 0 ? 'PASSED' : 'FAILED';
       return text(`$ ${r.command}\nexit code: ${r.exitCode ?? 'none'} (${status}, ${r.durationMs} ms)\n${r.outputTail}`, r.exitCode !== 0);
