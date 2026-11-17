@@ -4,6 +4,7 @@ Prereqs: TrueForge running (`OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]' npx -y @
 
 | # | Step | Command / action | Pass when | Record |
 |---|---|---|---|---|
+| 0 | Preflight (no keys needed) | `npx tsx scripts/preflight.ts` (after keys: add `--primary <name> --backup <name>`) | no FAIL rows; after keys, no BLOCKED rows | paste the table into `TRUEFORGE_INTEGRATION_STATUS.md` |
 | 1 | Provider config in TrueForge | http://localhost:8790 → Settings → Models: add **Google Gemini** (primary) and **custom OpenAI-compatible** `https://api.groq.com/openai/v1` (backup) | both listed | screenshot of Settings with keys hidden |
 | 2 | Exact model names | `curl -s http://localhost:8790/api/v1/models` | both models appear; copy their exact `name` | names into `axiomForge.models.primary/backup` |
 | 3 | Gemini connectivity (through TrueForge) | TrueForge chat UI: new chat on the Gemini model, ask "reply OK" | reply streams | — |
@@ -13,6 +14,7 @@ Prereqs: TrueForge running (`OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]' npx -y @
 | 7 | Real `propose_edit` + approval pause | `npx tsx scripts/proof.ts --model <gemini> --prompt "Use propose_edit to add a one-line comment '# axiom proof' at the top of src/flask/__main__.py"` | log shows `model.message` (tool call) → `tool.approval_required` → `turn.update` paused | recording in `tests/fixtures/trueforge-events/recorded/` |
 | 8 | Arguments readable | same log: `[approval] propose_edit {...}` and `[stage] … hunk(s)` | args parsed, diff staged | — |
 | 9 | Approve → resume | (the proof allows by default) | `user.tool_approval` → `turn.update` running → `tool.response` "Applied …" → `turn.done{done}`; file changed | `git -C fixtures/flask diff` |
+| 9b | Same-file / multi-file (Phase 3) | Task B run: watch the Output channel when the model proposes several edits in one pause | two edits to one file show as **one** diff ("combines N edits"); all files apply together; the tool responses say "merged" / "applied together" | Output channel log |
 | 10 | Deny | `bash scripts/tasks/reset-fixture.sh`, then step 7 with `--deny` | `tool.response` carries the denial; file unchanged; model acknowledges | `verify-task-c.sh` clean |
 | 11 | Cancel | step 7 with `--cancel-after 4` | `turn.done{cancelled, reason: client-cancelled}`; file unchanged | `verify-task-c.sh` clean |
 | 12 | Fingerprint match | in step 9, the MCP tool **applied** (no "Not applied: … not approved") | proves TrueForge passes the approved args unchanged | if it fails: record TrueForge's arg transform, fix `normalizeGatedArgs` |

@@ -1,0 +1,17 @@
+PASS       agent definition                                                                  agents/axiom-agent.json: axiom-forge MCP, approval required for propose_edit, run_command
+PASS       TrueForge reachable                                                               http://localhost:8790 answered /api/v1/models
+BLOCKED    models configured in TrueForge                                                    no models yet: add Gemini + Groq keys in TrueForge Settings → Models
+BLOCKED    primary model chosen                                                              pass --primary <name> (exact name from the list above)
+BLOCKED    backup model chosen                                                               pass --backup <name> (exact name from the list above)
+PASS       TrueForge lists the 7 MCP tools                                                   assemble_context, find_symbol, propose_edit, read_file, related_files, run_command, search_workspace (via a temporary MCP server)
+PASS       unknown model → bad_config (falls back)                                           422 → bad_config
+PASS       TrueForge down ≠ provider failure                                                 closed port → trueforge_error (ModelShield does not switch models for this)
+UNVERIFIED model calls read_file / propose_edit through TrueForge (MODEL_KEY_CHECKLIST 7–8)  needs a real model in TrueForge
+UNVERIFIED turn pauses on tool.approval_required; approve → write → resume (7, 9)            needs a real model in TrueForge
+UNVERIFIED deny → no write, model told why (10)                                              needs a real model in TrueForge
+UNVERIFIED cancel mid-turn → sessions.cancel, no write (11)                                  needs a real model in TrueForge
+UNVERIFIED approved arguments reach the MCP tool unchanged (12)                              needs a real model in TrueForge
+UNVERIFIED invalid primary key → backup model on a fresh session, workspace clean (13–16)    needs a real model in TrueForge
+UNVERIFIED Tasks A, B, C end to end (DEMO_SCRIPT.md + scripts/tasks/verify-task-*.sh)        needs a real model in TrueForge
+
+No failures; 3 blocked on keys; 7 model-dependent steps UNVERIFIED.
