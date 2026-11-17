@@ -9,6 +9,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { ContextEngine } from '../src/context/engine';
 import { SafeChange } from '../src/safety/safeChange';
+import { stageProposeEdits } from '../src/safety/stage';
 import { NodeWorkspaceHost } from '../src/workspace/host';
 
 const TASK_B =
@@ -21,23 +22,26 @@ async function main() {
 
   const host = new NodeWorkspaceHost(root);
   const sc = new SafeChange(host);
-  const cli = readFileSync(path.join(root, 'src/flask/cli.py'), 'utf8');
-  const cliNext = cli
-    .replace(
-      '            self.add_command(routes_command)\n',
-      '            self.add_command(routes_command)\n            self.add_command(config_command)\n',
-    )
-    .replace(
-      '\ncli = FlaskGroup(',
-      `\n@click.command("config", short_help="Show the app's configuration as JSON.")\n@with_appcontext\ndef config_command() -> None:\n    """Print the loaded application's configuration as JSON.\n\n    Values of keys containing SECRET, PASSWORD, TOKEN or KEY are shown as "***".\n    """\n    masked = {\n        key: "***" if any(w in key.upper() for w in ("SECRET", "PASSWORD", "TOKEN", "KEY")) else value\n        for key, value in current_app.config.items()\n    }\n    click.echo(json.dumps(masked, indent=2, sort_keys=True, default=str))\n\n\ncli = FlaskGroup(`,
-    );
+  // Two propose_edit calls on cli.py in one pause, merged by the real stageProposeEdits (Phase 3).
+  const cmdSrc = `\n@click.command("config", short_help="Show the app's configuration as JSON.")\n@with_appcontext\ndef config_command() -> None:\n    """Print the loaded application's configuration as JSON.\n\n    Values of keys containing SECRET, PASSWORD, TOKEN or KEY are shown as "***".\n    """\n    masked = {\n        key: "***" if any(w in key.upper() for w in ("SECRET", "PASSWORD", "TOKEN", "KEY")) else value\n        for key, value in current_app.config.items()\n    }\n    click.echo(json.dumps(masked, indent=2, sort_keys=True, default=str))\n\n\ncli = FlaskGroup(`;
+  const merged = await stageProposeEdits(
+    [
+      { toolCallId: 'call-edit-1a', rawArgs: { path: 'src/flask/cli.py', rationale: 'Register the command with the other built-ins.', edits: [{ old_text: '            self.add_command(routes_command)\n', new_text: '            self.add_command(routes_command)\n            self.add_command(config_command)\n' }] } },
+      { toolCallId: 'call-edit-1b', rawArgs: { path: 'src/flask/cli.py', rationale: 'Define `flask config` with secret masking.', edits: [{ old_text: '\ncli = FlaskGroup(', new_text: cmdSrc }] } },
+    ],
+    { sessionId: 'preview', turnId: 'preview' },
+    host,
+    sc,
+  );
+  const cliProposal = merged.find((r) => r.ok);
+  if (!cliProposal || !cliProposal.ok || merged.some((r) => !r.ok)) throw new Error(`merge failed: ${JSON.stringify(merged)}`);
   const testPath = 'tests/test_cli.py';
   const test = readFileSync(path.join(root, testPath), 'utf8');
   const testNext = `${test}\n\ndef test_config_command_masks_secrets(runner):\n    app = Flask(__name__)\n    app.config.update(SECRET_KEY="s3cret", API_TOKEN="t", DEBUG_VALUE=1)\n    result = runner.invoke(config_command, obj=ScriptInfo(create_app=lambda: app))\n    data = json.loads(result.output)\n    assert data["SECRET_KEY"] == "***"\n    assert data["API_TOKEN"] == "***"\n    assert data["DEBUG_VALUE"] == 1\n`;
   const mk = (p: string, base: string, next: string, rationale: string, toolCallId: string) =>
     sc.stage({ toolCallId, sessionId: 'preview', turnId: 'preview', path: p, rationale, baseText: base, proposedText: next });
   const proposals = [
-    mk('src/flask/cli.py', cli, cliNext, 'Register a built-in `config` command next to run/shell/routes.', 'call-edit-1'),
+    cliProposal.proposal,
     mk(testPath, test, testNext, 'Cover masking of SECRET/TOKEN keys and pass-through of other values.', 'call-edit-2'),
   ];
   writeFileSync(

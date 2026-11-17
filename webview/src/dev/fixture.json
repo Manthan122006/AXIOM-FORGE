@@ -2,67 +2,21 @@
  "note": "SIMULATED preview run. Receipt and hunks are real engine output; the agent turn is not.",
  "task": "Add a new built-in CLI command flask config that prints the loaded application's configuration as JSON, masking the values of any key containing SECRET, PASSWORD, TOKEN or KEY as \"***\". It must appear in flask --help, be covered by a test, and be documented alongside the other built-in commands.",
  "receipt": {
-  "id": "7b7ecb72-fafb-4551-8bee-e7d60a77c3d7",
+  "id": "02c7ba69-9b00-437c-9818-20f33e08ad7e",
   "task": "Add a new built-in CLI command flask config that prints the loaded application's configuration as JSON, masking the values of any key containing SECRET, PASSWORD, TOKEN or KEY as \"***\". It must appear in flask --help, be covered by a test, and be documented alongside the other built-in commands.",
-  "createdAt": "2026-11-17T15:49:29.217Z",
-  "strategy": "Hybrid local retrieval: explicit @mentions and the editor selection are always included; other files are scored by IDF-weighted keyword hits, path/name matches, symbol definitions, one-hop import neighbours, and test/doc pairing; then deduplicated and packed greedily into a token budget, sending outlines plus focused line windows for large files.",
+  "createdAt": "2026-11-17T18:25:22.657Z",
+  "strategy": "Hybrid local retrieval: explicit @mentions and the editor selection are always included; other files are scored by BM25 keyword relevance, file/folder-name matches, definitions of code identifiers named in the task, one-hop imports, and test/doc pairing in both directions (scaled by evidence); then packed greedily into a token budget, sending outlines plus focused line windows for large files.",
   "selected": [
    {
-    "path": "tests/test_config.py",
-    "category": "test",
-    "score": 155,
-    "reason": "Tests: file name matches \"config\"; naming convention: test_config.py ↔ config.py (related to src/flask/config.py)",
-    "signals": [
-     {
-      "signal": "path",
-      "weight": 50,
-      "detail": "file name matches \"config\""
-     },
-     {
-      "signal": "keyword",
-      "weight": 35,
-      "detail": "mentions \"flask\", \"config\", \"configuration\", \"json\", \"value\""
-     },
-     {
-      "signal": "test_pair",
-      "weight": 30,
-      "detail": "naming convention: test_config.py ↔ config.py (related to src/flask/config.py)"
-     },
-     {
-      "signal": "symbol_def",
-      "weight": 20,
-      "detail": "defines class `Flask` (L202)"
-     },
-     {
-      "signal": "symbol_def",
-      "weight": 20,
-      "detail": "defines class `Config` (L199)"
-     }
-    ],
-    "symbols": [
-     "Flask",
-     "Config"
-    ],
-    "inclusion": {
-     "mode": "full"
-    },
-    "estTokens": 2396
-   },
-   {
-    "path": "tests/test_cli.py",
-    "category": "test",
-    "score": 118,
-    "reason": "Tests: mentions \"cli\", \"command\", \"flask\", \"prints\", \"print\"; naming convention: test_cli.py ↔ cli.py (related to src/flask/cli.py)",
+    "path": "src/flask/cli.py",
+    "category": "implementation",
+    "score": 161.2,
+    "reason": "Code: mentions \"loaded\", \"commands\", \"command\", \"help\", \"cli\"",
     "signals": [
      {
       "signal": "keyword",
-      "weight": 35,
-      "detail": "mentions \"cli\", \"command\", \"flask\", \"prints\", \"print\""
-     },
-     {
-      "signal": "test_pair",
-      "weight": 30,
-      "detail": "naming convention: test_cli.py ↔ cli.py (related to src/flask/cli.py)"
+      "weight": 60,
+      "detail": "mentions \"loaded\", \"commands\", \"command\", \"help\", \"cli\""
      },
      {
       "signal": "path",
@@ -70,108 +24,91 @@
       "detail": "file name matches \"cli\""
      },
      {
-      "signal": "symbol_def",
-      "weight": 20,
-      "detail": "defines function `cli` (L322)"
+      "signal": "documented_by",
+      "weight": 25,
+      "detail": "doc page cli.rst matches module cli (docs/cli.rst matches the task)"
      },
      {
-      "signal": "import",
-      "weight": 8,
-      "detail": "imports `flask.cli` (related to src/flask/cli.py)"
+      "signal": "tested_by",
+      "weight": 21.2,
+      "detail": "naming convention: test_cli.py ↔ cli.py (tests/test_cli.py matches the task)"
+     },
+     {
+      "signal": "symbol_def",
+      "weight": 20,
+      "detail": "defines method `command` (L413)"
+     },
+     {
+      "signal": "path",
+      "weight": 10,
+      "detail": "folder name matches \"flask\""
      }
     ],
     "symbols": [
-     "cli"
+     "command"
     ],
     "inclusion": {
      "mode": "ranges",
      "ranges": [
       [
-       13,
-       58
+       398,
+       443
       ],
       [
-       279,
-       418
+       604,
+       676
       ],
       [
-       633,
-       678
+       875,
+       920
+      ],
+      [
+       992,
+       1037
+      ],
+      [
+       1041,
+       1086
       ]
      ]
     },
-    "estTokens": 2686
-   },
-   {
-    "path": "docs/config.rst",
-    "category": "documentation",
-    "score": 113,
-    "reason": "Docs: file name matches \"config\"; doc page config.rst matches module config (related to src/flask/config.py)",
-    "signals": [
-     {
-      "signal": "path",
-      "weight": 50,
-      "detail": "file name matches \"config\""
-     },
-     {
-      "signal": "keyword",
-      "weight": 35,
-      "detail": "mentions \"built-in\", \"built\", \"command\", \"flask\", \"config\""
-     },
-     {
-      "signal": "doc_pair",
-      "weight": 28,
-      "detail": "doc page config.rst matches module config (related to src/flask/config.py)"
-     }
-    ],
-    "symbols": [],
-    "inclusion": {
-     "mode": "ranges",
-     "ranges": [
-      [
-       1,
-       45
-      ],
-      [
-       48,
-       93
-      ],
-      [
-       106,
-       151
-      ],
-      [
-       491,
-       577
-      ],
-      [
-       649,
-       694
-      ]
-     ]
-    },
-    "estTokens": 2836
+    "estTokens": 3327
    },
    {
     "path": "src/flask/config.py",
     "category": "implementation",
-    "score": 105,
-    "reason": "Code: file name matches \"config\"",
+    "score": 157.2,
+    "reason": "Code: mentions \"loaded\", \"configuration\", \"values\", \"json\", \"key\"",
     "signals": [
      {
+      "signal": "keyword",
+      "weight": 60,
+      "detail": "mentions \"loaded\", \"configuration\", \"values\", \"json\", \"key\""
+     },
+     {
       "signal": "path",
-      "weight": 50,
+      "weight": 25,
       "detail": "file name matches \"config\""
      },
      {
-      "signal": "keyword",
-      "weight": 35,
-      "detail": "mentions \"flask\", \"config\", \"loaded\", \"application\", \"configuration\""
+      "signal": "documented_by",
+      "weight": 25,
+      "detail": "doc page config.rst matches module config (docs/config.rst matches the task)"
+     },
+     {
+      "signal": "tested_by",
+      "weight": 23,
+      "detail": "naming convention: test_config.py ↔ config.py (tests/test_config.py matches the task)"
      },
      {
       "signal": "symbol_def",
-      "weight": 20,
+      "weight": 14.1,
       "detail": "defines class `Config` (L50)"
+     },
+     {
+      "signal": "path",
+      "weight": 10,
+      "detail": "folder name matches \"flask\""
      }
     ],
     "symbols": [
@@ -185,13 +122,13 @@
    {
     "path": "docs/cli.rst",
     "category": "documentation",
-    "score": 88,
-    "reason": "Docs: mentions \"built-in\", \"built\", \"cli\", \"command\", \"flask\"; doc page cli.rst matches module cli (related to src/flask/cli.py)",
+    "score": 113,
+    "reason": "Docs: mentions \"commands\", \"command\", \"configuration\", \"print\", \"cli\"; doc page cli.rst matches module cli (related to src/flask/cli.py)",
     "signals": [
      {
       "signal": "keyword",
-      "weight": 35,
-      "detail": "mentions \"built-in\", \"built\", \"cli\", \"command\", \"flask\""
+      "weight": 60,
+      "detail": "mentions \"commands\", \"command\", \"configuration\", \"print\", \"cli\""
      },
      {
       "signal": "doc_pair",
@@ -229,15 +166,70 @@
     "estTokens": 2087
    },
    {
-    "path": "src/flask/cli.py",
-    "category": "implementation",
-    "score": 80,
-    "reason": "Code: mentions \"built-in\", \"built\", \"cli\", \"command\", \"flask\"",
+    "path": "docs/config.rst",
+    "category": "documentation",
+    "score": 111.6,
+    "reason": "Docs: mentions \"secret\", \"configuration\", \"loaded\", \"json\", \"values\"; doc page config.rst matches module config (related to src/flask/config.py)",
     "signals": [
      {
       "signal": "keyword",
-      "weight": 35,
-      "detail": "mentions \"built-in\", \"built\", \"cli\", \"command\", \"flask\""
+      "weight": 60,
+      "detail": "mentions \"secret\", \"configuration\", \"loaded\", \"json\", \"values\""
+     },
+     {
+      "signal": "doc_pair",
+      "weight": 26.6,
+      "detail": "doc page config.rst matches module config (related to src/flask/config.py)"
+     },
+     {
+      "signal": "path",
+      "weight": 25,
+      "detail": "file name matches \"config\""
+     }
+    ],
+    "symbols": [],
+    "inclusion": {
+     "mode": "ranges",
+     "ranges": [
+      [
+       1,
+       45
+      ],
+      [
+       48,
+       93
+      ],
+      [
+       106,
+       151
+      ],
+      [
+       491,
+       577
+      ],
+      [
+       649,
+       694
+      ]
+     ]
+    },
+    "estTokens": 2836
+   },
+   {
+    "path": "tests/test_cli.py",
+    "category": "test",
+    "score": 108.7,
+    "reason": "Tests: mentions \"command\", \"print\", \"key\", \"cli\", \"help\"; naming convention: test_cli.py ↔ cli.py (related to src/flask/cli.py)",
+    "signals": [
+     {
+      "signal": "keyword",
+      "weight": 45.7,
+      "detail": "mentions \"command\", \"print\", \"key\", \"cli\", \"help\""
+     },
+     {
+      "signal": "test_pair",
+      "weight": 30,
+      "detail": "naming convention: test_cli.py ↔ cli.py (related to src/flask/cli.py)"
      },
      {
       "signal": "path",
@@ -245,79 +237,162 @@
       "detail": "file name matches \"cli\""
      },
      {
+      "signal": "import",
+      "weight": 8,
+      "detail": "imports `flask.cli` (related to src/flask/cli.py)"
+     }
+    ],
+    "symbols": [],
+    "inclusion": {
+     "mode": "ranges",
+     "ranges": [
+      [
+       13,
+       58
+      ],
+      [
+       279,
+       418
+      ],
+      [
+       633,
+       678
+      ]
+     ]
+    },
+    "estTokens": 2686
+   },
+   {
+    "path": "tests/test_config.py",
+    "category": "test",
+    "score": 105.2,
+    "reason": "Tests: mentions \"secret\", \"json\", \"configuration\", \"key\", \"config\"; naming convention: test_config.py ↔ config.py (related to src/flask/config.py)",
+    "signals": [
+     {
+      "signal": "keyword",
+      "weight": 42.3,
+      "detail": "mentions \"secret\", \"json\", \"configuration\", \"key\", \"config\""
+     },
+     {
+      "signal": "test_pair",
+      "weight": 28.5,
+      "detail": "naming convention: test_config.py ↔ config.py (related to src/flask/config.py)"
+     },
+     {
+      "signal": "path",
+      "weight": 25,
+      "detail": "file name matches \"config\""
+     },
+     {
       "signal": "symbol_def",
-      "weight": 20,
-      "detail": "defines method `command` (L413)"
+      "weight": 4.7,
+      "detail": "defines class `Flask` (L202)"
+     },
+     {
+      "signal": "symbol_def",
+      "weight": 4.7,
+      "detail": "defines class `Config` (L199)"
      }
     ],
     "symbols": [
-     "command"
+     "Flask",
+     "Config"
+    ],
+    "inclusion": {
+     "mode": "full"
+    },
+    "estTokens": 2396
+   },
+   {
+    "path": "src/flask/app.py",
+    "category": "implementation",
+    "score": 84.1,
+    "reason": "Code: mentions \"print\", \"values\", \"prints\", \"cli\", \"command\"",
+    "signals": [
+     {
+      "signal": "keyword",
+      "weight": 60,
+      "detail": "mentions \"print\", \"values\", \"prints\", \"cli\", \"command\""
+     },
+     {
+      "signal": "symbol_def",
+      "weight": 14.1,
+      "detail": "defines class `Flask` (L81)"
+     },
+     {
+      "signal": "path",
+      "weight": 10,
+      "detail": "folder name matches \"flask\""
+     }
+    ],
+    "symbols": [
+     "Flask"
     ],
     "inclusion": {
      "mode": "ranges",
      "ranges": [
       [
-       398,
-       443
+       66,
+       111
       ],
       [
-       604,
-       676
+       237,
+       316
       ],
       [
-       875,
-       920
+       600,
+       645
       ],
       [
-       992,
-       1037
+       713,
+       758
       ],
       [
-       1041,
-       1086
+       1446,
+       1491
       ]
      ]
     },
-    "estTokens": 3327
+    "estTokens": 3599
    },
    {
-    "path": "tests/test_instance_config.py",
-    "category": "test",
-    "score": 66.8,
-    "reason": "Tests: file name matches \"config\"",
+    "path": "src/flask/blueprints.py",
+    "category": "implementation",
+    "score": 70,
+    "reason": "Code: mentions \"prints\", \"commands\", \"command\", \"print\", \"configuration\"",
     "signals": [
      {
-      "signal": "path",
-      "weight": 50,
-      "detail": "file name matches \"config\""
+      "signal": "keyword",
+      "weight": 60,
+      "detail": "mentions \"prints\", \"commands\", \"command\", \"print\", \"configuration\""
      },
      {
-      "signal": "keyword",
-      "weight": 16.8,
-      "detail": "mentions \"flask\", \"config\", \"value\", \"key\""
+      "signal": "path",
+      "weight": 10,
+      "detail": "folder name matches \"flask\""
      }
     ],
     "symbols": [],
     "inclusion": {
      "mode": "full"
     },
-    "estTokens": 1046
+    "estTokens": 1381
    },
    {
     "path": "src/flask/__init__.py",
     "category": "implementation",
-    "score": 64.1,
-    "reason": "Code: mentions \"flask\", \"config\", \"prints\", \"print\", \"json\"",
+    "score": 66.2,
+    "reason": "Code: mentions \"help\", \"json\", \"prints\", \"print\", \"config\"",
     "signals": [
      {
       "signal": "keyword",
-      "weight": 32.1,
-      "detail": "mentions \"flask\", \"config\", \"prints\", \"print\", \"json\""
+      "weight": 34.7,
+      "detail": "mentions \"help\", \"json\", \"prints\", \"print\", \"config\""
      },
      {
-      "signal": "import",
-      "weight": 8,
-      "detail": "imports `flask.config` (related to src/flask/config.py)"
+      "signal": "path",
+      "weight": 10,
+      "detail": "folder name matches \"flask\""
      },
      {
       "signal": "import",
@@ -326,13 +401,13 @@
      },
      {
       "signal": "import",
-      "weight": 8,
-      "detail": "imports `flask` (related to src/flask/app.py)"
+      "weight": 7.6,
+      "detail": "imports `flask.config` (related to src/flask/config.py)"
      },
      {
       "signal": "import",
-      "weight": 8,
-      "detail": "imports `flask.app` (related to src/flask/app.py)"
+      "weight": 5.9,
+      "detail": "imports `flask` (related to src/flask/app.py)"
      }
     ],
     "symbols": [],
@@ -342,66 +417,43 @@
     "estTokens": 804
    },
    {
-    "path": "tests/test_json.py",
-    "category": "test",
-    "score": 60,
-    "reason": "Tests: mentions \"cli\", \"flask\", \"config\", \"application\", \"json\"",
+    "path": "examples/tutorial/flaskr/__init__.py",
+    "category": "implementation",
+    "score": 62.3,
+    "reason": "Code: mentions \"secret\", \"commands\", \"prints\", \"print\", \"command\"",
     "signals": [
      {
       "signal": "keyword",
-      "weight": 35,
-      "detail": "mentions \"cli\", \"flask\", \"config\", \"application\", \"json\""
+      "weight": 52.3,
+      "detail": "mentions \"secret\", \"commands\", \"prints\", \"print\", \"command\""
      },
      {
       "signal": "path",
-      "weight": 25,
-      "detail": "file name matches \"json\""
+      "weight": 10,
+      "detail": "folder name matches \"flaskr\""
      }
     ],
     "symbols": [],
     "inclusion": {
      "mode": "full"
     },
-    "estTokens": 2813
-   },
-   {
-    "path": "tests/static/config.json",
-    "category": "test",
-    "score": 59.4,
-    "reason": "Tests: file name matches \"config\"",
-    "signals": [
-     {
-      "signal": "path",
-      "weight": 50,
-      "detail": "file name matches \"config\""
-     },
-     {
-      "signal": "keyword",
-      "weight": 9.4,
-      "detail": "mentions \"config\", \"key\", \"secret\""
-     }
-    ],
-    "symbols": [],
-    "inclusion": {
-     "mode": "full"
-    },
-    "estTokens": 43
+    "estTokens": 458
    },
    {
     "path": "tests/static/config.toml",
     "category": "test",
-    "score": 59.4,
+    "score": 44.8,
     "reason": "Tests: file name matches \"config\"",
     "signals": [
      {
       "signal": "path",
-      "weight": 50,
+      "weight": 25,
       "detail": "file name matches \"config\""
      },
      {
       "signal": "keyword",
-      "weight": 9.4,
-      "detail": "mentions \"config\", \"key\", \"secret\""
+      "weight": 19.8,
+      "detail": "mentions \"secret\", \"key\", \"config\""
      }
     ],
     "symbols": [],
@@ -411,119 +463,197 @@
     "estTokens": 34
    },
    {
-    "path": ".github/ISSUE_TEMPLATE/config.yml",
-    "category": "configuration",
-    "score": 52.2,
-    "reason": "Config: file name matches \"config\"",
+    "path": "tests/static/config.json",
+    "category": "test",
+    "score": 44.7,
+    "reason": "Tests: file name matches \"config\"",
     "signals": [
      {
       "signal": "path",
-      "weight": 50,
+      "weight": 25,
       "detail": "file name matches \"config\""
      },
      {
       "signal": "keyword",
-      "weight": 2.2,
-      "detail": "mentions \"flask\""
+      "weight": 19.7,
+      "detail": "mentions \"secret\", \"key\", \"config\""
      }
     ],
     "symbols": [],
     "inclusion": {
      "mode": "full"
     },
-    "estTokens": 169
+    "estTokens": 43
    }
   ],
   "excluded": [
    {
-    "path": "src/flask/testing.py",
-    "reason": "over_budget",
-    "detail": "needs ~3073 tokens, 1959 left",
-    "score": 59
-   },
-   {
     "path": "src/flask/sansio/app.py",
     "reason": "over_budget",
-    "detail": "needs ~3295 tokens, 1959 left",
-    "score": 59
+    "detail": "needs ~3295 tokens, 3100 left",
+    "score": 73.4
    },
    {
-    "path": "src/flask/app.py",
+    "path": "src/flask/testing.py",
     "reason": "over_budget",
-    "detail": "needs ~3599 tokens, 1959 left",
-    "score": 55
-   },
-   {
-    "path": "src/flask/helpers.py",
-    "reason": "low_relevance",
-    "detail": "score 51.0 below cut-off 38.8",
-    "score": 51
-   },
-   {
-    "path": "src/flask/sessions.py",
-    "reason": "low_relevance",
-    "detail": "score 51.0 below cut-off 38.8",
-    "score": 51
-   },
-   {
-    "path": ".pre-commit-config.yaml",
-    "reason": "low_relevance",
-    "detail": "score 50.0 below cut-off 38.8",
-    "score": 50
-   },
-   {
-    "path": ".devcontainer/on-create-command.sh",
-    "reason": "low_relevance",
-    "detail": "score 50.0 below cut-off 38.8",
-    "score": 50
-   },
-   {
-    "path": "tests/test_json_tag.py",
-    "reason": "low_relevance",
-    "detail": "score 47.3 below cut-off 38.8",
-    "score": 47.3
-   },
-   {
-    "path": "src/flask/ctx.py",
-    "reason": "low_relevance",
-    "detail": "score 43.0 below cut-off 38.8",
-    "score": 43
+    "detail": "needs ~3073 tokens, 915 left",
+    "score": 65
    },
    {
     "path": "src/flask/wrappers.py",
-    "reason": "low_relevance",
-    "detail": "score 43.0 below cut-off 38.8",
-    "score": 43
+    "reason": "over_budget",
+    "detail": "needs ~2823 tokens, 915 left",
+    "score": 64.6
    },
    {
-    "path": "src/flask/debughelpers.py",
-    "reason": "low_relevance",
-    "detail": "score 40.8 below cut-off 38.8",
-    "score": 40.8
+    "path": "tests/test_json.py",
+    "reason": "over_budget",
+    "detail": "needs ~2813 tokens, 915 left",
+    "score": 62.3
+   },
+   {
+    "path": "src/flask/sansio/blueprints.py",
+    "reason": "over_budget",
+    "detail": "needs ~3553 tokens, 457 left",
+    "score": 61.3
    },
    {
     "path": "CHANGES.rst",
-    "reason": "low_relevance",
-    "detail": "score 35.0 below cut-off 38.8",
-    "score": 35
+    "reason": "over_budget",
+    "detail": "needs ~2902 tokens, 457 left",
+    "score": 60
    },
    {
     "path": "docs/api.rst",
-    "reason": "low_relevance",
-    "detail": "score 35.0 below cut-off 38.8",
-    "score": 35
+    "reason": "over_budget",
+    "detail": "needs ~2212 tokens, 457 left",
+    "score": 60
    },
    {
-    "path": "docs/appcontext.rst",
-    "reason": "low_relevance",
-    "detail": "score 35.0 below cut-off 38.8",
-    "score": 35
+    "path": "docs/quickstart.rst",
+    "reason": "over_budget",
+    "detail": "needs ~2085 tokens, 457 left",
+    "score": 60
+   },
+   {
+    "path": "docs/tutorial/database.rst",
+    "reason": "over_budget",
+    "detail": "needs ~2162 tokens, 457 left",
+    "score": 60
+   },
+   {
+    "path": "docs/tutorial/deploy.rst",
+    "reason": "over_budget",
+    "detail": "needs ~1141 tokens, 457 left",
+    "score": 60
+   },
+   {
+    "path": "src/flask/sessions.py",
+    "reason": "over_budget",
+    "detail": "needs ~4438 tokens, 457 left",
+    "score": 59.8
+   },
+   {
+    "path": "docs/web-security.rst",
+    "reason": "over_budget",
+    "detail": "needs ~2999 tokens, 457 left",
+    "score": 57.8
+   },
+   {
+    "path": "docs/testing.rst",
+    "reason": "over_budget",
+    "detail": "needs ~2315 tokens, 457 left",
+    "score": 56.7
+   },
+   {
+    "path": "src/flask/ctx.py",
+    "reason": "over_budget",
+    "detail": "needs ~4706 tokens, 457 left",
+    "score": 56.4
+   },
+   {
+    "path": "src/flask/helpers.py",
+    "reason": "over_budget",
+    "detail": "needs ~3444 tokens, 457 left",
+    "score": 56.3
+   },
+   {
+    "path": "docs/tutorial/views.rst",
+    "reason": "over_budget",
+    "detail": "needs ~2437 tokens, 457 left",
+    "score": 55.9
+   },
+   {
+    "path": "docs/lifecycle.rst",
+    "reason": "over_budget",
+    "detail": "needs ~2553 tokens, 457 left",
+    "score": 52.9
+   },
+   {
+    "path": "tests/test_blueprints.py",
+    "reason": "over_budget",
+    "detail": "needs ~1452 tokens, 457 left",
+    "score": 52.4
+   },
+   {
+    "path": "docs/patterns/appfactories.rst",
+    "reason": "over_budget",
+    "detail": "needs ~1253 tokens, 457 left",
+    "score": 51
+   },
+   {
+    "path": "src/flask/json/provider.py",
+    "reason": "over_budget",
+    "detail": "needs ~2316 tokens, 457 left",
+    "score": 50.3
+   },
+   {
+    "path": "docs/tutorial/tests.rst",
+    "reason": "over_budget",
+    "detail": "needs ~2662 tokens, 457 left",
+    "score": 50.1
+   },
+   {
+    "path": "tests/test_basic.py",
+    "reason": "over_budget",
+    "detail": "needs ~2751 tokens, 457 left",
+    "score": 48.7
    },
    {
     "path": "docs/blueprints.rst",
-    "reason": "low_relevance",
-    "detail": "score 35.0 below cut-off 38.8",
-    "score": 35
+    "reason": "over_budget",
+    "detail": "needs ~2771 tokens, 457 left",
+    "score": 48.7
+   },
+   {
+    "path": "docs/extensiondev.rst",
+    "reason": "over_budget",
+    "detail": "needs ~2751 tokens, 457 left",
+    "score": 48.1
+   },
+   {
+    "path": "docs/tutorial/factory.rst",
+    "reason": "over_budget",
+    "detail": "needs ~1770 tokens, 457 left",
+    "score": 47
+   },
+   {
+    "path": "src/flask/debughelpers.py",
+    "reason": "over_budget",
+    "detail": "needs ~1854 tokens, 457 left",
+    "score": 46.6
+   },
+   {
+    "path": "tests/test_json_tag.py",
+    "reason": "over_budget",
+    "detail": "needs ~672 tokens, 457 left",
+    "score": 45.5
+   },
+   {
+    "path": "docs/patterns/celery.rst",
+    "reason": "over_budget",
+    "detail": "needs ~2613 tokens, 457 left",
+    "score": 45
    },
    {
     "path": "tests/test_apps/.env",
@@ -533,7 +663,7 @@
   ],
   "budget": {
    "limitTokens": 24000,
-   "usedTokens": 22210,
+   "usedTokens": 23620,
    "perFileCapTokens": 6000,
    "estimator": "chars_div_4",
    "truncated": true
@@ -546,17 +676,17 @@
  },
  "proposals": [
   {
-   "id": "f915e3b5-dde3-46ff-af07-81a662aa99a9",
-   "toolCallId": "call-edit-1",
+   "id": "751a42d1-45d7-42e8-8bec-4439bd0de131",
+   "toolCallId": "call-edit-1a",
    "sessionId": "preview",
    "turnId": "preview",
    "path": "src/flask/cli.py",
    "isNewFile": false,
-   "rationale": "Register a built-in `config` command next to run/shell/routes.",
+   "rationale": "(1) Register the command with the other built-ins. (2) Define `flask config` with secret masking.",
    "baseHash": "3df87bdbe07196fa07d101c20ce7351ef5c6ecaab95deb5fdf3ccdcf690d4879",
    "hunks": [
     {
-     "id": "f915e3b5-dde3-46ff-af07-81a662aa99a9:0",
+     "id": "751a42d1-45d7-42e8-8bec-4439bd0de131:0",
      "index": 0,
      "oldStart": 594,
      "oldLines": 6,
@@ -575,7 +705,7 @@
      "applyState": "not_applied"
     },
     {
-     "id": "f915e3b5-dde3-46ff-af07-81a662aa99a9:1",
+     "id": "751a42d1-45d7-42e8-8bec-4439bd0de131:1",
      "index": 1,
      "oldStart": 1115,
      "oldLines": 6,
@@ -608,10 +738,14 @@
     }
    ],
    "status": "staged",
-   "createdAt": "2026-11-17T15:49:29.218Z"
+   "createdAt": "2026-11-17T18:25:22.660Z",
+   "memberToolCallIds": [
+    "call-edit-1a",
+    "call-edit-1b"
+   ]
   },
   {
-   "id": "d727c9b7-c684-4629-8b8e-cd32cf9b860a",
+   "id": "e888ca37-d339-4dcf-964c-75038a473bd7",
    "toolCallId": "call-edit-2",
    "sessionId": "preview",
    "turnId": "preview",
@@ -621,7 +755,7 @@
    "baseHash": "bc9b456bcd5c8698f4a809ca9c5a595b8be47ac5f8f057442d6c78498b70e3f8",
    "hunks": [
     {
-     "id": "d727c9b7-c684-4629-8b8e-cd32cf9b860a:0",
+     "id": "e888ca37-d339-4dcf-964c-75038a473bd7:0",
      "index": 0,
      "oldStart": 700,
      "oldLines": 3,
@@ -647,7 +781,10 @@
     }
    ],
    "status": "staged",
-   "createdAt": "2026-11-17T15:49:29.219Z"
+   "createdAt": "2026-11-17T18:25:22.661Z",
+   "memberToolCallIds": [
+    "call-edit-2"
+   ]
   }
  ]
 }
