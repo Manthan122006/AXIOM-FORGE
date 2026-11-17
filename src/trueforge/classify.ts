@@ -23,13 +23,27 @@ export function classifyFailure(input: unknown): FailureClass {
   if (/timed? ?out|etimedout|deadline|headers timeout|und_err_(headers|body)_timeout|connect_timeout/.test(msg)) return 'timeout';
   if (/econnrefused|enotfound|eai_again|ehostunreach|enetunreach|econnreset|socket hang up|fetch failed|network|getaddrinfo|outbound url blocked|connection (refused|error)|unreachable/.test(msg)) return 'unreachable';
   if ((status !== undefined && status >= 500) || /\b5\d\d\b|internal server error|bad gateway|service unavailable|overloaded|upstream/.test(msg)) return 'server';
+  // The provider rejected a malformed tool call the model generated (Groq `tool_use_failed`):
+  // not our tool failing. A fresh sample on the same model often succeeds, so it is retryable.
+  if (/tool call validation failed|tool_use_failed|did not match schema/.test(msg)) return 'model_output';
   if (/tool .*(failed|error)/.test(msg)) return 'tool_error';
   if (/trueforge (rejected|is not reachable|responded)|truefo?rge agent .* not (saved|found)|validation|invalid (agent|session|request)/.test(msg) || status === 400 || status === 409 || status === 422) return 'trueforge_error';
   return 'unknown';
 }
 
+/**
+ * Retry delay the provider asked for, in ms, if the message says so: Groq "Please try again in 4.5s",
+ * "try again in 1m2.5s", Google "retryDelay": "27s", "Retry-After: 30". Undefined when absent.
+ */
+export function retryAfterMs(message: string): number | undefined {
+  const m = message.match(/try again in (?:(\d+)m)?([\d.]+)\s*s/i);
+  if (m) return Math.round(((m[1] ? Number(m[1]) * 60 : 0) + Number(m[2])) * 1000);
+  const g = message.match(/retry[_-]?delay"?\s*[:=]\s*"?([\d.]+)s/i) ?? message.match(/retry-after:?\s*([\d.]+)/i);
+  return g ? Math.round(Number(g[1]) * 1000) : undefined;
+}
+
 /** Failures worth retrying on the same model. */
-export const isTransient = (c: FailureClass) => c === 'rate_limit' || c === 'server' || c === 'timeout' || c === 'unreachable';
+export const isTransient = (c: FailureClass) => c === 'rate_limit' || c === 'server' || c === 'timeout' || c === 'unreachable' || c === 'model_output';
 /** Switching models helps only for provider-side problems; never for cancellation, tool errors or TrueForge errors. */
 export const warrantsFallback = (c: FailureClass) => c === 'auth' || c === 'bad_config' || isTransient(c) || c === 'unknown';
 
@@ -49,6 +63,8 @@ export function describeFailure(c: FailureClass): string {
       return 'The model provider returned a server error.';
     case 'cancelled':
       return 'The run was cancelled.';
+    case 'model_output':
+      return 'The model produced an invalid tool call that the provider rejected.';
     case 'tool_error':
       return 'A tool failed.';
     case 'trueforge_error':

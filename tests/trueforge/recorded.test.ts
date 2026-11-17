@@ -6,7 +6,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { TrueForgeApi } from '@truefoundry/trueforge-sdk';
-import { classifyFailure } from '../../src/trueforge/classify';
+import { classifyFailure, isTransient, retryAfterMs, warrantsFallback } from '../../src/trueforge/classify';
+import { runWithShield } from '../../src/trueforge/modelShield';
 import { TurnTracker } from '../../src/trueforge/reducer';
 
 type Ev = TrueForgeApi.TurnStreamingEvent;
@@ -68,5 +69,46 @@ describe('recorded real TrueForge streams', () => {
     expect(cls('gemini-429-daily-quota')).toBe('rate_limit');
     expect(cls('gemini-429-mid-turn')).toBe('rate_limit');
     expect(cls('groq-reasoning-content-400')).toBe('bad_config');
+  });
+});
+
+describe('Groq qwen tool_use_failed (live, 18 Nov)', () => {
+  it('is a retryable model_output failure, not a tool_error', () => {
+    const c = classifyFailure("[Model Error] tool call validation failed: parameters for tool read_file did not match schema: errors: [missing properties: 'path']");
+    expect(c).toBe('model_output');
+    expect(isTransient(c)).toBe(true);
+    expect(warrantsFallback(c)).toBe(true);
+  });
+});
+
+describe('ModelShield respects provider retry delays (live Groq/Gemini behaviour)', () => {
+  const groq429 = '[Model Error] Request failed (429): Rate limit reached for model `qwen/qwen3.8-27b` ... on input tokens per minute (ITPM): Limit 7000, Used 4608, Requested 2917. Please try again in 4.5s. Need more tokens?';
+  it('parses retry hints', () => {
+    expect(retryAfterMs(groq429)).toBe(4500);
+    expect(retryAfterMs('Please try again in 1m2.5s')).toBe(62500);
+    expect(retryAfterMs('"retryDelay": "47175s"')).toBe(47175000);
+    expect(retryAfterMs('no hint here')).toBeUndefined();
+  });
+  it('waits at least the hinted delay before retrying', async () => {
+    const waits: number[] = [];
+    let n = 0;
+    const r = await runWithShield({ primary: 'g', maxRetries: 2, baseDelayMs: 1000, maxDelayMs: 6000 }, {
+      attempt: async () => (n++ === 0 ? { kind: 'failed', error: groq429, sideEffects: false } : { kind: 'done' }),
+      onState: () => {},
+      sleep: async (ms) => void waits.push(ms),
+      random: () => 0.5,
+    });
+    expect(r.kind).toBe('done');
+    expect(waits[0]).toBeGreaterThanOrEqual(4750);
+  });
+  it('a long hint (daily quota) skips retries and switches to the backup at once', async () => {
+    const states: string[] = [];
+    const r = await runWithShield({ primary: 'g', backup: 'q', maxRetries: 2, baseDelayMs: 1000, maxDelayMs: 6000 }, {
+      attempt: async (m) => (m === 'g' ? { kind: 'failed', error: '[Model Error] Request failed (429): quota exceeded "retryDelay": "47175s"', sideEffects: false } : { kind: 'done' }),
+      onState: (s) => states.push(s.kind),
+      sleep: async () => {},
+    });
+    expect(r).toMatchObject({ kind: 'done', model: 'q', usedBackup: true });
+    expect(states).toEqual(['failed', 'switching', 'recovered']);
   });
 });

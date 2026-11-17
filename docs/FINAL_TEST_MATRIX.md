@@ -37,7 +37,7 @@ Legend: ✅ passed (real) · 🧪 passed with a labelled simulation · ⏳ block
 | TrueForge | subagent visible in session | Task B | ⏳ | |
 | Task A | official verification `False` on **agent** output | `verify-task-a.sh` | ✅ PASS (via proof.ts; ⌘I UI ⏳) | 18 Nov |
 | Task B | pytest, --help, masked JSON, ≥3 files on **agent** output | `verify-task-b.sh` | ⏳ | |
-| Task C | primary failure → fallback → clean | live `test:vscode` | ✅ real 429 → Groq, clean (no-tool prompt only; Groq fails tool turns) | 18 Nov |
+| Task C | primary failure → fallback → backup edit accepted and applied | live `test:vscode` (`AXIOM_LIVE_TASKC=1`) | ✅ real 429 → Groq qwen → edit applied; run then ends on Groq's 7k tokens/min limit (not replayed) | 18 Nov |
 | Checker sanity | verify scripts fail on clean tree, pass on a hand-written reference fix | Phase 1 run | ✅ (reference fix = **test of the checker only**) | 17 Nov |
 | Clean clone | README steps from scratch on a 2nd Mac | Vivan or Kunjal | ⏳ (needs remote) | |
 | Secrets | no keys in history | `git log -p --all \| grep -E 'AIza…|gsk_…|sk-…|ghp_…'` | ✅ 0 matches (gitleaks not installed; re-run before publishing) | 17 Nov |

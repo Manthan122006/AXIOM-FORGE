@@ -238,6 +238,7 @@ export type FailureClass =
   | 'bad_config' // unknown model name etc.
   | 'cancelled' // user cancellation — never a provider failure
   | 'tool_error'
+  | 'model_output' // the model emitted an invalid tool call that the provider rejected (e.g. Groq tool_use_failed)
   | 'trueforge_error' // TrueForge rejected/failed the request for a non-model reason (bad agent spec, 4xx, server down)
   | 'unknown';
 

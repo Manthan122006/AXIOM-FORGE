@@ -312,7 +312,7 @@ describe('AXIOM Forge in VS Code', () => {
     const primary = process.env.AXIOM_LIVE_PRIMARY;
     const backup = process.env.AXIOM_LIVE_BACKUP;
     const c = api.controller;
-    if (!primary || !backup || c.state.connection.kind !== 'connected') return this.skip();
+    if (!primary || !backup || process.env.AXIOM_LIVE_TASKC === '1' || c.state.connection.kind !== 'connected') return this.skip();
     this.timeout(240000);
     const conf = vscode.workspace.getConfiguration('axiomForge');
     await conf.update('models.primary', primary, vscode.ConfigurationTarget.Workspace);
@@ -337,6 +337,57 @@ describe('AXIOM Forge in VS Code', () => {
     console.log(`      [live model-shield] ${Date.now() - t0} ms; recovery states:\n        ${states.join('\n        ')}\n      session: ${JSON.stringify(c.state.session)}`);
     assert.ok(states.some((s) => s.includes('"switching"') || s.includes('"fallback"') || s.includes(backup)), 'switched to the backup model');
     assert.strictEqual(snapshot(), before, 'no file changed');
+  });
+
+  // Opt-in LIVE Task-C-shaped run on the real extension path (costs provider quota):
+  // primary fails → backup proposes an inline edit → the test accepts it in review → applied.
+  it('[LIVE, real models] Task C shape: primary fails, backup proposes an inline edit, user accepts, file changes', async function () {
+    const primary = process.env.AXIOM_LIVE_PRIMARY;
+    const backup = process.env.AXIOM_LIVE_BACKUP;
+    const c = api.controller;
+    if (!primary || !backup || process.env.AXIOM_LIVE_TASKC !== '1' || c.state.connection.kind !== 'connected') return this.skip();
+    this.timeout(300000);
+    const conf = vscode.workspace.getConfiguration('axiomForge');
+    await conf.update('models.primary', primary, vscode.ConfigurationTarget.Workspace);
+    await conf.update('models.backup', backup, vscode.ConfigurationTarget.Workspace);
+    const rel = 'pkg/flags.py';
+    const file = path.join(ws, rel);
+    const doc = await vscode.workspace.openTextDocument(file);
+    if (doc.isDirty) {
+      await vscode.window.showTextDocument(doc);
+      await vscode.commands.executeCommand('workbench.action.files.revert');
+    }
+    const before = fs.readFileSync(file, 'utf8');
+    const lines = before.split('\n');
+    const states = [];
+    let reviewed = false;
+    const timer = setInterval(() => {
+      const r = JSON.stringify(c.state.recovery);
+      if (states[states.length - 1] !== r) states.push(r);
+      const staged = c.safeChange.all().filter((p) => p.status === 'staged');
+      if (!reviewed && staged.length) {
+        reviewed = true; // the human step: accept every hunk, then Apply
+        for (const p of staged) c.safeChange.decideAll(p.id, 'accepted');
+        void c.submitReview();
+      }
+    }, 100);
+    const t0 = Date.now();
+    try {
+      await c.runTask({ text: 'Make get_flag return False instead of True, and update its docstring to say it returns False.', mentions: [], inline: { rel, startLine: 1, endLine: 3, selectedText: lines.slice(0, 3).join('\n') } });
+    } finally {
+      clearInterval(timer);
+      const last = JSON.stringify(c.state.recovery);
+      if (states[states.length - 1] !== last) states.push(last);
+      await conf.update('models.primary', undefined, vscode.ConfigurationTarget.Workspace);
+      await conf.update('models.backup', undefined, vscode.ConfigurationTarget.Workspace);
+    }
+    const after = fs.readFileSync(file, 'utf8');
+    console.log(`      [live task C] ${Date.now() - t0} ms; reviewed=${reviewed}\n        ${states.join('\n        ')}\n      session: ${JSON.stringify(c.state.session)}\n      proposals: ${JSON.stringify(c.safeChange.all().filter((p) => p.sessionId === c.state.session.sessionId).map((p) => ({ path: p.path, status: p.status, hunks: p.hunks.length })))}\n      file after:\n${after.split('\n').map((l) => '        | ' + l).join('\n')}`);
+    for (const p of c.safeChange.all().filter((x) => x.status === 'applied')) await c.safeChange.revert(p.id);
+    assert.ok(states.some((s) => s.includes('"switching"')), 'switched to the backup model');
+    assert.ok(reviewed, 'the backup proposed an edit for review');
+    assert.notStrictEqual(after, before, 'the accepted edit was applied');
+    assert.match(after, /return False/);
   });
 
   it('inline edit without a selection warns instead of running', async () => {

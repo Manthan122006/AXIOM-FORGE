@@ -63,3 +63,11 @@ Caveat: provider error *texts* come through TrueForge and are matched by pattern
 | Task B on agent output | ⏳ **not run to completion**: `gemini-3-6-flash` daily quota already used, `gemini-3-7-flash` timed out | |
 
 **Free-tier limits measured (Google error payload):** 20 requests/day and 5 requests/minute **per model**. One agent turn uses one request per step: the allow+pytest run used ~6, so Task B (~10–15 steps) may not fit in a single model's daily quota, and 5/minute can end a long turn early (`gemini-429-mid-turn.json`).
+
+### Backup retest (18 Nov, ~00:40 IST) with `groq/qwen-3-8-27b`
+| Check | Result |
+|---|---|
+| Tool-using turn on Groq qwen | ⚠️ **works sometimes**: 1 of 4 runs got through edit → approval → applied; 2 runs failed with Groq `tool_use_failed` (the model emitted `read_file` without `path`); others hit the rate limit |
+| Groq free-tier limit | **7,000 input tokens/minute** for this model; one agent request is ~3k tokens (system + 7 tool schemas + history), so only ~2 requests fit per minute |
+| ModelShield changes from these runs | `tool_use_failed` is now `model_output` (retryable, not `tool_error`); provider retry hints are respected ("try again in 4.5s" → wait 4.75 s; a hint > 30 s skips retries and switches model at once) |
+| **Task C shape in real VS Code** (`AXIOM_LIVE_TASKC=1`) | ✅ primary 429 → retries → backup qwen → **inline edit proposed, accepted, applied** (`return False`) in 41 s; then the backup's final summary request hit the 7k/min limit, the run ended with an error and **was not replayed** because an approved write had happened (correct). On camera this ends with a red banner after a correct change |

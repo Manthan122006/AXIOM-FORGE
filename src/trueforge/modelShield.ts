@@ -1,5 +1,5 @@
 import type { FailureClass, ModelRecoveryState } from '../shared/contracts';
-import { classifyFailure, isTransient, warrantsFallback } from './classify';
+import { classifyFailure, isTransient, retryAfterMs, warrantsFallback } from './classify';
 
 /** Result of one attempt to run a turn on a given model, as observed from the TrueForge stream. */
 export type AttemptOutcome =
@@ -40,6 +40,9 @@ const defaultSleep = (ms: number, signal?: AbortSignal) =>
       reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
     }, { once: true });
   });
+
+/** Longest provider-requested wait ModelShield will sit through before retrying the same model. */
+export const MAX_HINTED_WAIT_MS = 30_000;
 
 export function backoffDelay(attempt: number, p: Pick<ShieldPolicy, 'baseDelayMs' | 'maxDelayMs'>, random = Math.random): number {
   const exp = p.baseDelayMs * 2 ** (attempt - 1);
@@ -88,8 +91,12 @@ export async function runWithShield(policy: ShieldPolicy, deps: ShieldDeps): Pro
       if (outcome.sideEffects) {
         return { kind: 'failed', failure, message: lastMessage, tried, reason: 'side_effects' };
       }
-      if (isTransient(failure) && attemptNo <= policy.maxRetries) {
-        const delayMs = backoffDelay(attemptNo, policy, deps.random);
+      // Respect the provider's own retry delay: wait for it when it is short; when it is long
+      // (e.g. a daily quota that resets in hours) retrying this model is pointless, so move on.
+      const hinted = failure === 'rate_limit' ? retryAfterMs(lastMessage) : undefined;
+      const hintTooLong = hinted !== undefined && hinted > MAX_HINTED_WAIT_MS;
+      if (isTransient(failure) && attemptNo <= policy.maxRetries && !hintTooLong) {
+        const delayMs = Math.max(backoffDelay(attemptNo, policy, deps.random), hinted !== undefined ? hinted + 250 : 0);
         deps.onState({ kind: 'retrying', model, attempt: attemptNo, maxAttempts: policy.maxRetries, delayMs });
         try {
           await sleep(delayMs, deps.signal);
