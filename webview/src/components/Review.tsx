@@ -81,7 +81,13 @@ const FileChange = memo(function FileChange({ p }: { p: ProposedEdit }) {
       </div>
       <div className="rationale">
         {p.rationale} · <span className={open ? 'state-wait' : p.status === 'applied' ? 'state-ok' : p.status === 'undone' || p.status === 'discarded' ? 'muted' : 'state-bad'}>{statusText[p.status]}</span>
+        {(p.memberToolCallIds?.length ?? 1) > 1 && <span className="muted"> · combines {p.memberToolCallIds!.length} edits from the agent into one diff</span>}
       </div>
+      {(p.status === 'failed' || p.status === 'conflict') && p.outcomeMessage && (
+        <div className="rationale state-bad" role="alert">
+          {p.outcomeMessage}
+        </div>
+      )}
       {p.hunks.map((h) => (
         <Hunk key={h.id} proposalId={p.id} hunk={h} open={open} />
       ))}
@@ -121,7 +127,7 @@ export function Review() {
               Accept all
             </button>
           </span>
-          <button className="btn primary" disabled={pending > 0} title={pending > 0 ? `${pending} hunk(s) still need a decision` : undefined} onClick={() => post({ type: 'submitReview' })}>
+          <button className="btn primary" disabled={pending > 0} title={pending > 0 ? `${pending} hunk(s) still need a decision` : staged.length > 1 ? 'All files are applied together: if any file cannot be written, none are changed' : undefined} onClick={() => post({ type: 'submitReview' })}>
             {pending > 0 ? `Decide ${pending} more` : accepted > 0 ? `Apply ${accepted} accepted hunk${accepted > 1 ? 's' : ''}` : 'Send rejection'}
           </button>
         </div>

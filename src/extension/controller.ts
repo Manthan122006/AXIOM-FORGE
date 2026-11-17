@@ -5,7 +5,7 @@ import { GATED_TOOLS, MCP_SERVER_NAME, normalizeGatedArgs, startMcpHttpServer, T
 import { resolveWorkspacePath } from '../mcp/pathJail';
 import { ApprovalRegistry } from '../safety/approvals';
 import { SafeChange } from '../safety/safeChange';
-import { stageProposeEdit } from '../safety/stage';
+import { stageProposeEdits } from '../safety/stage';
 import type { AgentEvent, AxiomState, HostToWebview, ProposedEdit, VerificationResult, WebviewToHost } from '../shared/contracts';
 import { scrubSecrets } from '../shared/secrets';
 import { describeFailure } from '../trueforge/classify';
@@ -438,6 +438,7 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
   private async resolvePauses(tracker: TurnTracker, run: ActiveRun): Promise<Array<{ toolCallId: string; threadId: string; allow: boolean; reason?: string; gated: boolean }>> {
     const decisions: Array<{ toolCallId: string; threadId: string; allow: boolean; reason?: string; gated: boolean }> = [];
     const staged: Array<{ id: string; args: Record<string, unknown>; proposal: ProposedEdit; threadId: string }> = [];
+    const edits: Array<{ toolCallId: string; rawArgs: Record<string, unknown>; threadId: string }> = [];
     for (const id of tracker.pendingApprovals()) {
       const call = tracker.lookup(id);
       if (!call) {
@@ -447,9 +448,8 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
       const ours = call.server === null || call.server === MCP_SERVER_NAME;
       if (ours && call.toolName === TOOL.proposeEdit) {
         const args = normalizeGatedArgs(TOOL.proposeEdit, call.args);
-        const res = args ? await stageProposeEdit(args, { toolCallId: id, sessionId: run.sessionId!, turnId: tracker.turnId! }, this.host, this.safeChange) : ({ ok: false, error: 'Invalid propose_edit arguments.' } as const);
-        if (!res.ok) decisions.push({ toolCallId: id, threadId: call.threadId, allow: false, reason: `Not staged: ${res.error}`, gated: true });
-        else staged.push({ id, args: args!, proposal: res.proposal, threadId: call.threadId });
+        if (!args) decisions.push({ toolCallId: id, threadId: call.threadId, allow: false, reason: 'Not staged: invalid propose_edit arguments.', gated: true });
+        else edits.push({ toolCallId: id, rawArgs: args, threadId: call.threadId });
       } else if (ours && call.toolName === TOOL.runCommand) {
         const args = normalizeGatedArgs(TOOL.runCommand, call.args);
         const cmd = String(args?.command ?? '');
@@ -465,15 +465,31 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
       }
     }
 
+    // Stage all propose_edit calls of this pause together, so several edits to one file become one
+    // reviewed diff instead of a guaranteed conflict (src/safety/stage.ts).
+    if (edits.length) {
+      const results = await stageProposeEdits(edits, { sessionId: run.sessionId!, turnId: tracker.turnId! }, this.host, this.safeChange);
+      for (const r of results) {
+        const e = edits.find((x) => x.toolCallId === r.toolCallId)!;
+        if (!r.ok) decisions.push({ toolCallId: r.toolCallId, threadId: e.threadId, allow: false, reason: r.error.startsWith('Not staged') ? r.error : `Not staged: ${r.error}`, gated: true });
+        else staged.push({ id: r.toolCallId, args: e.rawArgs, proposal: r.proposal, threadId: e.threadId });
+      }
+    }
+
     if (staged.length) {
-      this.state.approval = { kind: 'pending', toolCallId: staged[0]!.id, proposalIds: staged.map((s) => s.proposal.id) };
+      const proposals = [...new Map(staged.map((s) => [s.proposal.id, s.proposal])).values()];
+      this.state.approval = { kind: 'pending', toolCallId: staged[0]!.id, proposalIds: proposals.map((p) => p.id) };
       this.syncProposals();
-      if (run.inline || staged.length === 1) void this.diff.open(staged[0]!.proposal.id, this.root);
-      void vscode.window.showInformationMessage(`AXIOM Forge proposes changes to ${staged.map((s) => s.proposal.path).join(', ')}. Review each hunk, then apply.`, 'Open diff').then((c) => c && this.diff.open(staged[0]!.proposal.id, this.root));
+      if (run.inline || proposals.length === 1) void this.diff.open(staged[0]!.proposal.id, this.root);
+      void vscode.window.showInformationMessage(`AXIOM Forge proposes changes to ${proposals.map((p) => p.path).join(', ')}. Review each hunk, then apply.`, 'Open diff').then((c) => c && this.diff.open(staged[0]!.proposal.id, this.root));
       await new Promise<void>((resolve, reject) => (run.review = { resolve, reject }));
       run.review = undefined;
+      const closed = new Map(proposals.map((p) => [p.id, this.safeChange.closeReview(p.id)]));
+      const approved = proposals.filter((p) => closed.get(p.id) === 'decided');
+      // Everything approved in this review is applied together, all-or-nothing (SafeChange.applyChangeSet).
+      if (approved.length) this.safeChange.createChangeSet(approved.map((p) => p.id));
       for (const s of staged) {
-        const outcome = this.safeChange.closeReview(s.proposal.id);
+        const outcome = closed.get(s.proposal.id);
         if (outcome === 'decided') {
           this.approvals.grant(TOOL.proposeEdit, s.args, s.id, { proposalId: s.proposal.id });
           decisions.push({ toolCallId: s.id, threadId: s.threadId, allow: true, gated: true });
@@ -491,12 +507,12 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
     if (undecided) return void vscode.window.showWarningMessage(`${undecided} hunk(s) still need Accept or Reject.`);
     if (this.run?.review) return this.run.review.resolve();
     // Dev review harness (no TrueForge run): apply SafeChange decisions directly. Only dev proposals exist outside a run.
-    for (const p of pending.filter((x) => x.sessionId === DEV_SESSION)) {
-      if (this.safeChange.closeReview(p.id) === 'decided') {
-        const o = await this.safeChange.apply(p.id);
-        this.log(`dev harness apply ${o.path}: ${o.status} (${o.message})`);
-        this.markVerificationStale();
-      }
+    const dev = pending.filter((x) => x.sessionId === DEV_SESSION).filter((p) => this.safeChange.closeReview(p.id) === 'decided');
+    if (dev.length) {
+      const r = await this.safeChange.applyChangeSet(this.safeChange.createChangeSet(dev.map((p) => p.id)));
+      for (const o of r.outcomes) this.log(`dev harness apply ${o.path}: ${o.status} (${o.message})`);
+      if (r.rollbackFailures.length) void vscode.window.showErrorMessage(`AXIOM Forge could not restore ${r.rollbackFailures.map((f) => f.path).join(', ')}; check these files.`);
+      this.markVerificationStale();
     }
   }
 

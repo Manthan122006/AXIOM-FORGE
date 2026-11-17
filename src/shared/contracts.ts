@@ -183,6 +183,15 @@ export interface ProposedEdit {
   hunks: DiffHunk[];
   status: ProposalStatus;
   createdAt: string;
+  /**
+   * Every tool call this proposal answers. Usually just `toolCallId`; several when the model made
+   * multiple propose_edit calls for the same file in one pause and they were merged into one diff.
+   */
+  memberToolCallIds?: string[];
+  /** Set when approved: all proposals approved in one review are applied together (all-or-nothing). */
+  changeSetId?: string;
+  /** Human-readable outcome of the last apply attempt (conflict/rollback details). */
+  outcomeMessage?: string;
 }
 
 export type ApprovalState =

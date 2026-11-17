@@ -2,6 +2,7 @@ import { realpathSync } from 'node:fs';
 import * as vscode from 'vscode';
 import { AxiomController } from './controller';
 import { DiffView } from './diffView';
+import { stageProposeEdits } from '../safety/stage';
 
 let controller: AxiomController | null = null;
 
@@ -35,7 +36,8 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<{ controll
   );
   // Test-only switch used to attribute editor responsiveness (tests/integration); never set in normal use.
   if (process.env.AXIOM_TEST_NO_START !== '1') await c.start();
-  return { controller: c };
+  // `stageProposeEdits` is exposed for the VS Code integration tests (same function the controller uses).
+  return { controller: c, stageProposeEdits };
 }
 
 export function deactivate(): void {

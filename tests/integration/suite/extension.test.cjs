@@ -172,6 +172,76 @@ describe('AXIOM Forge in VS Code', () => {
     await client.close();
   });
 
+  it('[Phase 3, approval simulated] same-file edits merge into one diff; multi-file change set applies via WorkspaceEdit; a failed write rolls back the editor buffer and disk', async () => {
+    const c = api.controller;
+    const { Client } = require(path.join(__dirname, '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/client/index.js'));
+    const { StreamableHTTPClientTransport } = require(path.join(__dirname, '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/client/streamableHttp.js'));
+    const client = new Client({ name: 'int-cs', version: '0' });
+    await client.connect(new StreamableHTTPClientTransport(new URL(c.state.mcp.url)));
+    const long = path.join(ws, 'pkg/long.py');
+    const flags = path.join(ws, 'pkg/flags.py');
+    const doc = await vscode.workspace.openTextDocument(long);
+    await vscode.window.showTextDocument(doc);
+    // an earlier test leaves an unsaved user edit in this buffer; start from the saved file
+    if (doc.isDirty) await vscode.commands.executeCommand('workbench.action.files.revert');
+    for (const d of vscode.workspace.textDocuments) if (d.isDirty && d.uri.fsPath === flags) await d.save();
+    const longBefore = fs.readFileSync(long, 'utf8');
+    const flagsBefore = fs.readFileSync(flags, 'utf8');
+    assert.strictEqual(doc.getText(), longBefore);
+
+    // 1. two calls on long.py + one on flags.py → 2 proposals, 1 change set
+    const e1 = { path: 'pkg/long.py', rationale: 'first', edits: [{ old_text: 'value_2 = 2', new_text: 'value_2 = 200' }] };
+    const e2 = { path: 'pkg/long.py', rationale: 'second', edits: [{ old_text: 'value_18 = 18', new_text: 'value_18 = 1800' }] };
+    const e3 = { path: 'pkg/flags.py', rationale: 'third', edits: [{ old_text: 'return True', new_text: 'return False' }] };
+    const meta = { sessionId: 'sim', turnId: 'sim-cs' };
+    const res = await api.stageProposeEdits([{ toolCallId: 'cs1', rawArgs: e1 }, { toolCallId: 'cs2', rawArgs: e2 }, { toolCallId: 'cs3', rawArgs: e3 }], meta, c.host, c.safeChange);
+    assert.ok(res.every((r) => r.ok), JSON.stringify(res));
+    const ids = [...new Set(res.map((r) => r.proposal.id))];
+    assert.strictEqual(ids.length, 2, 'two calls on one file became one proposal');
+    assert.strictEqual(c.safeChange.get(ids[0]).hunks.length, 2, 'combined diff shows both hunks');
+    for (const id of ids) {
+      c.safeChange.decideAll(id, 'accepted');
+      c.safeChange.closeReview(id);
+    }
+    c.safeChange.createChangeSet(ids);
+    res.forEach((r, i) => c.approvals.grant('propose_edit', [e1, e2, e3][i], r.toolCallId, { proposalId: r.proposal.id }));
+    for (const a of [e1, e2, e3]) {
+      const out = await client.callTool({ name: 'propose_edit', arguments: a });
+      assert.ok(!out.isError, JSON.stringify(out.content));
+    }
+    assert.ok(fs.readFileSync(long, 'utf8').includes('value_2 = 200') && fs.readFileSync(long, 'utf8').includes('value_18 = 1800'), 'both same-file edits on disk');
+    assert.ok(doc.getText().includes('value_18 = 1800'), 'editor buffer updated');
+    assert.ok(fs.readFileSync(flags, 'utf8').includes('return False'));
+    for (const id of ids) assert.ok((await c.safeChange.revert(id)).ok);
+    assert.strictEqual(fs.readFileSync(long, 'utf8'), longBefore);
+    assert.strictEqual(fs.readFileSync(flags, 'utf8'), flagsBefore);
+
+    // 2. injected write failure on the second file → first file restored in buffer and on disk
+    const r2 = await api.stageProposeEdits([{ toolCallId: 'cs4', rawArgs: e1 }, { toolCallId: 'cs5', rawArgs: e3 }], { sessionId: 'sim', turnId: 'sim-cs2' }, c.host, c.safeChange);
+    const ids2 = r2.map((r) => r.proposal.id);
+    for (const id of ids2) {
+      c.safeChange.decideAll(id, 'accepted');
+      c.safeChange.closeReview(id);
+    }
+    const realWrite = c.host.writeText.bind(c.host);
+    c.host.writeText = async (rel, text) => {
+      if (rel === 'pkg/flags.py' && !text.includes('return True')) throw new Error('injected write failure');
+      return realWrite(rel, text);
+    };
+    try {
+      const out = await c.safeChange.applyChangeSet(c.safeChange.createChangeSet(ids2));
+      assert.deepStrictEqual(out.outcomes.map((o) => o.status), ['failed', 'failed']);
+      assert.deepStrictEqual(out.rolledBack, ['pkg/long.py']);
+      assert.deepStrictEqual(out.rollbackFailures, []);
+    } finally {
+      c.host.writeText = realWrite;
+    }
+    assert.strictEqual(fs.readFileSync(long, 'utf8'), longBefore, 'disk restored');
+    assert.strictEqual(doc.getText(), longBefore, 'editor buffer restored');
+    assert.strictEqual(fs.readFileSync(flags, 'utf8'), flagsBefore);
+    await client.close();
+  });
+
   // ── Path B/I/J: real TrueForge failure → ModelShield → clean workspace ──
   it('[B/I/J, real TrueForge] unconfigured primary + backup → classified bad_config, both tried, workspace unchanged', async function () {
     const c = api.controller;

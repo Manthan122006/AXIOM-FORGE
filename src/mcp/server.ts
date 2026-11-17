@@ -200,17 +200,37 @@ export function buildMcpServer(deps: McpDeps): McpServer {
           true,
         );
       }
-      const outcome = await deps.safeChange.apply(grant.payload.proposalId);
-      deps.onApplied?.(outcome);
-      if (outcome.status === 'applied') {
-        const p = deps.safeChange.get(outcome.proposalId);
-        if (p) deps.engine.noteFileChanged(p.path, await deps.host.readText(p.path));
+      const proposal = deps.safeChange.get(grant.payload.proposalId);
+      const setId = proposal?.changeSetId;
+      let outcome: ApplyOutcome;
+      let together = '';
+      if (setId) {
+        // All proposals approved in one review are applied together (all-or-nothing). The first
+        // approved call performs the apply; later calls of the same set report the recorded result.
+        const r = await deps.safeChange.applyChangeSet(setId);
+        if (r.first) {
+          for (const o of r.outcomes) {
+            deps.onApplied?.(o);
+            if (o.status === 'applied') deps.engine.noteFileChanged(o.path, await deps.host.readText(o.path));
+          }
+        }
+        outcome = r.outcomes.find((o) => o.proposalId === grant.payload.proposalId)!;
+        const merged = (proposal?.memberToolCallIds?.length ?? 1) > 1;
+        if (merged) together = ' This edit was merged with your other edit(s) to the same file and applied as one change.';
+        else if (!r.first) together = ' It was applied together with the other approved edits of this step.';
+      } else {
+        outcome = await deps.safeChange.apply(grant.payload.proposalId);
+        deps.onApplied?.(outcome);
+        if (outcome.status === 'applied') {
+          const p = deps.safeChange.get(outcome.proposalId);
+          if (p) deps.engine.noteFileChanged(p.path, await deps.host.readText(p.path));
+        }
       }
       const note =
         outcome.rejectedHunks > 0
           ? ` The user rejected ${outcome.rejectedHunks} hunk(s); do not re-propose them unless asked. Re-read the file before further edits.`
           : '';
-      return text(`${outcome.message}${note}`, outcome.status !== 'applied');
+      return text(`${outcome.message}${together}${note}`, outcome.status !== 'applied');
     }),
   );
 

@@ -13,7 +13,7 @@ import { ContextEngine } from '../../src/context/engine';
 import { startMcpHttpServer, TOOL, type RunningMcpServer } from '../../src/mcp/server';
 import { ApprovalRegistry } from '../../src/safety/approvals';
 import { SafeChange } from '../../src/safety/safeChange';
-import { stageProposeEdit } from '../../src/safety/stage';
+import { stageProposeEdit, stageProposeEdits } from '../../src/safety/stage';
 import type { ContextReceipt } from '../../src/shared/contracts';
 import { NodeWorkspaceHost } from '../../src/workspace/host';
 
@@ -117,6 +117,35 @@ describe('MCP server over HTTP', () => {
     expect(again.isError).toBe(true);
     await safeChange.revert(staged.proposal.id);
     expect(readFileSync(path.join(root, 'pkg/flags.py'), 'utf8')).toBe(SRC);
+  });
+
+  it('[Phase 3, approval simulated] two edits to one file + one to another: merged, one change set, the first call writes all, the rest report it', async () => {
+    writeFileSync(path.join(root, 'pkg', 'two.py'), 'a = 1\nb = 2\nc = 3\nd = 4\ne = 5\nf = 6\n');
+    const e1 = { path: 'pkg/two.py', rationale: 'a', edits: [{ old_text: 'a = 1', new_text: 'a = 10' }] };
+    const e2 = { path: 'pkg/two.py', rationale: 'f', edits: [{ old_text: 'f = 6', new_text: 'f = 60' }] };
+    const e3 = { path: 'tests/test_flags.py', rationale: 't', edits: [{ old_text: 'assert get_flag()', new_text: 'assert get_flag() is True' }] };
+    const res = await stageProposeEdits([{ toolCallId: 'm1', rawArgs: e1 }, { toolCallId: 'm2', rawArgs: e2 }, { toolCallId: 'm3', rawArgs: e3 }], { sessionId: 's', turnId: 't' }, host, safeChange);
+    expect(res.every((r) => r.ok)).toBe(true);
+    const ids = [...new Set(res.map((r) => (r.ok ? r.proposal.id : '')))];
+    expect(ids).toHaveLength(2);
+    for (const id of ids) {
+      safeChange.decideAll(id, 'accepted');
+      safeChange.closeReview(id);
+    }
+    safeChange.createChangeSet(ids);
+    for (const [i, r] of res.entries()) if (r.ok) approvals.grant(TOOL.proposeEdit, [e1, e2, e3][i], r.toolCallId, { proposalId: r.proposal.id });
+
+    const r3 = await client.callTool({ name: TOOL.proposeEdit, arguments: e3 }); // TrueForge may run them in any order
+    expect(r3.isError).toBeFalsy();
+    expect(readFileSync(path.join(root, 'pkg', 'two.py'), 'utf8')).toBe('a = 10\nb = 2\nc = 3\nd = 4\ne = 5\nf = 60\n');
+    const r1 = await client.callTool({ name: TOOL.proposeEdit, arguments: e1 });
+    const r2 = await client.callTool({ name: TOOL.proposeEdit, arguments: e2 });
+    expect(r1.isError).toBeFalsy();
+    expect(textOf(r2)).toMatch(/merged with your other edit/);
+    expect(readFileSync(path.join(root, 'tests', 'test_flags.py'), 'utf8')).toContain('is True');
+    // single-use grants: a replay is refused
+    expect((await client.callTool({ name: TOOL.proposeEdit, arguments: e1 })).isError).toBe(true);
+    for (const id of ids) await safeChange.revert(id);
   });
 
   it('run_command requires a grant and reports exit codes', async () => {
