@@ -54,23 +54,33 @@ export class TrueForgeConnection {
     return { ok: false, reason: `TrueForge is not reachable at ${this.configuredUrl} (${lastError})` };
   }
 
-  /** Session on a saved agent, optionally overriding the model (used by ModelShield for the backup). */
-  async createSession(opts: { agentName: string; modelOverride?: string; spec?: TrueForgeApi.AgentSpec; title?: string }): Promise<string> {
-    let agent: TrueForgeApi.CreateSessionAgent;
-    if (opts.spec) {
-      agent = { spec: opts.modelOverride ? { ...opts.spec, model: { ...opts.spec.model, name: opts.modelOverride } } : opts.spec };
-    } else if (opts.modelOverride) {
-      // A saved agent can't be re-modelled per session, so fetch its manifest and run it inline with the override.
+  /**
+   * Create a session. Uses the saved agent by name when it exists and no model override is needed;
+   * otherwise runs the same manifest inline (the committed agents/axiom-agent.json, snake_case wire
+   * format) with `model.name` set to the requested model. Both paths are TrueForge sessions.
+   * Errors carry TrueForge's HTTP status and message (e.g. 422 "provider not configured").
+   */
+  async createSession(opts: { agentName: string; model: string; inlineManifest?: Record<string, unknown>; preferSaved: boolean }): Promise<string> {
+    if (opts.preferSaved) {
       const list = await this.sdk.agents.list();
-      const found = list.data.find((a) => a.name === opts.agentName);
-      if (!found) throw new Error(`TrueForge agent "${opts.agentName}" not found. Run "AXIOM Forge: Register MCP Server and Agent in TrueForge".`);
-      const spec = found.manifest as TrueForgeApi.AgentSpec;
-      agent = { spec: { ...spec, model: { ...spec.model, name: opts.modelOverride } } };
-    } else {
-      agent = { name: opts.agentName };
+      const saved = list.data.find((a) => a.name === opts.agentName);
+      if (saved && saved.manifest.model.name === opts.model) {
+        const { data } = await this.sdk.sessions.create({ agent: { name: opts.agentName } });
+        return data.id;
+      }
     }
-    const { data } = await this.sdk.sessions.create({ agent, ...(opts.title ? { metadata: { title: opts.title } as never } : {}) });
-    return data.id;
+    if (!opts.inlineManifest) throw new Error(`TrueForge agent "${opts.agentName}" is not saved with model ${opts.model}, and no inline agent definition is available.`);
+    const manifest = { ...opts.inlineManifest, model: { ...(opts.inlineManifest.model as Record<string, unknown>), name: opts.model } };
+    const res = await fetch(`${this.baseUrl}/api/v1/sessions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ agent: { spec: manifest } }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { data?: { id: string }; error?: { message?: string } };
+    if (!res.ok || !body.data) {
+      throw Object.assign(new Error(`TrueForge rejected the session (HTTP ${res.status}): ${body.error?.message ?? 'unknown error'}`), { statusCode: res.status });
+    }
+    return body.data.id;
   }
 
   async streamTurn(sessionId: string, input: TurnInput, signal?: AbortSignal): Promise<AsyncIterable<TrueForgeApi.TurnStreamingEvent>> {

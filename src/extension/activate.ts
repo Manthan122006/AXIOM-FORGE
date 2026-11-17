@@ -23,6 +23,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<{ controll
   register('axiomForge.reconnect', () => c.reconnect());
   register('axiomForge.setupTrueForge', () => c.setupTrueForge());
   register('axiomForge.submitReview', () => c.submitReview());
+  register('axiomForge.dev.stageSample', () => c.devStageSample());
   register('axiomForge.hunk', (proposalId: string, hunkId: string, decision: 'accepted' | 'rejected') => c.decide(proposalId, hunkId, decision));
 
   // Keep retrieval in sync with edits the user makes outside AXIOM Forge.

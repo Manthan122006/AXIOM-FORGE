@@ -12,7 +12,7 @@ import { describeFailure } from '../trueforge/classify';
 import { TrueForgeConnection } from '../trueforge/client';
 import { runWithShield, type AttemptOutcome } from '../trueforge/modelShield';
 import { TurnTracker } from '../trueforge/reducer';
-import { registerMcp, setupTrueForge } from '../trueforge/setup';
+import { loadAgentDefinition, registerMcp, setupTrueForge } from '../trueforge/setup';
 import { runCommand, type CommandResult } from '../verification/commandRunner';
 import { DiffView } from './diffView';
 import { VsCodeWorkspaceHost } from './vscodeHost';
@@ -39,6 +39,7 @@ interface ActiveRun {
 }
 
 const cfg = () => vscode.workspace.getConfiguration('axiomForge');
+export const DEV_SESSION = 'dev-harness';
 
 /**
  * Orchestrates one VS Code window: MCP server, TrueForge runs (through ModelShield), SafeChange
@@ -59,6 +60,8 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
   private postTimer: NodeJS.Timeout | null = null;
   private healthTimer: NodeJS.Timeout | null = null;
   private agentModel: string | null = null;
+  /** Number of AXIOM MCP tool executions currently running (used by the stream watchdog). */
+  private mcpBusy = 0;
   /** Label of the operation in progress, reported by the stall detector. */
   private lastOp = 'idle';
   private stallTimer: NodeJS.Timeout | null = null;
@@ -127,8 +130,14 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
             this.markVerificationStale();
             if (o.status === 'applied' && this.run?.inline) void this.showAppliedFile(o.path);
           },
-          onCommandStart: (command) => this.verificationStarted(command),
-          onCommandResult: (r) => this.verificationFinished(r),
+          onCommandStart: (command) => {
+            this.mcpBusy++;
+            this.verificationStarted(command);
+          },
+          onCommandResult: (r) => {
+            this.mcpBusy = Math.max(0, this.mcpBusy - 1);
+            this.verificationFinished(r);
+          },
         },
         port,
       );
@@ -137,7 +146,8 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
     } catch (e) {
       this.state.mcp = { kind: 'error', message: `Could not listen on 127.0.0.1:${port}: ${(e as Error).message}` };
     }
-    await this.checkHealth(true);
+    // Connectivity is checked in the background so activation never waits on the network.
+    void this.checkHealth(true);
     this.healthTimer = setInterval(() => void this.checkHealth(false), 5000);
     this.lastOp = 'idle';
   }
@@ -234,7 +244,7 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
         for (const id of m.proposalIds) this.safeChange.decideAll(id, m.type === 'acceptAll' ? 'accepted' : 'rejected');
         return;
       case 'submitReview':
-        return this.submitReview();
+        return void this.submitReview();
       case 'openDiff':
         return this.diff.open(m.proposalId, this.root);
       case 'undo':
@@ -350,8 +360,12 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
     let sideEffects = false;
     const idleMs = 120_000;
     try {
-      const override = model !== this.agentModel ? model : undefined;
-      const sessionId = await this.tf.createSession({ agentName: cfg().get<string>('agentName', 'axiom-forge'), ...(override ? { modelOverride: override } : {}) });
+      const sessionId = await this.tf.createSession({
+        agentName: cfg().get<string>('agentName', 'axiom-forge'),
+        model,
+        preferSaved: model === this.agentModel,
+        inlineManifest: loadAgentDefinition(this.ctx.asAbsolutePath(path.join('agents', 'axiom-agent.json')), model).manifest,
+      });
       run.sessionId = sessionId;
       this.state.session = { sessionId, turnId: null, model, modelSlot: slot, status: 'running' };
       this.log(`session ${sessionId} on ${model}: ${this.tf.sessionUrl(sessionId)}`);
@@ -372,8 +386,12 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
       if (tracker.status === 'error') return sideEffects ? { kind: 'failed', error: tracker.error, sideEffects: true } : { kind: 'failed', error: tracker.error, sideEffects: false };
       const err = new Error('TrueForge stream ended without turn.done (timeout)');
       return sideEffects ? { kind: 'failed', error: err, sideEffects: true } : { kind: 'failed', error: err, sideEffects: false };
-    } catch (e) {
-      if (run.abort.signal.aborted || e instanceof Cancelled) return { kind: 'cancelled' };
+    } catch (thrown) {
+      if (run.abort.signal.aborted || thrown instanceof Cancelled) return { kind: 'cancelled' };
+      // A thrown error (not a turn.done error) may mean TrueForge itself is down; that is not a model failure.
+      let e: unknown = thrown;
+      const h = await this.tf.health();
+      if (!h.ok) e = new Error(h.reason);
       this.log(`attempt on ${model} failed: ${scrubSecrets((e as Error).message ?? String(e))}`);
       return sideEffects ? { kind: 'failed', error: e, sideEffects: true } : { kind: 'failed', error: e, sideEffects: false };
     }
@@ -383,9 +401,18 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
   private async consume(events: AsyncIterable<Parameters<TurnTracker['apply']>[0]>, tracker: TurnTracker, run: ActiveRun, idleMs: number): Promise<'paused' | 'ended'> {
     const it = events[Symbol.asyncIterator]();
     for (;;) {
+      // Watchdog: TrueForge is silent while a tool runs (e.g. a 2-minute pytest via run_command), so
+      // silence only counts as a timeout when no tool call is in flight.
       let timer: NodeJS.Timeout | undefined;
       const idle = new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(Object.assign(new Error(`No events from TrueForge for ${idleMs / 1000}s (timeout)`), { code: 'ETIMEDOUT' })), idleMs);
+        const arm = () => {
+          timer = setTimeout(() => {
+            const toolInFlight = this.mcpBusy > 0 || [...tracker.toolCalls.values()].some((c) => c.phase === 'requested' || c.phase === 'running');
+            if (toolInFlight) return arm();
+            reject(Object.assign(new Error(`No events from TrueForge for ${idleMs / 1000}s (timeout)`), { code: 'ETIMEDOUT' }));
+          }, idleMs);
+        };
+        arm();
       });
       let next: IteratorResult<Parameters<TurnTracker['apply']>[0]>;
       try {
@@ -457,11 +484,45 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
     return decisions;
   }
 
-  submitReview(): void {
+  async submitReview(): Promise<void> {
     const pending = this.safeChange.all().filter((p) => p.status === 'staged');
     const undecided = pending.flatMap((p) => p.hunks).filter((h) => h.decision === 'pending').length;
     if (undecided) return void vscode.window.showWarningMessage(`${undecided} hunk(s) still need Accept or Reject.`);
-    this.run?.review?.resolve();
+    if (this.run?.review) return this.run.review.resolve();
+    // Dev review harness (no TrueForge run): apply SafeChange decisions directly. Only dev proposals exist outside a run.
+    for (const p of pending.filter((x) => x.sessionId === DEV_SESSION)) {
+      if (this.safeChange.closeReview(p.id) === 'decided') {
+        const o = await this.safeChange.apply(p.id);
+        this.log(`dev harness apply ${o.path}: ${o.status} (${o.message})`);
+        this.markVerificationStale();
+      }
+    }
+  }
+
+  /**
+   * DEV TOOL (axiomForge.devTools): stage a sample two-hunk proposal on the active file so the real
+   * editor review (native diff, per-hunk CodeLens, sidebar, apply, undo, conflict) can be inspected
+   * without a model. Never involves TrueForge; proposals are tagged with sessionId "dev-harness".
+   */
+  async devStageSample(): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return void vscode.window.showWarningMessage('Open a file in this workspace first.');
+    let rel: string;
+    try {
+      rel = resolveWorkspacePath(this.root, editor.document.uri.fsPath, 'write').rel;
+    } catch (e) {
+      return void vscode.window.showWarningMessage((e as Error).message);
+    }
+    const base = editor.document.getText();
+    const lines = base.split('\n');
+    if (lines.length < 12) return void vscode.window.showWarningMessage('Use a file with at least 12 lines so the sample has two separate hunks.');
+    const marker = editor.document.languageId === 'python' ? '#' : '//';
+    const next = [...lines];
+    next.splice(1, 0, `${marker} AXIOM Forge dev harness: sample hunk 1`);
+    next.splice(next.length - 2, 0, `${marker} AXIOM Forge dev harness: sample hunk 2`);
+    const p = this.safeChange.stage({ toolCallId: `dev-${Date.now()}`, sessionId: DEV_SESSION, turnId: DEV_SESSION, path: rel, rationale: 'Dev harness sample (not model output).', baseText: base, proposedText: next.join('\n') });
+    await this.diff.open(p.id, this.root);
+    void vscode.commands.executeCommand('axiomForge.agent.focus');
   }
 
   cancel(reason: string): void {

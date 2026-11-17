@@ -11,6 +11,7 @@ const ws = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'axiom-int-')));
 mkdirSync(path.join(ws, 'pkg'));
 writeFileSync(path.join(ws, 'pkg', 'flags.py'), 'def get_flag():\n    """Return the flag."""\n    return True\n');
 writeFileSync(path.join(ws, 'tests_flags.py'), 'from pkg.flags import get_flag\n');
+writeFileSync(path.join(ws, 'pkg', 'long.py'), Array.from({ length: 20 }, (_, i) => `value_${i + 1} = ${i + 1}`).join('\n') + '\n');
 
 await runTests({
   vscodeExecutablePath: exe,

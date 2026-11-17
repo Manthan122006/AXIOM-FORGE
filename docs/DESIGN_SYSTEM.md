@@ -20,9 +20,9 @@ That draft matched three generic tells the skill lists: *near-black + a single b
 | Role | Dark | Light | Used for |
 |---|---|---|---|
 | `--ax-act` (indigo) | `#8B8CF8` | `#5558D9` | primary actions, focus ring, selection |
-| `--ax-run` (ice cyan) | `#6FD3E6` | `#0E8AA3` | *only* things happening right now (streaming, running tool) |
-| `--ax-ok` (green) | `#4CC38A` | `#1F8A5B` | *only* after evidence: command exit 0, hunk applied |
-| `--ax-wait` (amber) | `#E8B04B` | `#A86A00` | waiting for the user (approval, review) |
+| `--ax-run` (ice cyan) | `#6FD3E6` | `#0C7A91` | *only* things happening right now (streaming, running tool) |
+| `--ax-ok` (green) | `#4CC38A` | `#1C8054` | *only* after evidence: command exit 0, hunk applied |
+| `--ax-wait` (amber) | `#E8B04B` | `#9F6400` | waiting for the user (approval, review) |
 | `--ax-bad` (red) | `#F06A6A` | `#C93C3C` | failures, rejected hunks, destructive actions |
 | surfaces / text | `var(--vscode-*)` | same | everything else |
 

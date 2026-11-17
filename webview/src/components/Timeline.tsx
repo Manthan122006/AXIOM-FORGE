@@ -58,7 +58,15 @@ const ToolStep = memo(function ToolStep({ call }: { call: ToolCallState }) {
   );
 });
 
+declare global {
+  interface Window {
+    __axiomRenders?: Record<string, number>;
+  }
+}
+
 const Step = memo(function Step({ ev }: { ev: AgentEvent }) {
+  // Dev-only render counter used to verify that streaming re-renders only the changed row.
+  if (import.meta.env.DEV) (window.__axiomRenders ??= {})[ev.id] = (window.__axiomRenders[ev.id] ?? 0) + 1;
   switch (ev.kind) {
     case 'user_message':
       return (

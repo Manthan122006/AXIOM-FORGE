@@ -57,6 +57,11 @@
         "command": "axiomForge.setupTrueForge",
         "title": "AXIOM Forge: Register MCP Server and Agent in TrueForge",
         "category": "AXIOM Forge"
+      },
+      {
+        "command": "axiomForge.dev.stageSample",
+        "title": "AXIOM Forge (dev): Stage a sample proposal for review",
+        "category": "AXIOM Forge"
       }
     ],
     "keybindings": [
@@ -89,7 +94,7 @@
         "axiomForge.models.primary": {
           "type": "string",
           "default": "",
-          "description": "TrueForge model name for the primary model (as listed in TrueForge Settings → Models). Empty = use the agent's own model."
+          "description": "TrueForge model name for the primary model (as listed in TrueForge Settings \u2192 Models). Empty = use the agent's own model."
         },
         "axiomForge.models.backup": {
           "type": "string",
@@ -105,8 +110,25 @@
           "type": "number",
           "default": 24000,
           "description": "Estimated-token budget for automatically assembled context."
+        },
+        "axiomForge.devTools": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show developer commands (review harness that stages a sample, non-model proposal)."
         }
       }
+    },
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "axiomForge.dev.stageSample",
+          "when": "config.axiomForge.devTools"
+        },
+        {
+          "command": "axiomForge.cancel",
+          "when": "axiomForge.running"
+        }
+      ]
     }
   },
   "scripts": {

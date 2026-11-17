@@ -56,7 +56,7 @@ async function main() {
   try {
     const reg = await setupTrueForge({ base, mcpUrl: mcp.url, model, agentFile });
     console.log(`[setup] agent ${reg.agent} (${reg.agentId})`);
-    sessionId = await tf.createSession({ agentName: reg.agent });
+    sessionId = await tf.createSession({ agentName: reg.agent, model, preferSaved: true });
   } catch (e) {
     console.log(`[setup] saved agent unavailable: ${(e as Error).message}`);
     console.log('[setup] falling back to an inline agent spec (same manifest) to observe session/turn behaviour');

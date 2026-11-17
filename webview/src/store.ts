@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { AxiomState, HostToWebview, WebviewToHost } from '../../src/shared/contracts';
+import { reconcile } from './reconcile';
 
 /**
  * External store for host state. Components subscribe to *slices* through `useAxiom(selector)`,
@@ -47,7 +48,7 @@ export function onMentionResults(fn: typeof mentionListener) {
 }
 
 export function handleHostMessage(msg: HostToWebview): void {
-  if (msg.type === 'state') setState(msg.state);
+  if (msg.type === 'state') setState(reconcile(state, msg.state));
   else if (msg.type === 'mentionResults') mentionListener?.(msg.items);
 }
 

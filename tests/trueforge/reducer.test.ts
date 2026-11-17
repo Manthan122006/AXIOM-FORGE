@@ -75,6 +75,9 @@ describe('classifyFailure', () => {
     ['503 Service Unavailable', 'server'],
     ['The operation was aborted', 'cancelled'],
     ['something odd', 'unknown'],
+    ['TrueForge rejected the session (HTTP 422): Unknown model "x/y" — provider not configured', 'bad_config'],
+    ['TrueForge is not reachable at http://localhost:8790 (fetch failed)', 'trueforge_error'],
+    ['TrueForge rejected the session (HTTP 400): invalid agent spec: iteration_limit', 'trueforge_error'],
   ])('%s → %s', (msg, cls) => {
     expect(classifyFailure(msg)).toBe(cls);
   });

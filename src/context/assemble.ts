@@ -25,13 +25,44 @@ export interface AssembleOutput {
   bundle: string;
 }
 
+// Generic English stop words only. (Earlier versions also listed words taken from the Task A/B
+// wording, which was task-specific tuning; removed in the Phase 2 audit.)
 const STOP = new Set(
-  ('a an and are as at be by can do does for from has have how i in into is it its it\'s must new not of on or ' +
-    'our should so that the their then there these this to use used using via was we were what when which while ' +
-    'who will with would also any all each every other as well add make makes made update updates prints print value values ' +
-    'loaded alongside covered appear appears containing contain contains treat treated list well like same')
+  ('a an and are as at be by can do does for from has have how i in into is it its our should so that the their then ' +
+    'there these this to use used using via was we were what when which while who will with would also any all each ' +
+    'every other well like same must new not of on or make makes made add adds update updates instead too they them ' +
+    'so its than such one two way support supports allow allows let lets')
     .split(/\s+/),
 );
+
+/** Light suffix stemmer so "blueprint" matches blueprints.py, "test" matches testing.py, "signals" matches signal. */
+export function stem(word: string): string {
+  let w = word.toLowerCase();
+  for (const suf of ['ations', 'ation', 'ings', 'ing', 'ies', 'es', 'ed', 's']) {
+    if (w.length - suf.length >= 4 && w.endsWith(suf)) {
+      w = w.slice(0, -suf.length) + (suf === 'ies' ? 'y' : '');
+      break;
+    }
+  }
+  return w;
+}
+
+/** Does a task term name this file stem? Exact, stemmed, or a ≥5-char prefix ("configuration" → config). */
+function namesFile(term: string, fileStem: string): boolean {
+  if (term === fileStem) return true;
+  const a = stem(term);
+  const b = stem(fileStem);
+  if (a === b) return true;
+  return (b.length >= 5 && a.startsWith(b)) || (a.length >= 5 && b.startsWith(a));
+}
+
+/**
+ * Deliverable words describe WHAT to produce ("add a test", "document it"), not WHICH module to change.
+ * They are removed from matching and instead raise the weight of test/doc pairing.
+ */
+const INTENT_TEST = /\b(tests?|tested|testing|pytest|covered|coverage)\b/i;
+const INTENT_DOCS = /\b(docs?|document(ed|ation)?|documenting)\b/i;
+const INTENT_WORDS = new Set(['test', 'tests', 'tested', 'covered', 'coverage', 'doc', 'docs', 'document', 'documented', 'documentation', 'documenting']);
 
 export const estimateTokens = (text: string) => Math.ceil(text.length / 4);
 
@@ -78,7 +109,9 @@ export function assembleContext(
   const budget = input.budgetTokens ?? 24_000;
   const perFileCap = input.perFileCapTokens ?? 6_000;
   const maxItems = input.maxItems ?? 12;
-  const terms = extractTerms(input.task);
+  const terms = extractTerms(input.task).filter((t) => !INTENT_WORDS.has(t));
+  const wantsTests = INTENT_TEST.test(input.task);
+  const wantsDocs = INTENT_DOCS.test(input.task);
   const cands = new Map<string, Candidate>();
   const cand = (f: FileEntry): Candidate => {
     let c = cands.get(f.rel);
@@ -141,8 +174,9 @@ export function assembleContext(
       add(c, 'keyword', Math.min(kw * 1.5, 35), `mentions ${hitTerms.slice(0, 5).map((t) => `"${t}"`).join(', ')}`);
     }
     // path / name match
-    const stem = path.basename(f.rel).replace(/\.[^.]+$/, '').replace(/^test_/, '').toLowerCase();
-    const pathHits = terms.filter((t) => stem === t || stem.split(/[_\-.]/).includes(t));
+    const fileStem = path.basename(f.rel).replace(/\.[^.]+$/, '').replace(/^test_/, '').toLowerCase();
+    const parts = [fileStem, ...fileStem.split(/[_\-.]/)];
+    const pathHits = terms.filter((t) => t.length >= 3 && parts.some((p) => p.length >= 3 && namesFile(t, p)));
     if (pathHits.length) add(cand(f), 'path', 25 * Math.min(pathHits.length, 2), `file name matches "${pathHits[0]}"`);
   }
 
@@ -171,7 +205,7 @@ export function assembleContext(
       const f = index.byPath.get(otherRel);
       if (!f) continue;
       const c = cand(f);
-      const w = e.kind === 'tests' ? 22 : e.kind === 'documents' ? 18 : 8;
+      const w = e.kind === 'tests' ? (wantsTests ? 30 : 18) : e.kind === 'documents' ? (wantsDocs ? 28 : 12) : 8;
       if (c.signals.some((s) => s.signal === `${e.kind}_pair` && s.detail.includes(leader.f.rel))) continue;
       add(c, e.kind === 'imports' ? 'import' : `${e.kind === 'tests' ? 'test' : 'doc'}_pair`, w, `${e.reason} (related to ${leader.f.rel})`);
     }
@@ -216,8 +250,9 @@ export function assembleContext(
     const full = numbered(c.f.text, 1);
     let inclusion: ContextItem['inclusion'] = { mode: 'full' };
     let body = full;
-    if (estimateTokens(full) > perFileCap) {
-      const { text, ranges } = focused(c.f, symbols, c.hitLines, perFileCap);
+    const cap = category === 'test' || category === 'documentation' ? Math.min(perFileCap, 3_000) : perFileCap;
+    if (estimateTokens(full) > cap) {
+      const { text, ranges } = focused(c.f, symbols, c.hitLines, cap);
       body = text;
       inclusion = ranges.length ? { mode: 'ranges', ranges } : { mode: 'outline' };
     }

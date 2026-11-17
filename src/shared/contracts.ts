@@ -229,6 +229,7 @@ export type FailureClass =
   | 'bad_config' // unknown model name etc.
   | 'cancelled' // user cancellation — never a provider failure
   | 'tool_error'
+  | 'trueforge_error' // TrueForge rejected/failed the request for a non-model reason (bad agent spec, 4xx, server down)
   | 'unknown';
 
 export type ModelRecoveryState =

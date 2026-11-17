@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { useAxiom } from '../store';
+import { post, useAxiom } from '../store';
 
 const Mark = () => (
   <svg className="brand-mark" viewBox="0 0 16 16" aria-hidden="true">
@@ -16,6 +16,7 @@ export const Header = memo(function Header() {
   const model = useAxiom((s) => s.session.model ?? (s.recovery.kind === 'healthy' ? s.recovery.model : ''));
   const slot = useAxiom((s) => s.session.modelSlot);
   const running = useAxiom((s) => s.session.status === 'running' || s.session.status === 'paused');
+  const sessionId = useAxiom((s) => s.session.sessionId);
 
   const tfDot = conn === 'connected' ? 'ok' : conn === 'connecting' ? 'wait' : 'bad';
   return (
@@ -36,6 +37,11 @@ export const Header = memo(function Header() {
         <span className={`dot ${running ? 'run' : model && conn === 'connected' ? 'ok' : ''}`} aria-hidden="true" />
         {model ? `${model.split('/').pop()}${slot === 'backup' ? ' · backup' : ''}` : 'model'}
       </span>
+      {sessionId && sessionId !== 'preview' && (
+        <button className="btn" title={`Open TrueForge session ${sessionId}`} onClick={() => post({ type: 'openSessionInTrueForge' })}>
+          Session
+        </button>
+      )}
     </header>
   );
 });
