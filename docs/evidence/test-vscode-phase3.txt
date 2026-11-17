@@ -1,0 +1,74 @@
+
+> axiom-forge@0.1.0 test:vscode
+> npm run build:ext && node tests/integration/runTest.mjs
+
+
+> axiom-forge@0.1.0 build:ext
+> node scripts/build-extension.mjs
+
+Warning: 'cached-data' is not in the list of known options, but still passed to Electron/Chromium.
+[90m[main 2026-11-17T18:28:17.041Z][0m StorageMainService: creating application shared storage
+[90m[main 2026-11-17T18:28:18.616Z][0m [shared storage] Creating shared storage database at ':memory:' (wasCreated: true)
+[90m[main 2026-11-17T18:28:18.633Z][0m [shared storage] Initializing fallback application storage (path: in-memory)
+2026-11-17 23:58:19.320 Code[24632:829027] +[IMKClient subclass]: chose IMKClient_Modern
+2026-11-17 23:58:19.321 Code[24632:829027] +[IMKInputSession subclass]: chose IMKInputSession_Modern
+[90m[main 2026-11-17T18:28:19.412Z][0m [shared storage] Fallback application storage initialized with 3 items
+[90m[main 2026-11-17T18:28:19.485Z][0m update#setState disabled
+[90m[main 2026-11-17T18:28:19.496Z][0m update#ctor - updates are disabled by the environment
+Creation of workbench contribution 'workbench.contrib.preferencesActions' took 29ms.
+Creation of workbench contribution 'workbench.contrib.registerCellSchemas' took 44ms.
+Creation of workbench contribution 'workbench.contrib.chatLanguageModelsData' took 35ms.
+Creation of workbench contribution 'workbench.contrib.chatSetup' took 225ms.
+Creation of workbench contribution 'chat.usagesTool' took 31ms.
+Creation of workbench contribution 'workbench.contrib.interactiveDocument' took 28ms.
+Canceled Failed to load custom agents
+Started local extension host with pid 24656.
+Loading development extension at /Users/manthangajra/IIT BOMBAY/axiom-forge
+
+  AXIOM Forge in VS Code
+      [timing] activate(): 670 ms
+      [timing] connection: connected after 2575 ms
+    ✔ registers its commands (199ms)
+      [lag] max 172 ms, p99 172 ms — registers its commands
+    ✔ starts the MCP server on 127.0.0.1
+      [lag] max 0 ms, p99 0 ms — starts the MCP server on 127.0.0.1
+    ✔ reports real TrueForge connectivity and TrueForge can list our tools (2141ms)
+      [lag] max 729 ms, p99 729 ms — reports real TrueForge connectivity and TrueForge can list o
+      [timing] open+show document: 3891 ms
+      [timing] stage+decide: 47 ms
+      [timing] apply (WorkspaceEdit + save): 6912 ms
+      [timing] revert: 4957 ms
+    ✔ SafeChange applies only accepted hunks through WorkspaceEdit and undo restores the file (15820ms)
+      [lag] max 444 ms, p99 38 ms — SafeChange applies only accepted hunks through WorkspaceEdit
+    ✔ propose_edit through MCP refuses without approval (no write) (6692ms)
+      [lag] max 994 ms, p99 994 ms — propose_edit through MCP refuses without approval (no write)
+      [codelens] ["Apply decisions…","Hunk 1","Accept","Reject","Hunk 2","Accept","Reject"]
+    ✔ [E/F] dev harness: native diff tab + per-hunk CodeLens + accept 1 / reject 1 + apply + undo (27505ms)
+      [lag] max 399 ms, p99 60 ms — [E/F] dev harness: native diff tab + per-hunk CodeLens + acc
+    ✔ [E/F] conflict: a user edit after staging blocks the apply (8151ms)
+      [lag] max 159 ms, p99 38 ms — [E/F] conflict: a user edit after staging blocks the apply
+    ✔ [D-G, approval simulated] approved propose_edit via MCP applies through WorkspaceEdit; approved run_command records Proof (3273ms)
+      [lag] max 448 ms, p99 290 ms — [D-G, approval simulated] approved propose_edit via MCP appl
+    ✔ [Phase 3, approval simulated] same-file edits merge into one diff; multi-file change set applies via WorkspaceEdit; a failed write rolls back the editor buffer and disk (15503ms)
+      [lag] max 222 ms, p99 41 ms — [Phase 3, approval simulated] same-file edits merge into one
+      [model-shield] {"kind":"exhausted","tried":["google-gemini/axiom-missing-primary","google-gemini/axiom-missing-backup"],"message":"TrueForge rejected the session (HTTP 422): Unknown model \"google-gemini/axiom-missing-backup\" — provider not configured"} in 652 ms; session={"sessionId":null,"turnId":null,"model":null,"modelSlot":null,"status":"error","error":"TrueForge rejected the session (HTTP 422): Unknown model \"google-gemini/axiom-missing-backup\" — provider not configured"}
+    ✔ [B/I/J, real TrueForge] unconfigured primary + backup → classified bad_config, both tried, workspace unchanged (8831ms)
+      [lag] max 1325 ms, p99 508 ms — [B/I/J, real TrueForge] unconfigured primary + backup → clas
+    ✔ inline edit without a selection warns instead of running (1076ms)
+      [lag] max 77 ms, p99 35 ms — inline edit without a selection warns instead of running
+      [perf] operation                      count   total ms   mean ms   max ms   >50ms
+      [perf] mcp.warmup                         1       1011   1010.75   1010.8       1
+      [perf] mcp.buildServer                    3        682    227.42    377.6       3
+      [perf] safechange.diff                    8        282     35.21    144.2       2
+      [perf] safechange.applyHunks              7         36      5.13     27.1       0
+      [perf] context.relations                  1         26     26.33     26.3       0
+      [perf] webview.post                      25        142      5.68     24.4       0
+      [perf] safechange.merge                   1         24     23.81     23.8       0
+      [perf] mcp.parseBody                     16         37      2.29     18.9       0
+      [perf] context.symbols                    1          7      6.92      6.9       0
+      [perf] webview posts: 2 full, 23 patches, slowest post 24.4 ms
+      [perf] MCP: 20 requests served by 3 built server instance(s)
+      [event-loop] extension host lag during AXIOM operations: p50 11 ms, p99 110 ms, max 2865 ms
+  11 passing (2m)
+[90m[main 2026-11-17T18:30:38.798Z][0m Extension host with pid 24656 exited with code: 0, signal: unknown.
+Exit code:   0

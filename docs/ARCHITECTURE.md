@@ -61,14 +61,21 @@ Deferred loading stays on for the read tools; `assemble_context` and `propose_ed
 
 ## 5. SafeChange: how approval drives the diff
 
-1. Model emits `model.message` with a `propose_edit` tool call → TrueForge emits `tool.approval_required` and `turn.update{paused}`.
-2. The extension looks up the call's arguments by `source_event_id`, validates the path, computes hunks against the **current document text** (open buffer if dirty, else disk) and records `baseHash`.
-3. Webview + native `vscode.diff` (virtual `axiom-proposed:` URI) show the change. User accepts/rejects each hunk (or Accept all / Reject all as explicit actions).
-4. Decision sent to TrueForge as `user.tool_approval`:
-   - ≥1 hunk accepted → `allow`. TrueForge then calls the tool; the handler re-checks `baseHash`, applies **only accepted hunks** in one `WorkspaceEdit` (atomic per file), saves, writes an undo journal entry, and returns a summary listing rejected hunks so the model knows.
-   - 0 accepted → `deny` with reason ("user rejected all hunks: …").
-5. Nothing touches disk before step 4. Cancel during review → `sessions.cancel` + staged proposal discarded. Cancel after allow → `WorkspaceEdit` is atomic, so a file is either fully updated or untouched; the undo journal can revert any file already applied in the run.
-6. Undo: journal stores pre-image per applied proposal; "Undo" restores it via `WorkspaceEdit` after checking the file still matches the post-image (else shows a conflict).
+1. Model emits `model.message` with one or more `propose_edit` tool calls → TrueForge emits `tool.approval_required` and `turn.update{paused}`.
+2. The extension looks up each call's arguments by `source_event_id` and stages **all calls of the pause together** (`stageProposeEdits`): paths are validated (jail); each call's new text is computed against the **current document text** (open buffer if dirty, else disk) and `baseHash` is recorded. Several calls on the **same file** are merged line by line into one proposal (`src/safety/merge.ts`). An overlapping or adjacent edit is refused with a reason, and an identical edit is applied once.
+3. Webview + native `vscode.diff` (virtual `axiom-proposed:` URI) show one diff per file. The user accepts/rejects each hunk.
+4. Decisions go to TrueForge as `user.tool_approval`: ≥1 hunk accepted → `allow` plus a single-use grant per call; 0 accepted → `deny` with reason. Everything approved in this review becomes **one change set**.
+5. TrueForge then calls the tool. The **first** approved call applies the whole change set (`SafeChange.applyChangeSet`); the others report its recorded result:
+
+```
+validate ALL files ──any conflict──▶ write nothing, every proposal "failed/conflict", reason to the model
+      │ all ok
+write file 1 … file n (re-check each hash just before its write)
+      │ write k fails
+      ▼
+restore k-1 … 1 (pre-image / delete created file) → read back → report "Restored …" or "ROLLBACK FAILED for …"
+```
+6. Nothing touches disk before step 5. Cancel during review → `sessions.cancel` + staged proposals discarded, grants revoked. Undo restores a file's pre-image after checking it still matches the post-image. The set is **not crash-atomic** (see KNOWN_LIMITATIONS).
 
 ## 6. ModelShield (fallback)
 
@@ -84,7 +91,10 @@ Backup selection is data (`axiomForge.models.primary/backup` settings → TrueFo
 
 ## 7. Context strategy (summary — full detail in Kunjal's packet)
 
-Hybrid, local, explainable. Signals: explicit `@file`/`@symbol` (hard include), keyword hits (ripgrep), path/name match, symbol definitions, 1-hop import graph, test pairing (`src/flask/x.py` ↔ `tests/test_x.py`), doc pairing (identifiers mentioned in `docs/**/*.rst`), active editor selection. Score = weighted sum → dedupe → **budget**: default 24 k tokens (≈ chars/4), per-file cap 6 k; over-cap files are included as outline (signatures) + relevant line windows instead of whole files. The Context Receipt lists included items with reasons, excluded candidates with reasons, and budget used/remaining. The model also runs a **repo-scout subagent** (instructed in the agent definition) whose `thread.created` shows in the TrueForge session.
+Hybrid, local, explainable (`src/context/assemble.ts`). Signals: explicit `@file`/`@symbol` and the editor selection (hard includes); **BM25** keyword relevance; file- and folder-name matches (stemmed, counted once per name part); definitions of **code identifiers** named in the task (strong) or of plain words (weak); one-hop Python imports; test/doc pairing **in both directions**, scaled by the evidence of the file it comes from. Score → rank → **budget**: default 24k tokens (≈ chars/4), per-file cap 6k (3k for tests/docs); over-cap files go in as outline + focused line windows. The Context Receipt lists included files with reasons, excluded candidates with reasons, and the budget used. Measured on a 33-task Flask benchmark with an ablation (`RETRIEVAL_EVAL.md`). The model also runs a **repo-scout subagent** (agent definition), whose `thread.created` shows in the TrueForge session.
+
+## 7b. Performance design
+The MCP server is stateless over HTTP but **pooled** (built once, reconnected per request); the webview receives **patches** (changed slices and changed timeline rows only); the stream reducer marks dirty rows; index re-derivation after a write is lazy. Every heavy synchronous step is a `perf.span`, and the stall detector names the spans that overlapped a stall. See `PERFORMANCE.md`.
 
 ## 8. Versions (pin, do not float)
 

@@ -2,18 +2,20 @@
 
 ## Not yet verified
 - **Every model-driven behaviour** (tool calls, approval pause/resume, cancel, fallback) is unverified at runtime until model keys are configured in TrueForge. See `TRUEFORGE_INTEGRATION_STATUS.md`.
-- **Extension-host responsiveness (A3).** In the VS Code integration run, event-loop lag in the extension host was p50 11 ms / p99 95 ms with AXIOM running (p99 18 ms with AXIOM's work disabled), with one unexplained ~2 s spike. The same fresh test instance was slow at plain VS Code operations too (6–11 s for open/save with AXIOM disabled), so the spike is not yet attributed. A stall detector now logs any stall > 250 ms with the active operation to the "AXIOM Forge" output channel; check it during a normal F5 session.
+- **Extension-host responsiveness (A3).** Phase 3 profiled it (`PERFORMANCE.md`): the largest stalls in the VS Code test instance (1.5–2.4 s) are VS Code's own work (self time ≥ 85% VS Code). AXIOM's avoidable repeated work was fixed (MCP server pooling, patch-only webview posts, dirty-row timeline sync, lazy index rebuild). That test instance runs identical code 60–200× slower than plain Node, for reasons not established, so its absolute numbers are an upper bound. Not yet measured in a normal F5 session or during a real model stream: use `axiomForge.perfLog` + **Show Performance Report**.
 - The negative SSRF case (TrueForge *without* `OUTBOUND_URL_ALLOWED_HOSTS` refusing our MCP server) was read in source but not re-run.
 
-## Found in the Phase 2 audit (open)
-- Two `propose_edit` calls on the same file in one approval pause: the second will hit a conflict after the first applies (safe, not smooth).
-- Multi-file changes are atomic per file, not as a set.
-- `propose_edit` can't delete or rename files.
-- Retrieval R@5 is 0.74 on our 13-task eval (in-context recall 0.90); see `RETRIEVAL_EVAL.md`.
-- The Task B golden test was relaxed from "top 5" to "top 6 and in context" after the generic ranking changes.
+## SafeChange (Phase 3)
+- **Same-file edits** in one approval pause are merged into one diff. Edits that overlap **or touch adjacent lines** are refused (conservative, like `git merge`) and the model is told to re-read and re-propose. Two calls that both create the same new file: the first wins.
+- **Multi-file changes are applied as a change set** (everything approved in one review): every target is validated first; if a write fails, already-written files are restored and verified by read-back, and a restore that fails is reported by name. **This is not crash-atomic**: if VS Code or the machine dies between two writes, the files written so far stay written (the undo journal is only recorded on success). Neither the filesystem nor VS Code's per-file save offers a multi-file atomic commit.
+- The **first approved `propose_edit` call of a set applies the whole set**; the others report the recorded result. If TrueForge never executes some approved calls (e.g. the run is cancelled between them), their edits are still written, because the user approved them in the same review. Undo is per file, not per set.
+- `propose_edit` still can't delete or rename files.
+
+## Retrieval (Phase 3)
+- 33-task benchmark: 25/33 tasks have every needed file in the top 5 (76%), mean R@5 0.84, in-context recall 0.94. **On the 8 fresh tasks never used for tuning: 5/8 (63%), the same as before the Phase 3 changes.** The 80% target is not met. The systematic misses are big catch-all files (`app.py`, `sansio/app.py`, `test_basic.py`) and task words that match parts of identifiers (`handle_url_build_error`). See `RETRIEVAL_EVAL.md`.
 
 ## Design limits
-- **Retrieval is lexical + structural** (with light stemming), not semantic: IDF keyword scoring, path/name matches, regex symbol extraction, Python import graph, naming-convention test pairing, doc pairing. No embeddings. It's explainable and fast (~50 ms on Flask) but can miss conceptually related code with no shared vocabulary.
+- **Retrieval is lexical + structural** (with light stemming), not semantic: BM25 keyword scoring, file/folder-name matches, code-identifier definitions, regex symbol extraction, Python import graph, naming-convention test pairing, doc pairing. No embeddings. It's explainable and fast (~50 ms on Flask) but can miss conceptually related code with no shared vocabulary.
 - **Symbol extraction is regex-based** (Python `def`/`class`, click `@command("name")`, basic TS/JS). No language server; nested functions and dynamic registration aren't modelled.
 - **Token budget is estimated** as characters ÷ 4, not a real tokenizer; the budget is a guide, not a guarantee.
 - **ModelShield runs in the extension**, because TrueForge 0.185 has no automatic model fallback ("planned" in its docs). Fallback starts a fresh TrueForge session on the backup with the original request; earlier-turn reasoning isn't carried over. It never replays after an approved write/command ran (`side_effects`), so the user decides.

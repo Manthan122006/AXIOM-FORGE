@@ -4,7 +4,7 @@
 - [ ] Agent loop runs on TrueForge (sessions/turns via SDK + HTTP API; streamed events rendered)
 - [x] Editor capabilities exposed as MCP tools (7), agent decides what to read/change
 - [x] TrueForge in local mode (`npx @truefoundry/trueforge@0.185.1`)
-- [ ] Models configured **in TrueForge**; extension never calls a provider (enforced by an eslint import ban) and works with any TrueForge model
+- [ ] Models configured **in TrueForge** (`scripts/preflight.ts` shows no BLOCKED rows); extension never calls a provider (enforced by an eslint import ban) and works with any TrueForge model
 - [ ] Video shows the TrueForge session for Task B
 - [x] Repo contains the agent definition used (`agents/axiom-agent.json`): **re-check it matches what was used in the video**
 
@@ -18,18 +18,18 @@
 - [ ] 1 Team: names, college/employer, GitHub handles (collect handles from all four)
 - [ ] 2 Starting point: "from scratch"
 - [ ] 3 Architecture on TrueForge: SDK/HTTP, 7 MCP tools, approval-driven SafeChange, subagent/deferred tools/compaction **only if visible in the session**
-- [ ] 4 How context is selected: strategy + 24k budget + eval numbers from `RETRIEVAL_EVAL.md`
+- [ ] 4 How context is selected: strategy + 24k budget + eval numbers from `RETRIEVAL_EVAL.md`: quote the **fresh-split** result (5/8) next to the 33-task aggregate (25/33), and say the 80% target wasn't met
 - [ ] 5 Model setup: Gemini/Groq models, where they ran, cost (₹0 if free tier), how to switch (TrueForge Settings + two VS Code settings)
 - [ ] 6 Scorecard: one row per criterion (A1–A3, B1–B4, C1–C2) with **real** video timestamps and a one-line claim
 - [ ] 7 Tools used: Claude Code (Claude) as the AI coding assistant; skills used
-- [ ] 8 Known limitations (from `KNOWN_LIMITATIONS.md`, `PHASE_2_AUDIT.md`) + "another month"
+- [ ] 8 Known limitations (from `KNOWN_LIMITATIONS.md`, `PHASE_2_AUDIT.md`, `PERFORMANCE.md`): change sets are not crash-atomic; retrieval misses on catch-all files; + "another month"
 - [ ] Every claim cross-checked against `FINAL_TEST_MATRIX.md`; nothing claimed that's ⏳
 
 ## Artefact 3: GitHub repository (public before the deadline)
 - [ ] Repo created, `main` pushed; branches merged
 - [ ] README clean-clone steps tested on a second Mac
 - [ ] `LICENSE` (MIT) present; third-party attributions in README
-- [ ] `config/models.example.json` present; no keys in the repo or its history (`gitleaks detect` or grep)
+- [ ] `config/models.example.json` present; no keys in the repo or its history (grep of all history: 0 matches on 17 Nov; re-run right before publishing, plus `gitleaks detect` if available)
 - [ ] `skills-lock.json`/`.agents` decision: they live in the parent folder, not the repo. Mention in write-up section 7 if relevant
 - [ ] Opened in a private window to confirm it's public
 

@@ -1,6 +1,6 @@
 # AXIOM Forge — Task Board
 
-Statuses: **Not started · In progress · Blocked · Implemented · Tested · Verified**. *Verified* = evidence from a real run (not mocks). Updated Tue 17 Nov, Phase 2 (see PHASE_2_AUDIT.md).
+Statuses: **Not started · In progress · Blocked · Implemented · Tested · Verified**. *Verified* = evidence from a real run (not mocks). Updated Tue 17 Nov, Phase 3 (see PERFORMANCE.md, RETRIEVAL_EVAL.md).
 
 | ID | Task | Owner | Pri | Status | Evidence / next step |
 |---|---|---|---|---|---|
@@ -19,10 +19,11 @@ Statuses: **Not started · In progress · Blocked · Implemented · Tested · Ve
 | S-1 | Hunking, conflict detection | Toheed | P0 | Tested | `safeChange.test.ts` |
 | S-2 | Per-hunk apply via WorkspaceEdit + undo | Toheed | P0 | Verified | VS Code integration test (real editor buffer + disk) |
 | S-3 | Native diff + per-hunk CodeLens | Toheed | P0 | Tested | VS Code test drives the real CodeLens commands; human visual check pending |
-| S-4 | M5: two edits to one file in one pause | Toheed | P1 | Not started | currently safe (conflict), not smooth |
+| S-4 | M5: two edits to one file in one pause → merged diff | Claude (Phase 3) / Toheed review | P1 | Tested | `tests/safety/changeSet.test.ts`, MCP + VS Code tests; model-produced case ⏳ |
+| S-5 | M6: multi-file change set, validate-all + rollback | Claude (Phase 3) / Toheed review | P1 | Tested | injected write/rollback failures; real VS Code buffer + disk restored; not crash-atomic |
 | C-1..4 | Index, symbols, imports, pairing, ranking, budget, receipt | Kunjal | P0 | Tested | 9 golden tests on Flask 3.1.3 |
 | C-5 | @mentions (engine + composer) | Kunjal/Vivan | P1 | Tested | golden test + browser preview |
-| C-6 | Retrieval eval beyond fixed tasks | Kunjal | P1 | Tested | 13 tasks, in-context 0.90, R@5 0.74 (`RETRIEVAL_EVAL.md`); Kunjal to raise R@5 |
+| C-6 | Retrieval eval beyond fixed tasks | Claude (Phase 3) / Kunjal next | P1 | Tested | 33 tasks: 25/33 full top-5; fresh 5/8 (target not met); Kunjal: F9+ and identifier decomposition |
 | T-1 | TurnTracker reducer | Manthan | P0 | Tested | synthetic streams; recorded streams pending |
 | T-2 | Approval bridge (pause → review → grant → allow/deny) | Manthan | P0 | Implemented | live BLOCKED |
 | T-3 | Cancellation | Manthan | P0 | Tested (partial) | cancel kills running command (tested); live sessions.cancel BLOCKED |
@@ -38,7 +39,8 @@ Statuses: **Not started · In progress · Blocked · Implemented · Tested · Ve
 | Q-1 | Flask fixture + pinned test deps | Kunjal | P0 | Verified | test_cli 58/58 on clean tree |
 | Q-2 | Task A/B/C verify scripts | Kunjal | P0 | Verified | fail on clean, pass on reference fix, reset clean |
 | Q-3 | Tasks A/B/C live | All | P0 | Blocked | keys |
-| Q-4 | Extension-host responsiveness evidence | Manthan | P1 | In progress | p99 64–78 ms in test instance; ~1.4 s spike unattributed |
+| Q-4 | Extension-host responsiveness evidence | Manthan | P1 | Tested (test instance) | CPU-profile attribution: big stalls are VS Code's; AXIOM fixes in `PERFORMANCE.md`; live F5 run ⏳ |
+| T-8 | Key-free preflight | Manthan | P0 | Tested | `scripts/preflight.ts`, `docs/evidence/preflight-no-keys.txt` |
 | D-0 | Demo script, test matrix, submission checklist, key checklist | Manthan | P0 | Implemented | docs/ |
 | D-1 | README, LICENSE, example config | Manthan | P0 | Implemented | clean-clone test pending |
 | D-2 | Video | Manthan/Vivan | P0 | Not started | Fri |

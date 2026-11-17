@@ -45,13 +45,17 @@ git clone <this repo> axiom-forge && cd axiom-forge && npm ci && npm run build
 4. **Run the extension:** open this folder in VS Code and press **F5** ("Run AXIOM Forge (Flask fixture)"). It opens `fixtures/flask` with the extension loaded; the MCP server starts on `127.0.0.1:7811` and registers itself in TrueForge.
 5. **Load the agent definition** ([agents/axiom-agent.json](agents/axiom-agent.json)): Command Palette → **AXIOM Forge: Register MCP Server and Agent in TrueForge**, pick the primary model. Optionally set `axiomForge.models.primary` / `axiomForge.models.backup` in settings for automatic fallback.
    Headless alternative: `npx tsx scripts/setup-trueforge.ts --model <name>`.
+6. **Check the wiring** (no keys needed; never calls a provider): `npx tsx scripts/preflight.ts [--primary <name> --backup <name>]`. It checks the agent definition, TrueForge reachability, configured models, that TrueForge lists the 7 MCP tools, and that a TrueForge outage is classified differently from a provider failure. Model-dependent steps are listed as UNVERIFIED until you run [docs/MODEL_KEY_CHECKLIST.md](docs/MODEL_KEY_CHECKLIST.md).
 
 ## Using it
 
 - **Inline edit:** select code, press **⌘I** (Ctrl+I), describe the change. The diff opens in the editor with Accept/Reject on each hunk.
 - **Agent mode:** describe a change in the AXIOM Forge sidebar; you don't need to name files. Type `@` to mention a file or symbol.
 - **Review:** accept/reject each hunk (sidebar or CodeLens in the diff), then **Apply**. **Undo change** reverts an applied file.
+  - Several edits the agent makes to the **same file** in one step are merged into **one** diff; overlapping edits are refused, never silently overwritten.
+  - Everything you approve in one review is applied **together**: all files are checked first, and if one can't be written the others are restored (not crash-atomic; see limitations).
 - **Stop run** cancels the TrueForge turn; anything not yet applied is discarded.
+- **Performance:** set `axiomForge.perfLog: true`, then run **AXIOM Forge: Show Performance Report** for per-operation timings. Stalls over 250 ms are logged with the AXIOM work that ran during them ([docs/PERFORMANCE.md](docs/PERFORMANCE.md)).
 
 ## Tests
 
@@ -62,6 +66,7 @@ bash scripts/tasks/verify-task-a.sh   # official Task A check against fixtures/f
 bash scripts/tasks/verify-task-b.sh   # Task B: pytest, flask --help, masked JSON, >=3 files
 bash scripts/tasks/verify-task-c.sh   # Task C: git status clean
 bash scripts/tasks/reset-fixture.sh   # restore fixtures/flask to pristine 3.1.3
+npx tsx scripts/eval-retrieval.ts     # 33-task retrieval benchmark (see docs/RETRIEVAL_EVAL.md)
 ```
 
 ## Security notes

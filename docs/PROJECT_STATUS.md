@@ -1,8 +1,10 @@
 # AXIOM Forge — Project Status
 
-_Last updated: Tue 17 Nov 2026, Phase 2. Repo: local git, `main` + 4 feature branches (no teammate commits yet). No remote yet (by decision)._
+_Last updated: Tue 17 Nov 2026, Phase 3. Repo: local git, `main` + 4 feature branches (no teammate commits yet). No remote yet._
 
-> **Phase 2 changes:** see `PHASE_2_AUDIT.md` (13-question audit, findings H1–H5/M1–M9/L1–L5, integration paths A–J). Current numbers: `npm run check` → **123 tests pass**; `npm run test:vscode` → **10/10** in real VS Code (incl. per-hunk CodeLens review, conflict, real TrueForge failure path); retrieval eval on 13 tasks → in-context recall **0.90**, R@5 0.74; activation 0.7 s.
+> **Phase 3 (current):** `npm run check` → **155 tests pass**; `npm run test:vscode` → **11/11** in real VS Code (adds same-file merge + multi-file change set + buffer/disk rollback). Retrieval on a 33-task benchmark: **25/33** tasks fully in top 5 (was 18/33), in-context recall 0.94; **on 8 fresh tasks: 5/8, no gain** (`RETRIEVAL_EVAL.md`). Stall investigation with CPU profiles: the largest stalls are VS Code's own; AXIOM's repeated work fixed (`PERFORMANCE.md`). Preflight without keys: 5 pass, 3 blocked on keys, 7 model steps unverified.
+>
+> **Phase 2:** see `PHASE_2_AUDIT.md`. The feature table below is from Phase 2 except where marked.
 
 ## Summary
 All model-independent parts are implemented and tested: MCP server and tools, workspace safety, SafeChange, context engine with Context Receipt, TrueForge client/reducer/ModelShield, extension host, webview UI, and the Task A/B/C verification scripts. Every **model-driven** behaviour is **BLOCKED** until model keys are entered in TrueForge; those are listed with exact verification steps in `TRUEFORGE_INTEGRATION_STATUS.md`.
