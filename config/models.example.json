@@ -1,0 +1,28 @@
+{
+  "_comment": "EXAMPLE ONLY. Never put API keys in this repository. Keys are entered in TrueForge (Settings -> Models, http://localhost:8790) and stored in TrueForge's local SQLite database. AXIOM Forge itself never sees or sends them.",
+  "trueforge": {
+    "baseUrl": "http://localhost:8790",
+    "start": "OUTBOUND_URL_ALLOWED_HOSTS='[\"127.0.0.1\"]' npx -y @truefoundry/trueforge@0.185.1"
+  },
+  "providers": [
+    {
+      "role": "primary",
+      "trueforgeProviderType": "google-gemini",
+      "how": "TrueForge Settings -> Models -> Google Gemini -> paste a Gemini API key (free tier from Google AI Studio)",
+      "exampleModelIds": ["gemini-3-5-flash", "gemini-3-5-flash-lite"],
+      "note": "Model ids come from TrueForge's shipped catalog (GET /api/v1/catalogs/model-providers). Use the full name TrueForge lists under GET /api/v1/models."
+    },
+    {
+      "role": "backup",
+      "trueforgeProviderType": "custom",
+      "how": "TrueForge Settings -> Models -> Add custom provider (OpenAI-compatible)",
+      "baseUrl": "https://api.groq.com/openai/v1",
+      "apiKey": "<entered in TrueForge, not here>",
+      "exampleModelIds": ["<a Groq model id that supports tool calling; check Groq's current model list>"]
+    }
+  ],
+  "vscodeSettings": {
+    "axiomForge.models.primary": "<primary model name exactly as GET /api/v1/models lists it>",
+    "axiomForge.models.backup": "<backup model name exactly as GET /api/v1/models lists it>"
+  }
+}

@@ -1,44 +1,42 @@
 # AXIOM Forge — Task Board
 
-Statuses: **Not started · In progress · Blocked · Implemented · Tested · Verified**. "Verified" means the evidence column points at something real.
+Statuses: **Not started · In progress · Blocked · Implemented · Tested · Verified**. *Verified* = evidence from a real run (not mocks). Updated Tue 17 Nov 21:00 IST.
 
-| ID | Task | Owner | Pri | Depends | Acceptance | Status | Evidence |
-|---|---|---|---|---|---|---|---|
-| P0-1 | Read official PDF, extract requirements | Manthan | P0 | — | checklist in PROJECT_MASTER_PLAN §1 | Verified | `docs/PROJECT_MASTER_PLAN.md` |
-| P0-2 | Research TrueForge API from source + SDK types | Manthan | P0 | — | ARCHITECTURE §2 with citations | Verified | `docs/ARCHITECTURE.md` §2 |
-| P0-3 | Skill discovery + registry | Manthan | P1 | — | `docs/SKILL_REGISTRY.md` | Verified | `docs/SKILL_REGISTRY.md`; `frontend-design` + `vercel-react-best-practices` installed, files and `skills-lock.json` checked |
-| P0-4 | Shared contracts | Manthan | P0 | P0-2 | `src/shared/contracts.ts` compiles | Tested | `tsc --strict --noEmit` clean (TS 5.6.3), 2026-11-17 |
-| P0-5 | TrueForge running locally, pinned 0.185.1 | Manthan | P0 | — | `GET /api/v1/models` 200 | Verified | banner `TrueForge v0.185.1 · standalone`, SQLite at `~/Library/Application Support/trueforge/db/db.sqlite`, HTTP 200 |
-| P0-5b | TrueForge → 127.0.0.1 MCP reachability | Manthan | P0 | P0-5 | TrueForge lists tools of a loopback MCP server | Verified | started with `OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]'`; registered `axiom-probe` via `POST /api/v1/settings/mcp-servers {manifest:{type:"remote",...}}`; `GET /api/v1/mcp-servers/axiom-probe/tools` returned `echo` + `propose_edit`. Negative case (without allowlist) not yet re-tested |
-| P0-6 | Model providers configured (Gemini primary, Groq backup) | Manthan | P0 | P0-5, **API keys** | a plain turn streams on each model | Blocked | needs team's own free-tier keys, entered in TrueForge Settings → Models |
-| P0-7 | Repo scaffold (extension + webview + vitest), git init, GitHub repo | Manthan | P0 | — | `npm run build && npm test` green | Not started | — |
-| P0-8 | Integration proof: session → turn → MCP `read_file` → `propose_edit` approval pause → allow/deny → cancel | Manthan + Toheed | P0 | P0-5..7, M-1 | `scripts/proof.ts` log | Not started | — |
-| T-1 | TrueForge client: sessions, stream reducer, resubscribe | Manthan | P0 | P0-8 | unit tests on recorded event fixtures | Not started | — |
-| T-2 | Approval bridge (`tool.approval_required` → SafeChange → `user.tool_approval`) | Manthan | P0 | T-1, S-1 | proposal shown before any write | Not started | — |
-| T-3 | Cancellation (button, `sessions.cancel`, discard staged) | Manthan | P0 | T-1 | cancel mid-stream ⇒ `git status` clean | Not started | — |
-| T-4 | ModelShield: classify, retry/backoff, backup session | Manthan | P1 | T-1 | Task C with bad Gemini key ⇒ Groq completes | Not started | — |
-| T-5 | Agent definition `agents/axiom-agent.json` + setup script | Manthan | P0 | M-1 | `scripts/setup-trueforge.ts` idempotent | Not started | — |
-| M-1 | MCP Streamable-HTTP server on 127.0.0.1 | Toheed | P0 | P0-7 | TrueForge lists our tools via `GET /api/v1/mcp-servers/{name}/tools` | Not started | — |
-| M-2 | `read_file`, `search_workspace` + path jail + secret-file denylist | Toheed | P0 | M-1 | traversal tests pass | Not started | — |
-| M-3 | `propose_edit` (stage pre-approval, apply accepted hunks post-approval) | Toheed | P0 | M-1, S-1 | cannot write without approval (test) | Not started | — |
-| M-4 | `run_command` allowlist, timeout, scrub | Toheed | P0 | M-1 | timeout + exit code tests | Not started | — |
-| S-1 | SafeChange: hunking, baseHash, conflict check | Toheed | P0 | — | unit tests | Not started | — |
-| S-2 | Per-hunk apply via `WorkspaceEdit` + undo journal | Toheed + Manthan | P0 | S-1 | undo restores exact pre-image | Not started | — |
-| C-1 | Indexer + ripgrep search | Kunjal | P0 | P0-7 | Flask indexed < 2 s | Not started | — |
-| C-2 | Python symbol index + import graph | Kunjal | P0 | C-1 | `get_debug_flag` def + refs found | Not started | — |
-| C-3 | Test/doc pairing | Kunjal | P0 | C-1 | `cli.py` ↔ `tests/test_cli.py`, `docs/cli.rst` | Not started | — |
-| C-4 | Ranking + budget + Context Receipt | Kunjal | P0 | C-1..3 | Task B prompt ranks the 3 files top-5, under budget | Not started | — |
-| C-5 | `@file` / `@symbol` mention parsing + completion | Kunjal + Vivan | P1 | C-2 | mentions hard-included in receipt | Not started | — |
-| U-1 | Webview shell, design tokens, dark theme | Vivan | P0 | P0-7 | renders in VS Code sidebar 300–600 px | Not started | — |
-| U-2 | Stream/timeline/composer bound to `AxiomState` | Vivan | P0 | U-1, T-1 | live tokens + tool rows from real events | Not started | — |
-| U-3 | Context Receipt panel | Vivan | P0 | U-1, C-4 | shows real receipt | Not started | — |
-| U-4 | Change review panel (per-hunk, undo) | Vivan | P0 | U-1, S-1 | hunk controls drive SafeChange | Not started | — |
-| U-5 | Verification + recovery states | Vivan | P1 | U-1, V-1, T-4 | only real results shown | Not started | — |
-| I-1 | Inline edit command (`cmd+i`) | Manthan | P0 | T-2, S-2 | **Task A** | Not started | — |
-| V-1 | Proof of Change (results, staleness) | Toheed | P1 | M-4 | exit codes shown | Not started | — |
-| Q-1 | Flask fixture: clone tag 3.1.3, venv, `pip install -e . pytest` | Kunjal | P0 | — | `pytest tests/test_cli.py -q` green on clean tree | Not started | — |
-| Q-2 | Run Tasks A/B/C end-to-end, record evidence | All | P0 | everything | `ACCEPTANCE_TESTS.md` filled | Not started | — |
-| D-1 | README, LICENSE (MIT), `.env.example`, `config/models.example.json` | Manthan | P0 | — | clean-clone test | Not started | — |
-| D-2 | Video ≤ 4 min | Manthan + Vivan | P0 | Q-2 | public link | Not started | — |
-| D-3 | Write-up PDF, 8 headings | Manthan + Kunjal | P0 | Q-2 | public link | Not started | — |
-| D-4 | Secret scan + clean-clone + submit | Manthan | P0 | D-1..3 | portal confirmation | Not started | — |
+| ID | Task | Owner | Pri | Status | Evidence / next step |
+|---|---|---|---|---|---|
+| P0-1 | Official requirements extracted | Manthan | P0 | Verified | `PROJECT_MASTER_PLAN.md` |
+| P0-2 | TrueForge API researched (source + SDK types) | Manthan | P0 | Verified | `ARCHITECTURE.md` §2 |
+| P0-3 | Skills discovered/installed/registered | Manthan | P1 | Verified | `SKILL_REGISTRY.md`, `skills-lock.json` |
+| P0-4 | Shared contracts | Manthan | P0 | Tested | `src/shared/contracts.ts`, strict tsc |
+| P0-5 | TrueForge 0.185.1 local | Manthan | P0 | Verified | log banner; listens on `[::1]:8790` |
+| P0-6 | Model providers (Gemini primary, Groq backup) | Manthan | P0 | Blocked | keys to be added by Manthan |
+| P0-7 | Build/lint/test tooling, git | Manthan | P0 | Tested | `npm run check` green; 5 commits on `main` |
+| P0-8 | Live integration proof (turn → tool → approval → cancel) | Manthan | P0 | Blocked | `scripts/proof.ts` ready; MCP-listing and 422 path verified |
+| M-1 | MCP Streamable-HTTP server, 127.0.0.1, Host/Origin checks | Toheed | P0 | Verified | TrueForge lists 7 tools (live); 12 protocol tests |
+| M-2 | read_file / search / find_symbol / related_files + path jail | Toheed | P0 | Tested | 20 path-jail + protocol tests |
+| M-3 | propose_edit staged pre-approval, applied post-grant | Toheed | P0 | Tested | MCP + VS Code tests; live approval BLOCKED |
+| M-4 | run_command allowlist/no shell/timeout/abort/scrub | Toheed | P0 | Tested | 27 tests |
+| S-1 | Hunking, conflict detection | Toheed | P0 | Tested | `safeChange.test.ts` |
+| S-2 | Per-hunk apply via WorkspaceEdit + undo | Toheed | P0 | Verified | VS Code integration test (real editor buffer + disk) |
+| S-3 | Native diff + per-hunk CodeLens | Toheed | P0 | Implemented | needs a live proposal to check by hand |
+| C-1..4 | Index, symbols, imports, pairing, ranking, budget, receipt | Kunjal | P0 | Tested | 9 golden tests on Flask 3.1.3 |
+| C-5 | @mentions (engine + composer) | Kunjal/Vivan | P1 | Tested | golden test + browser preview |
+| C-6 | Retrieval eval beyond fixed tasks | Kunjal | P1 | Not started | packet in TEAM_ASSIGNMENTS |
+| T-1 | TurnTracker reducer | Manthan | P0 | Tested | synthetic streams; recorded streams pending |
+| T-2 | Approval bridge (pause → review → grant → allow/deny) | Manthan | P0 | Implemented | live BLOCKED |
+| T-3 | Cancellation | Manthan | P0 | Implemented | live BLOCKED |
+| T-4 | ModelShield | Manthan | P1 | Tested | 7 policy tests; live fallback BLOCKED |
+| T-5 | Agent definition + setup | Manthan | P0 | Implemented | TrueForge 422 until a provider exists |
+| T-6 | IPv6 loopback fix | Manthan | P0 | Verified | VS Code test connects |
+| U-1..5 | Webview: tokens, timeline, receipt, review, proof, recovery, composer | Vivan | P0 | Tested (preview) | screenshots 360/420/520 px, dark/light |
+| U-6 | Live-data polish, session link, contrast test, a11y pass | Vivan | P1 | Not started | packet |
+| I-1 | Inline edit command (⌘I) | Manthan | P0 | Implemented | Task A BLOCKED |
+| V-1 | Proof of Change (results, stale) | Toheed | P1 | Implemented | live BLOCKED |
+| Q-1 | Flask fixture + pinned test deps | Kunjal | P0 | Verified | test_cli 58/58 on clean tree |
+| Q-2 | Task A/B/C verify scripts | Kunjal | P0 | Verified | fail on clean, pass on reference fix, reset clean |
+| Q-3 | Tasks A/B/C live | All | P0 | Blocked | keys |
+| Q-4 | Extension-host responsiveness evidence | Manthan | P1 | In progress | stall detector added; check in F5 |
+| D-1 | README, LICENSE, example config | Manthan | P0 | Implemented | clean-clone test pending |
+| D-2 | Video | Manthan/Vivan | P0 | Not started | Fri |
+| D-3 | Write-up PDF | Manthan/Kunjal | P0 | Not started | Fri |
+| D-4 | Public repo, secret scan, submit | Manthan | P0 | Not started | needs GitHub owner |

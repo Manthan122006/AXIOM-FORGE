@@ -1,23 +1,42 @@
 # AXIOM Forge — Project Status
 
-_Audit baseline: 2026-11-17 20:15 IST. Updated as work lands; the latest section is at the bottom._
+_Last updated: Tue 17 Nov 2026, 21:00 IST. Repo: local git, branch `main`, 5 commits. No remote yet (by decision)._
 
-## Baseline audit (before implementation started)
+## Summary
+All model-independent parts are implemented and tested: MCP server and tools, workspace safety, SafeChange, context engine with Context Receipt, TrueForge client/reducer/ModelShield, extension host, webview UI, and the Task A/B/C verification scripts. Every **model-driven** behaviour is **BLOCKED** until model keys are entered in TrueForge; those are listed with exact verification steps in `TRUEFORGE_INTEGRATION_STATUS.md`.
 
-| Area | Status | Evidence |
+## Feature status
+
+| Feature | Status | Evidence |
 |---|---|---|
-| Repository / git | NOT STARTED | `axiom-forge/` had no `.git`, no `package.json` |
-| Docs (plan, architecture, board, tests, registry, team) | COMPLETE | `docs/*.md` |
-| Shared contracts | COMPLETE | `src/shared/contracts.ts`, `tsc --strict` clean |
-| Build / lint / test tooling | NOT STARTED | — |
-| MCP server + tools | NOT STARTED | only a throwaway probe in the scratchpad, not in repo |
-| SafeChange | NOT STARTED | — |
-| Context engine | NOT STARTED | — |
-| TrueForge client | NOT STARTED | — |
-| Webview UI | NOT STARTED | — |
-| Extension host | NOT STARTED | — |
-| TrueForge server 0.185.1 running locally | COMPLETE | `GET /api/v1/models` → 200 |
-| TrueForge → 127.0.0.1 MCP | COMPLETE (tool listing only) | `axiom-probe` connector lists tools |
-| Model providers | BLOCKED | `GET /api/v1/settings/model-providers` → `{"data":[]}`; keys to be added by Manthan |
-| Model-driven turn / approval / cancel | BLOCKED | needs a model |
-| Skills | COMPLETE (installed) / see note | `frontend-design`, `vercel-react-best-practices` installed and pinned; **not in this session's loaded skill list** (installed mid-session), so their `SKILL.md` files are read and followed directly |
+| Build / typecheck / lint / unit tests | COMPLETE | `npm run check` exit 0: tsc clean (ext + webview), eslint clean, **106 tests pass**, esbuild + vite build |
+| Extension runs in real VS Code | COMPLETE (smoke) | `npm run test:vscode` on installed VS Code 1.125.1: **6/6 pass** (activation, commands, MCP on 127.0.0.1, TrueForge lists our tools, WorkspaceEdit apply + exact undo, unapproved edit refused, inline edit w/o selection) |
+| MCP server (7 tools, Streamable HTTP, 127.0.0.1) | COMPLETE | `tests/mcp/server.test.ts` (real MCP client over HTTP, 12 tests); TrueForge lists all 7 tools (live) |
+| Path jail / secret files / traversal / symlink escape | COMPLETE | `tests/mcp/pathJail.test.ts` (20 cases) |
+| Approval enforcement (no write without the user's grant) | COMPLETE (extension side) | MCP + VS Code tests: `propose_edit`/`run_command` refuse without a single-use grant |
+| Command execution safety (allowlist, no shell, timeout, abort, scrub) | COMPLETE | `tests/verification/commandRunner.test.ts` (27 tests) |
+| SafeChange (stage, per-hunk, conflict, apply, undo, discard on cancel) | COMPLETE | `tests/safety/safeChange.test.ts` (18 tests) + VS Code integration test |
+| Native diff + per-hunk CodeLens in the editor | NEEDS VERIFICATION | implemented (`src/extension/diffView.ts`); needs a model-produced proposal to view by hand |
+| Context engine + Context Receipt | COMPLETE | `tests/context/flaskGolden.test.ts` (9 tests on Flask 3.1.3): Task B prompt puts `cli.py`, `test_cli.py`, `docs/cli.rst` in the top 5; budget respected; reasons for every item; ~285k-token repo → 24k budget in ~50 ms |
+| `@file` / `@symbol` mentions | COMPLETE (engine) / NEEDS VERIFICATION (UI with live host) | golden test; composer popup tested in browser preview |
+| TrueForge client: sessions, streaming, approvals, subscribe, cancel | NEEDS VERIFICATION | type-checked against SDK 0.185.0; reducer tested on synthetic streams; live: health + 422 path verified |
+| Loopback/IPv6 connection fix | COMPLETE | found TrueForge on `[::1]` only; probing fix unit-tested; VS Code test now connects |
+| ModelShield (classify, retry/backoff, fallback, no unsafe replay) | COMPLETE (logic) / BLOCKED (live) | `tests/trueforge/reducer.test.ts` shield cases; live fallback needs two providers |
+| Inline edit (Task A) | BLOCKED | flow implemented (`inlineEdit` → TrueForge → staged diff); needs a model |
+| Agent mode (Task B) | BLOCKED | implemented; needs a model |
+| Resilience (Task C) | BLOCKED | implemented; needs a provider with an invalid key + a backup |
+| Webview UI | COMPLETE (preview) / NEEDS VERIFICATION (inside VS Code with live data) | screenshots at 360/420/520 px, dark + light, review/fallback/offline states; per-hunk flow clicked through |
+| Agent definition | COMPLETE (file) / BLOCKED (saved in TrueForge) | `agents/axiom-agent.json`; TrueForge rejects saving until a provider exists (422) |
+| Task A/B/C verification scripts | COMPLETE | on clean fixture: A FAIL, B FAIL, C PASS (correct); with a hand-written reference fix: A PASS, B PASS (pytest 59 passed, masked JSON, ≥3 files); reset → 0 changed files |
+| README / LICENSE / example config | COMPLETE (draft) | `README.md`, `LICENSE` (MIT), `config/models.example.json`, `.env.example` |
+| Event-loop responsiveness (A3) | NEEDS VERIFICATION | see KNOWN_LIMITATIONS (unattributed ~2 s spike in test instance; stall detector added) |
+| Video, write-up, public repo | NOT STARTED | after live runs |
+
+## Blockers
+1. **Model keys** (Manthan, planned): add Gemini + Groq in TrueForge Settings → Models. Unblocks 10 runtime checks, Tasks A/B/C, and saving the agent.
+2. GitHub remote (deferred by decision): needed before Friday.
+
+## Next exact actions
+1. Manthan: add keys → `npx tsx scripts/proof.ts --model <name>` (+ `--deny`, `--cancel-after 6`) → commit recorded streams.
+2. Manthan: F5 → Task A, then `verify-task-a.sh`; Task B → `verify-task-b.sh`; Task C → `verify-task-c.sh`.
+3. Team: task packets in `TEAM_ASSIGNMENTS.md`.

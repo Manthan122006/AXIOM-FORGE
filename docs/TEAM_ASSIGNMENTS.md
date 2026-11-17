@@ -1,74 +1,104 @@
-# AXIOM Forge — Team Assignments
+# AXIOM Forge — Team Task Packets
 
-Rule: code only against `src/shared/contracts.ts`. If you need a new field, open a PR that changes only that file and ping Manthan. Integrate into `main` **at least daily** (Wed 21:00, Thu 21:00 IST).
+**Situation (Tue 17 Nov, 21:00 IST):** a first implementation of every module exists on `main` with 106 unit tests and 6 VS Code integration tests (see `PROJECT_STATUS.md`). Your job is to **own** one module: understand it well enough to explain and defend it on the judges' 10-minute call, harden it, and close its open items. Nothing is "done" for you until your own evidence is in your PR.
 
-## Shared setup (every member, ~15 min, macOS)
+## Shared setup (all four Macs, ~15 min)
 
 ```bash
-# Node ≥ 22.14 (24.x is fine) — check
-node -v
+node -v   # must be >= 22.14
 ```
 
 ```bash
-git clone https://github.com/<org-or-manthan>/axiom-forge.git && cd axiom-forge && npm ci
+git clone <repo-url> axiom-forge && cd axiom-forge && npm ci && npm run check
 ```
 
 ```bash
-# Flask fixture used by Tasks A/B/C (outside the extension repo)
-git clone https://github.com/pallets/flask.git ~/axiom-fixtures/flask && cd ~/axiom-fixtures/flask && git checkout 3.1.3 && python3 -m venv .venv && .venv/bin/pip install -e . pytest
+npm run fixture:flask
 ```
 
 ```bash
-# Local TrueForge, pinned, with ONLY loopback allowlisted so it can reach our MCP server
 OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]' npx -y @truefoundry/trueforge@0.185.1
 ```
 
-Then open http://localhost:8790 → **Settings → Models** and add your own free-tier keys (never paste keys in chat, code, or commits). Run the extension with **F5** in VS Code ("Run AXIOM Forge").
+Then add your own free-tier key in TrueForge (http://localhost:8790 → Settings → Models). Never paste keys in code, chat, commits or screenshots. Run the extension with **F5**.
 
-Branches: `feat/trueforge-client` (Manthan) · `feat/webview-ui` (Vivan) · `feat/mcp-tools` (Toheed) · `feat/context-engine` (Kunjal). PR template: what changed, files, how to run, tests run (paste output), known issues, screenshot.
+**Rules.** Code against `src/shared/contracts.ts`; changes to it need Manthan's review. Branches are listed below. Every PR has: what changed, files, how to run, the commands you ran with their output, known issues, and a screenshot if it's UI. Merge into `main` by **Wed 21:00** and **Thu 21:00 IST**. Before each PR run `npm run check` and paste the summary.
 
 ---
 
-## Manthan Chandulal Gajra — architecture, TrueForge integration, final integrator
+## Manthan Chandulal Gajra: architecture, TrueForge integration, final integration
+**Branch:** `feat/trueforge-client` · **Owns:** `src/trueforge/*`, `src/extension/controller.ts`, `src/extension/activate.ts`, `agents/axiom-agent.json`, `scripts/proof.ts`, `scripts/setup-trueforge.ts`, README, write-up.
 
-**Files:** `src/extension/*`, `src/trueforge/*`, `agents/axiom-agent.json`, `scripts/setup-trueforge.ts`, `scripts/proof.ts`, `README.md`, write-up.
+**Objective.** Turn every BLOCKED line in `TRUEFORGE_INTEGRATION_STATUS.md` into verified evidence, then run Tasks A/B/C.
 
-**First task (today):** `scripts/proof.ts`, a headless proof using the probe MCP server:
-1. `sessions.create({ agent: { spec } })` with `mcp_servers:[{ name:'axiom-forge', require_approval_for_tools:['propose_edit','run_command'], preload_tools:['assemble_context','propose_edit'] }]`.
-2. `createTurnStream` → print every event type; collect `tool.approval_required`; look up args via `source_event_id`; reply `user.tool_approval` allow, then a second run with deny; a third run calling `sessions.cancel` mid-stream.
-3. Save the raw event logs to `tests/fixtures/trueforge-events/*.jsonl`. They become the reducer's unit-test fixtures.
+**Do, in order.**
+1. Add Gemini (primary) and Groq (custom OpenAI-compatible, backup) in TrueForge. Confirm the names with `curl -s http://localhost:8790/api/v1/models`.
+2. `npx tsx scripts/proof.ts --model <primary>`, then `--deny`, then `--cancel-after 6`. Commit the three files in `tests/fixtures/trueforge-events/recorded/`.
+3. Add a reducer test that replays each recorded stream (`tests/trueforge/recorded.test.ts`) and asserts the final tracker state.
+4. Command Palette → "Register MCP Server and Agent in TrueForge", then Task A in F5 and `bash scripts/tasks/verify-task-a.sh`.
+5. Task B, then `verify-task-b.sh`; open the session in TrueForge's UI (`/sessions/<id>`) and check the repo-scout subagent appears.
+6. Task C: put an invalid key on the primary provider, set `axiomForge.models.backup`, run Task A, then `verify-task-c.sh` before accepting.
 
-**Acceptance:** all three logs exist; deny produces a model message acknowledging the denial; cancel ends with `turn.done{cancelled}`.
-**Then:** T-1 → T-2 → T-3 → I-1 (Task A) → T-4.
-**Commit style:** `feat(trueforge): stream reducer with delta merge`.
+**Acceptance.** The three recordings are committed; all 10 rows in the integration status are verified or have a documented reason; the verify scripts print PASS for A and B and clean for C.
+**Definition of done.** Evidence pasted into `ACCEPTANCE_TESTS.md`, and the status docs updated.
 
-## Vivan Jain — webview UI, design system, motion
+## Vivan Jain: webview UI, design system, motion
+**Branch:** `feat/webview-ui` · **Owns:** `webview/**`, `docs/DESIGN_SYSTEM.md`.
 
-**Files:** `webview/**` (React 18 + Vite + Tailwind 4, built into `dist/webview`).
+**Objective.** Make the UI correct with *live* host state inside VS Code and finish the polish, without breaking the state contract.
 
-**First task:** design tokens + shell with **static fixture state only** (an `AxiomState` JSON in `webview/src/dev/fixtures.ts`, excluded from the production bundle):
-- Tokens: graphite base `#0B0C0F`, surfaces `#121419 / #181B22`, border `#232733`, text `#E6E8EE / #9AA1B2`, accent indigo `#7C83FF`, active cyan `#5CE1E6`, success `#3DDC97` (verified only), warning `#F5B54A`, danger `#FF6B6B`. Use VS Code font vars for code (`var(--vscode-editor-font-family)`). Also map to `--vscode-*` so the light theme degrades gracefully.
-- Motion tokens: 120 ms micro, 200 ms panel, `cubic-bezier(.2,.8,.2,1)`; wrap everything in `@media (prefers-reduced-motion: reduce)`.
-- Regions: Header (brand, TrueForge/MCP/model badges from `connection`/`mcp`/`session`), Timeline, Context Receipt, Change Review, Verification, Composer (`@` opens mention popup fed by `mentionResults`).
-**Acceptance:** looks right at 300 px and 600 px wide; every badge reads from state; no hard-coded "connected".
-**Then:** U-2 → U-4 → U-3 → U-5. Messages to host only via `WebviewToHost`.
+**Do.**
+1. `npm run dev:webview`, then open `http://localhost:5199/?state=review` (also `fallback`, `offline`, `empty`). Know every state.
+2. In F5 with a real run, check each region against `DESIGN_SYSTEM.md` at sidebar widths 300, 400 and 600 px, in dark and light themes. Fix the real-data issues you find: long paths, many hunks, and long streaming text.
+3. Add a "Show TrueForge session" link in the header when `session.sessionId` is set; it posts `openSessionInTrueForge`, which already exists. It's needed for the Task B video.
+4. Keyboard pass: Tab through hunks; Enter/Space on Accept and Reject; focus is always visible. Add `aria-live` only where it's needed.
+5. Performance: with React DevTools Profiler during a streamed run, confirm only the streaming row re-renders per batch. If not, fix it using the `rerender-*` rules in `.agents/skills/vercel-react-best-practices`.
+6. Write `webview/src/theme.test.ts`, which computes WCAG contrast for the five semantic colours against `#181818` and `#F8F8F8` (≥ 4.5:1). DESIGN_SYSTEM.md claims this, so it must be tested.
 
-## Toheed Inamdar — MCP server, workspace safety, SafeChange apply
+**Acceptance.** Screenshots at 300, 400 and 600 px in both themes are attached to the PR; the contrast test passes; there's no horizontal scroll at 300 px; reduced-motion disables all animation.
+**Skills.** `frontend-design`, `vercel-react-best-practices`, `dataviz` for the budget meter.
 
-**Files:** `src/mcp/*`, `src/safety/*`, `src/verification/*`, tests under `tests/mcp`, `tests/safety`.
+## Toheed Inamdar: MCP server, workspace safety, SafeChange
+**Branch:** `feat/mcp-tools` · **Owns:** `src/mcp/*`, `src/safety/*`, `src/verification/*`, `src/workspace/*`, `src/extension/vscodeHost.ts`, `src/extension/diffView.ts`, `tests/mcp`, `tests/safety`, `tests/verification`.
 
-**First task:** `src/mcp/server.ts` (Streamable HTTP via `@modelcontextprotocol/sdk@1.32.2`, bind `127.0.0.1`, random free port, stateless) + `read_file` + `search_workspace` (`@vscode/ripgrep`) + `src/mcp/pathJail.ts`:
-- resolve → `realpath` → must stay under the workspace root; reject `..`, absolute paths outside, symlink escapes, `.git/`, `.env*`, `*.pem`, `id_*`, `.venv/`.
-- every tool has a zod schema; annotations set (`readOnlyHint` true for reads; `propose_edit` `readOnlyHint:false`; `run_command` `destructiveHint:true`).
-**Acceptance:** vitest: traversal (`../../etc/passwd`, encoded, symlink) rejected; `GET /api/v1/mcp-servers/axiom-forge/tools` lists the tools.
-**Then:** S-1 hunking (`diff@5` `structuredPatch`) → M-3 `propose_edit` (stage on call, apply accepted hunks only after approval) → S-2 undo → M-4 `run_command` (allowlist `pytest`, `python`, `flask`, `git status|diff`; 120 s timeout; output tail 4 KB; scrub `/(sk|gsk|AIza)[A-Za-z0-9_\-]{10,}/`).
-**Key test:** call `propose_edit` handler without a recorded approval → no file change.
+**Objective.** Be able to prove, live, that the agent cannot change a file or run a command without approval, and harden the edge cases.
 
-## Kunjal — context engine, retrieval, QA lead
+**Do.**
+1. Read `server.ts` and the approval registry (`approvals.ts`). Explain grant fingerprints to the team in 5 minutes.
+2. Run the `security-review` skill on `src/mcp` and `src/safety`; fix confirmed findings with tests.
+3. Add tests for these cases:
+   - two `propose_edit` calls on the same file in one pause, where the second proposal's base is stale after the first is applied: it must be a conflict, not a corrupt write;
+   - a proposal on a file the user edits in an unsaved buffer;
+   - CRLF files;
+   - new files in new directories;
+   - `run_command` with a `cwd` outside the workspace.
+4. In F5 with a real proposal, check the CodeLens Accept/Reject in the diff editor, then **Undo change**, and confirm the editor's own Undo (⌘Z) behaves sensibly after an apply. Record it.
+5. Re-run the negative SSRF test: start TrueForge *without* `OUTBOUND_URL_ALLOWED_HOSTS` and confirm it can't reach the MCP server. Record the error text.
 
-**Files:** `src/context/*`, `tests/context/*`, `docs/ACCEPTANCE_TESTS.md` evidence.
+**Acceptance.** New tests pass; the security findings are fixed or recorded; there's a screen recording of the per-hunk CodeLens flow.
 
-**First task:** Q-1 Flask fixture, then `src/context/indexer.ts` + `search.ts`: walk the workspace (respect `.gitignore`), record size/lines, skip binaries and >512 KB; ripgrep keyword search with per-file hit counts.
-**Then:** `symbolSearch.ts` (Python `def`/`class`/top-level assignments by regex + line numbers; good enough and explainable) → `dependencyGraph.ts` (`import x`, `from .x import y`, relative resolution within `src/`) → `testDiscovery.ts` (`src/pkg/mod.py` ↔ `tests/test_mod.py`, plus test files that import the module) → doc pairing (`docs/**/*.rst|md` mentioning the module or its symbols) → `ranking.ts` + `tokenBudget.ts` + `contextReceipt.ts`.
-**Ranking v1 weights:** mention 100 · selection 80 · symbol def match 40 · path/name match 25 · keyword hits 3/hit (cap 30) · import neighbour 15 · test pair 20 · doc pair 15. Budget 24 000 est. tokens, per-file cap 6 000; over-cap → outline + ±30-line windows around hits.
-**Acceptance (golden test):** for the exact Task B prompt on Flask 3.1.3, `src/flask/cli.py`, `tests/test_cli.py`, `docs/cli.rst` are all in the top 5, total ≤ budget, and every item has a non-empty reason. For Task A's selection, `helpers.py` is first and `tests/test_helpers.py` is paired.
+## Kunjal: context engine, retrieval quality, QA lead
+**Branch:** `feat/context-engine` · **Owns:** `src/context/*`, `tests/context/*`, `scripts/tasks/*`, `docs/ACCEPTANCE_TESTS.md`.
+
+**Objective.** Make retrieval measurably good beyond the two fixed tasks, and run QA for the whole team.
+
+**Do.**
+1. `npx tsx scripts/receipt.ts fixtures/flask "<task>"` for at least **10 new realistic Flask tasks** (blueprints, sessions, JSON provider, templating, `url_for`, signals…). For each, record the expected files and the actual top 5 in `docs/RETRIEVAL_EVAL.md`, and compute recall@5.
+2. Improve ranking where recall@5 < 1 **without** regressing the golden tests, for example by weighting the click `command` symbols, using `__all__` exports, or tuning the doc-pairing threshold.
+3. Check the receipt's honesty: every "Left out" reason must be true; add a test that over-budget items really didn't fit.
+4. Own the task scripts. Run `verify-task-*.sh` after every teammate merge, and keep `ACCEPTANCE_TESTS.md` filled with dated evidence.
+5. Large-repo check: run the receipt on a bigger repository (e.g. a clone of `pallets/werkzeug`) and record index time and memory.
+
+**Acceptance.** `RETRIEVAL_EVAL.md` exists with ≥ 12 tasks and recall@5; the golden tests still pass; the large-repo numbers are recorded.
+
+---
+
+## Integration calendar
+| When | Who | What |
+|---|---|---|
+| Wed 13:00 | Manthan | recorded streams committed; first live Task A |
+| Wed 21:00 | all | merge round 1; Kunjal runs the verify scripts |
+| Thu 18:00 | Manthan | Tasks B and C live |
+| Thu 21:00 | all | merge round 2; feature freeze |
+| Fri 12:00 | Manthan + Vivan | record the video; Kunjal + Manthan write the write-up |
+| Fri 18:00 | Manthan | public repo + links submitted |
