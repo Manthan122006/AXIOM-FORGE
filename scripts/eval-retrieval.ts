@@ -38,15 +38,33 @@ export const TASKS: EvalTask[] = [
   { id: 'E9 instance path', task: 'Change how the default instance folder path is found for namespace packages and update the instance config tests.', expected: ['src/flask/sansio/app.py', 'tests/test_instance_config.py'] },
   { id: 'E10 config from file signal', task: 'Send a new signal whenever configuration is loaded from a file, document it with the other signals and test it.', expected: ['src/flask/config.py', 'src/flask/signals.py', 'docs/signals.rst', 'tests/test_signals.py'] },
   { id: 'E11 json tag', task: 'Support tagging Python Decimal values in the session serializer tags so they round-trip, with a test.', expected: ['src/flask/json/tag.py', 'tests/test_json_tag.py'] },
+  // ---- Held-out set H1–H12: written and committed BEFORE any Phase 3 ranking change (see RETRIEVAL_EVAL.md).
+  // Ground truth checked with grep on Flask 3.1.3. Not to be edited to make numbers go up.
+  { id: 'H1 prefixed env sep', task: 'Add an option to Config.from_prefixed_env to use a custom separator for nested keys instead of double underscores; document it and add a test.', expected: ['src/flask/config.py', 'tests/test_config.py', 'docs/config.rst'] },
+  { id: 'H2 log request path', task: 'Make the default logging handler include the request method and path in each log line, and update the logging docs and tests.', expected: ['src/flask/logging.py', 'tests/test_logging.py', 'docs/logging.rst'] },
+  { id: 'H3 copy ctx async', task: 'Let copy_current_request_context also wrap async functions, with a test.', expected: ['src/flask/ctx.py', 'tests/test_reqctx.py'] },
+  { id: 'H4 form memory error', task: 'Raise a clearer error message when MAX_FORM_MEMORY_SIZE is exceeded, and add a request test for it.', expected: ['src/flask/wrappers.py', 'tests/test_request.py'] },
+  { id: 'H5 send dir name', task: 'Make send_from_directory fall back to a sensible download name when the requested file has no extension, with tests.', expected: ['src/flask/helpers.py', 'tests/test_helpers.py'] },
+  { id: 'H6 redirect debug msg', task: 'Improve the debug-mode error raised when a form POST gets redirected because the URL was defined with a trailing slash, so the message names the HTTP method; update the existing test.', expected: ['src/flask/debughelpers.py', 'tests/test_basic.py'] },
+  { id: 'H7 stream template list', task: 'Let stream_template accept a list of template names and use the first that exists, with tests and a note in the templating docs.', expected: ['src/flask/templating.py', 'tests/test_templating.py', 'docs/templating.rst'] },
+  { id: 'H8 blueprint cli group', task: "Allow a blueprint's cli_group to be changed after the blueprint is constructed, and cover it in the CLI tests.", expected: ['src/flask/sansio/blueprints.py', 'tests/test_cli.py'] },
+  { id: 'H9 auto options config', task: 'Add a configuration key that disables automatic OPTIONS responses for every route, and document it in the configuration docs.', expected: ['src/flask/sansio/app.py', 'docs/config.rst'] },
+  { id: 'H10 async install hint', task: 'Give a clearer install hint in the error raised when an async view is used without the async extra installed, and test it.', expected: ['src/flask/app.py', 'tests/test_async.py'] },
+  { id: 'H11 shell banner names', task: 'Make the interactive shell command list the names provided by shell context processors in its banner.', expected: ['src/flask/cli.py'] },
+  { id: 'H12 template attribute', task: 'Make get_template_attribute raise an error naming the template when the attribute is missing, with a templating test.', expected: ['src/flask/helpers.py', 'tests/test_templating.py'] },
 ];
+
+const split = (id: string) => (id.startsWith('H') ? 'heldout' : 'dev');
 
 async function main() {
   const engine = new ContextEngine('fixtures/flask');
   const t0 = performance.now();
   await engine.ready();
   const indexMs = performance.now() - t0;
-  const rows: Array<{ id: string; inCtx: number; r5: number; r10: number; selected: number; noise: number; tokens: number; ms: number; missing: string[]; top5: string[] }> = [];
+  const rows: Array<{ id: string; split: string; inCtx: number; r5: number; r10: number; selected: number; noise: number; dupes: number; tokens: number; budget: number; ms: number; missing: string[]; ranks: Record<string, number | null>; top5: string[] }> = [];
   for (const t of TASKS) {
+    // warm-up run is excluded from latency so the first task isn't penalised by JIT
+    if (rows.length === 0) await engine.assemble({ task: t.task });
     const s = performance.now();
     const { receipt } = await engine.assemble({ task: t.task, ...(t.selection ? { selection: t.selection } : {}) });
     const ms = performance.now() - s;
@@ -55,13 +73,23 @@ async function main() {
     const missing = t.expected.filter((e) => !ranked.includes(e));
     const inCtx = t.expected.filter((e) => ranked.includes(e)).length / t.expected.length;
     const noise = ranked.filter((p) => !t.expected.includes(p)).length;
-    rows.push({ id: t.id, inCtx, r5: at(5), r10: at(10), selected: ranked.length, noise, tokens: receipt.budget.usedTokens, ms: Math.round(ms), missing, top5: ranked.slice(0, 5) });
+    const dupes = ranked.length - new Set(ranked).size;
+    const ranks = Object.fromEntries(t.expected.map((e) => [e, ranked.includes(e) ? ranked.indexOf(e) + 1 : null]));
+    rows.push({ id: t.id, split: split(t.id), inCtx, r5: at(5), r10: at(10), selected: ranked.length, noise, dupes, tokens: receipt.budget.usedTokens, budget: receipt.budget.maxTokens, ms: Math.round(ms), missing, ranks, top5: ranked.slice(0, 5) });
   }
   if (process.argv.includes('--json')) return void console.log(JSON.stringify({ indexMs, rows }, null, 2));
   console.log(`index ${indexMs.toFixed(0)} ms\n`);
-  console.log('task                       ctx   R@5   R@10  sel noise tokens   ms  missing');
-  for (const r of rows) console.log(`${r.id.padEnd(26)} ${r.inCtx.toFixed(2)}  ${r.r5.toFixed(2)}  ${r.r10.toFixed(2)}  ${String(r.selected).padStart(3)} ${String(r.noise).padStart(5)} ${String(r.tokens).padStart(6)} ${String(r.ms).padStart(4)}  ${r.missing.join(', ')}`);
-  const mean = (k: 'r5' | 'r10' | 'inCtx') => rows.reduce((a, r) => a + r[k], 0) / rows.length;
-  console.log(`\nmean in-context recall ${mean('inCtx').toFixed(2)} · mean recall@5 ${mean('r5').toFixed(2)} · mean recall@10 ${mean('r10').toFixed(2)} · tasks with full recall@5: ${rows.filter((r) => r.r5 === 1).length}/${rows.length}`);
+  console.log('task                        split    ctx   R@5   R@10  sel dup tokens   ms  ranks of expected files');
+  for (const r of rows) console.log(`${r.id.padEnd(27)} ${r.split.padEnd(7)} ${r.inCtx.toFixed(2)}  ${r.r5.toFixed(2)}  ${r.r10.toFixed(2)}  ${String(r.selected).padStart(3)} ${String(r.dupes).padStart(3)} ${String(r.tokens).padStart(6)} ${String(r.ms).padStart(4)}  ${Object.entries(r.ranks).map(([f, k]) => `${f.split('/').pop()}:${k ?? '—'}`).join(' ')}`);
+  const summary = (label: string, rs: typeof rows) => {
+    const mean = (k: 'r5' | 'r10' | 'inCtx') => rs.reduce((a, r) => a + r[k], 0) / rs.length;
+    const ms = rs.map((r) => r.ms).sort((a, b) => a - b);
+    const tok = rs.reduce((a, r) => a + r.tokens, 0) / rs.length;
+    console.log(`${label.padEnd(9)} n=${String(rs.length).padStart(2)} · tasks fully in top 5: ${rs.filter((r) => r.r5 === 1).length}/${rs.length} (${((100 * rs.filter((r) => r.r5 === 1).length) / rs.length).toFixed(0)}%) · mean R@5 ${mean('r5').toFixed(2)} · mean R@10 ${mean('r10').toFixed(2)} · in-context ${mean('inCtx').toFixed(2)} · latency p50 ${ms[Math.floor(ms.length / 2)]} ms max ${ms[ms.length - 1]} ms · mean context ${Math.round(tok)} tokens`);
+  };
+  console.log('');
+  summary('dev', rows.filter((r) => r.split === 'dev'));
+  summary('held-out', rows.filter((r) => r.split === 'heldout'));
+  summary('all', rows);
 }
 void main();
