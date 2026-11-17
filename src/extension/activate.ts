@@ -7,7 +7,7 @@ import { stageProposeEdits } from '../safety/stage';
 let controller: AxiomController | null = null;
 
 /** Returned API is used only by the integration tests (tests/integration). */
-export async function activate(ctx: vscode.ExtensionContext): Promise<{ controller: AxiomController } | undefined> {
+export async function activate(ctx: vscode.ExtensionContext): Promise<{ controller: AxiomController; stageProposeEdits: typeof stageProposeEdits } | undefined> {
   const folder = vscode.workspace.workspaceFolders?.[0];
   const register = (id: string, fn: (...a: never[]) => unknown) => ctx.subscriptions.push(vscode.commands.registerCommand(id, fn));
   if (!folder || folder.uri.scheme !== 'file') {
