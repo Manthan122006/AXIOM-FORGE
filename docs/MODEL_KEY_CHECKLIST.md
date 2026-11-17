@@ -71,3 +71,11 @@ Caveat: provider error *texts* come through TrueForge and are matched by pattern
 | Groq free-tier limit | **7,000 input tokens/minute** for this model; one agent request is ~3k tokens (system + 7 tool schemas + history), so only ~2 requests fit per minute |
 | ModelShield changes from these runs | `tool_use_failed` is now `model_output` (retryable, not `tool_error`); provider retry hints are respected ("try again in 4.5s" → wait 4.75 s; a hint > 30 s skips retries and switches model at once) |
 | **Task C shape in real VS Code** (`AXIOM_LIVE_TASKC=1`) | ✅ primary 429 → retries → backup qwen → **inline edit proposed, accepted, applied** (`return False`) in 41 s; then the backup's final summary request hit the 7k/min limit, the run ended with an error and **was not replayed** because an approved write had happened (correct). On camera this ends with a red banner after a correct change |
+
+### Compact inline profile (18 Nov, ~01:00 IST)
+Inline edits (Tasks A and C) now use `agents/axiom-agent-inline.json`: only `read_file` + `propose_edit` (preloaded, edit approval-gated), no subagents, 699-character instructions, iteration limit 8. Agent mode keeps `agents/axiom-agent.json`.
+
+| Measure | Full agent | Inline agent |
+|---|---|---|
+| Input tokens of one request (TrueForge `turn.done` metrics, Groq qwen, no-tool turn; `scripts/measure-request.ts`) | 2,802 | **1,114** (−60%) |
+| Live Task-C-shaped run in real VS Code (primary `gemini-3-5-flash` real 429 → backup `groq/qwen-3-8-27b`) | 1 of 3 tries got the edit applied, then hit the 7k tokens/min limit | **3 of 3 clean**: edit proposed, accepted, applied, `turn.done{done}`, banner "Backup model … completed the request" (71 s, 29 s, 36 s; runs 60 s apart) |

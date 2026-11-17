@@ -45,7 +45,7 @@ Title card or voice-over: "AXIOM Forge: a VS Code coding agent on TrueForge. It 
 
 ## 2:35–3:35 Task C — resilience
 1. `bash scripts/tasks/reset-fixture.sh` (cut). In TrueForge Settings, break the Gemini key (off camera, or show the field with the value hidden).
-2. Repeat Task A exactly.
+2. Wait ≥ 60 s after any earlier Groq use (free tier: 7k input tokens/minute), then repeat Task A exactly. Inline edits use the compact agent `agents/axiom-agent-inline.json`.
 3. Show the banner: *Retrying …* (only for transient failures) → *Running on backup model …* → *Backup model … completed the request*. The editor stays usable: scroll and type in another file while it runs.
 4. Before accepting: terminal `git status` → clean. Then accept → `FLASK_DEBUG=off python -c "…"` → **False**.
 5. (If fallback isn't configured: show the clear error and `git status` clean. That earns the 4-point anchor, not 10.)

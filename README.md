@@ -43,7 +43,7 @@ git clone <this repo> axiom-forge && cd axiom-forge && npm ci && npm run build
    npm run fixture:flask
    ```
 4. **Run the extension:** open this folder in VS Code and press **F5** ("Run AXIOM Forge (Flask fixture)"). It opens `fixtures/flask` with the extension loaded; the MCP server starts on `127.0.0.1:7811` and registers itself in TrueForge.
-5. **Load the agent definition** ([agents/axiom-agent.json](agents/axiom-agent.json)): Command Palette → **AXIOM Forge: Register MCP Server and Agent in TrueForge**, pick the primary model. Optionally set `axiomForge.models.primary` / `axiomForge.models.backup` in settings for automatic fallback.
+5. **Load the agent definition** ([agents/axiom-agent.json](agents/axiom-agent.json) for agent mode; inline edits use the compact [agents/axiom-agent-inline.json](agents/axiom-agent-inline.json), sent with each session): Command Palette → **AXIOM Forge: Register MCP Server and Agent in TrueForge**, pick the primary model. Optionally set `axiomForge.models.primary` / `axiomForge.models.backup` in settings for automatic fallback.
    Headless alternative: `npx tsx scripts/setup-trueforge.ts --model <name>`.
 6. **Check the wiring** (no keys needed; never calls a provider): `npx tsx scripts/preflight.ts [--primary <name> --backup <name>]`. It checks the agent definition, TrueForge reachability, configured models, that TrueForge lists the 7 MCP tools, and that a TrueForge outage is classified differently from a provider failure. Model-dependent steps are listed as UNVERIFIED until you run [docs/MODEL_KEY_CHECKLIST.md](docs/MODEL_KEY_CHECKLIST.md).
 

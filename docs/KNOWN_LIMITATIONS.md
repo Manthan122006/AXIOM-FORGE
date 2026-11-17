@@ -1,7 +1,7 @@
 # Known Limitations (honest list, kept current)
 
 ## Found in live runs (18 Nov)
-- **Groq `gpt-oss-20b` can't finish a tool-using turn** (TrueForge echoes `reasoning_content`, Groq rejects it with HTTP 400; classified `bad_config`). **Groq `qwen-3-8-27b` works but is unreliable on the free tier**: 7,000 input tokens/minute (~2 agent requests per minute) and occasional malformed tool calls (`tool_use_failed`, now retried as `model_output`). A Task C run applies the backup's edit but can end with a rate-limit error on the final message.
+- **Groq `gpt-oss-20b` can't finish a tool-using turn** (TrueForge echoes `reasoning_content`, Groq rejects it with HTTP 400; classified `bad_config`). **Groq `qwen-3-8-27b` works but is unreliable on the free tier**: 7,000 input tokens/minute (~2 agent requests per minute) and occasional malformed tool calls (`tool_use_failed`, now retried as `model_output`). With the compact inline profile (~1.1k tokens per request) Task C ran clean 3 of 3 times, 60 s apart; back-to-back runs within one minute can still hit the limit, and agent-mode (Task B) turns on this backup would exceed it.
 - **Gemini free tier: 20 requests/day and 5/minute per model.** Long turns can hit the per-minute limit mid-run; daily quotas run out after a few runs. Plan rehearsals and recording around it, or use a paid key.
 - Gemini occasionally returns no response headers before TrueForge's timeout (`Headers Timeout`, ~30–64 s); classified `timeout` and retried by ModelShield.
 

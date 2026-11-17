@@ -6,7 +6,7 @@
 - [x] TrueForge in local mode (`npx @truefoundry/trueforge@0.185.1`)
 - [ ] Models configured **in TrueForge** (`scripts/preflight.ts` shows no BLOCKED rows); extension never calls a provider (enforced by an eslint import ban) and works with any TrueForge model
 - [ ] Video shows the TrueForge session for Task B
-- [x] Repo contains the agent definition used (`agents/axiom-agent.json`): **re-check it matches what was used in the video**
+- [x] Repo contains the agent definitions used: `agents/axiom-agent.json` (agent mode, Task B) and `agents/axiom-agent-inline.json` (inline edits, Tasks A and C): **re-check both match what was used in the video**
 
 ## Artefact 1: video (public link)
 - [ ] ≤ 4:00; editor visible; A → B → C; each verified on screen (`DEMO_SCRIPT.md`)

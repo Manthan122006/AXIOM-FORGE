@@ -355,8 +355,8 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
         `INLINE EDIT of \`${t.inline.rel}\`, lines ${t.inline.startLine}-${t.inline.endLine} (the user's selection).`,
         `Selected code:\n${fence}\n${t.inline.selectedText}\n${fence}`,
         `Instruction: ${t.text}`,
-        'Change only the selected region (plus anything strictly required, such as its docstring). You may read surrounding lines with read_file. ' +
-          `Then call propose_edit once for \`${t.inline.rel}\`, using old_text copied exactly from the file. Do not run commands. Finish with one sentence describing the change.`,
+        'Change only the selected region (plus anything strictly required, such as its docstring). If the selection is enough, call propose_edit directly; otherwise read the lines you need with read_file. ' +
+          `Call propose_edit once for \`${t.inline.rel}\`, using old_text copied exactly from the file. Do not run commands. Finish with one short sentence.`,
       ].join('\n\n');
     }
     const mentions = t.mentions.length ? `\n\nThe user mentioned: ${t.mentions.map((m) => `@${m.value} (${m.kind})`).join(', ')}. Pass these as \`mentions\` to assemble_context.` : '';
@@ -422,8 +422,11 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
       const sessionId = await this.tf.createSession({
         agentName: cfg().get<string>('agentName', 'axiom-forge'),
         model,
-        preferSaved: model === this.agentModel,
-        inlineManifest: loadAgentDefinition(this.ctx.asAbsolutePath(path.join('agents', 'axiom-agent.json')), model).manifest,
+        // Inline edits (Tasks A/C) use a compact definition: 2 tools, short instructions, no
+        // subagents. One request costs ~1.1k input tokens instead of ~2.8k (measured with
+        // scripts/measure-request.ts), so low-quota backup models can finish the turn.
+        preferSaved: model === this.agentModel && !run.inline,
+        inlineManifest: loadAgentDefinition(this.ctx.asAbsolutePath(path.join('agents', run.inline ? 'axiom-agent-inline.json' : 'axiom-agent.json')), model).manifest,
       });
       run.sessionId = sessionId;
       this.state.session = { sessionId, turnId: null, model, modelSlot: slot, status: 'running' };
