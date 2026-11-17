@@ -41,3 +41,25 @@ Prereqs: TrueForge running (`OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]' npx -y @
 **No blind replay.** Fallback opens a *fresh* TrueForge session with the original request. Staged but unapproved proposals are discarded and grants revoked. If any approved write or command already ran in the failed attempt, ModelShield stops (`side_effects`) and tells the user, instead of re-running the request.
 
 Caveat: provider error *texts* come through TrueForge and are matched by pattern. Steps 13 and 16 are where we confirm the real wording; add any new pattern with a unit test.
+
+## Live results (18 Nov 2026, 00:15–00:30 IST; TrueForge 0.185.1; recordings in `tests/fixtures/trueforge-events/recorded/`, replayed by `tests/trueforge/recorded.test.ts`)
+
+| Step | Result | Evidence |
+|---|---|---|
+| 0 Preflight | ✅ no FAIL/BLOCKED with `--primary google-gemini/gemini-3-5-flash --backup groq/gpt-oss-20b` | `docs/evidence/preflight-with-keys.txt` |
+| 1–2 Providers / names | ✅ 13 Gemini models + `groq/gpt-oss-20b` | `/api/v1/models` |
+| 3 Gemini through TrueForge | ✅ (after one transient `Headers Timeout`) | `gemini-readonly-assemble-context.json`, `gemini-headers-timeout.json` |
+| 4 Groq + tool calling | ⚠️ **first tool call works, the next request fails 400**: TrueForge echoes `reasoning_content` and Groq rejects it for `gpt-oss-20b` | `groq-reasoning-content-400.json` |
+| 5–6 Agent saved, 7 tools | ✅ | proof log `[setup]`, `[trueforge→mcp]` |
+| 7–9 propose_edit → pause → approve → applied → resume | ✅ file changed, turn `done` | `gemini-allow-edit-and-pytest.json` |
+| 9b merged same-file edits from a real model | ⏳ not observed yet (the model made one edit per file) | |
+| 10 Deny | ✅ reason reaches the model, 0 files changed | `gemini-lite-deny.json` |
+| 11 Cancel | ✅ `turn.done{cancelled, client-cancelled}`, 0 files changed | `gemini-lite-cancel.json` |
+| 12 Approved args reach MCP unchanged | ✅ for `propose_edit` and `run_command` (grant matched, applied/ran) | same allow recording |
+| — Deferred tool via `call_tool` | 🐞 found and fixed: an approved deferred `run_command` was refused (no grant matched). Now unwrapped; `run_command` also preloaded | `gemini-allow-edit-deferred-run-command-before-fix.json` |
+| 13–15 Fallback | ✅ **in real VS Code**: primary `gemini-3-5-flash` (real 429) → retry 1/2 → retry 2/2 → backup `groq/gpt-oss-20b` on a fresh session → `done`, workspace unchanged, 23.7 s. Only a no-tool prompt: a tool-using turn on this Groq model fails (step 4) | `AXIOM_LIVE_PRIMARY=… AXIOM_LIVE_BACKUP=… npm run test:vscode` |
+| 16 No-backup variant | covered by the earlier real-TrueForge test (exhausted, clean) | `test:vscode` B/I/J |
+| Task A on agent output | ✅ `verify-task-a.sh` PASS (gemini-3-5-flash-lite, via `proof.ts`, not yet via the ⌘I UI) | `gemini-lite-task-a.json` |
+| Task B on agent output | ⏳ **not run to completion**: `gemini-3-6-flash` daily quota already used, `gemini-3-7-flash` timed out | |
+
+**Free-tier limits measured (Google error payload):** 20 requests/day and 5 requests/minute **per model**. One agent turn uses one request per step: the allow+pytest run used ~6, so Task B (~10–15 steps) may not fit in a single model's daily quota, and 5/minute can end a long turn early (`gemini-429-mid-turn.json`).

@@ -29,14 +29,15 @@ Legend: ✅ passed (real) · 🧪 passed with a labelled simulation · ⏳ block
 | UI | AA contrast, 5 colours × 2 themes | `webview/src/theme.test.ts` | ✅ | 17 Nov |
 | UI | 360/420/520 px, focus ring, no overflow, reduced-motion rule | browser preview | ✅ (preview) | 17 Nov |
 | UI | live data inside VS Code | F5 with a model | ⏳ | |
-| TrueForge | model calls propose_edit; approval pause; args; allow → resume | `scripts/proof.ts` | ⏳ | |
-| TrueForge | deny | `proof.ts --deny` | ⏳ | |
-| TrueForge | cancel mid-turn | `proof.ts --cancel-after 4` | ⏳ | |
-| TrueForge | approved args reach MCP unchanged (grant matches) | proof step 12 | ⏳ | |
+| TrueForge | model calls propose_edit; approval pause; args; allow → resume | `scripts/proof.ts` (Gemini) | ✅ real | 18 Nov |
+| TrueForge | deny | `proof.ts --deny` | ✅ real, 0 files changed | 18 Nov |
+| TrueForge | cancel mid-turn | `proof.ts --cancel-after 6` | ✅ real, 0 files changed | 18 Nov |
+| TrueForge | approved args reach MCP unchanged (grant matches) | proof step 12 | ✅ real (propose_edit + run_command, after the call_tool fix) | 18 Nov |
+| TrueForge | recorded real streams replayed | `tests/trueforge/recorded.test.ts` | ✅ 6 tests | 18 Nov |
 | TrueForge | subagent visible in session | Task B | ⏳ | |
-| Task A | official verification `False` on **agent** output | `verify-task-a.sh` | ⏳ | |
+| Task A | official verification `False` on **agent** output | `verify-task-a.sh` | ✅ PASS (via proof.ts; ⌘I UI ⏳) | 18 Nov |
 | Task B | pytest, --help, masked JSON, ≥3 files on **agent** output | `verify-task-b.sh` | ⏳ | |
-| Task C | invalid key → fallback → clean before accept | `verify-task-c.sh` | ⏳ | |
+| Task C | primary failure → fallback → clean | live `test:vscode` | ✅ real 429 → Groq, clean (no-tool prompt only; Groq fails tool turns) | 18 Nov |
 | Checker sanity | verify scripts fail on clean tree, pass on a hand-written reference fix | Phase 1 run | ✅ (reference fix = **test of the checker only**) | 17 Nov |
 | Clean clone | README steps from scratch on a 2nd Mac | Vivan or Kunjal | ⏳ (needs remote) | |
 | Secrets | no keys in history | `git log -p --all \| grep -E 'AIza…|gsk_…|sk-…|ghp_…'` | ✅ 0 matches (gitleaks not installed; re-run before publishing) | 17 Nov |

@@ -306,6 +306,39 @@ describe('AXIOM Forge in VS Code', () => {
     console.log(`      [event-loop] extension host lag during AXIOM operations: p50 ${Math.round(lag.percentile(50) / 1e6)} ms, p99 ${Math.round(lag.percentile(99) / 1e6)} ms, max ${Math.round(lag.max / 1e6)} ms`);
   });
 
+  // Opt-in LIVE test with real models in TrueForge (costs provider quota):
+  //   AXIOM_LIVE_PRIMARY=<failing or real model> AXIOM_LIVE_BACKUP=<model> npm run test:vscode
+  it('[LIVE, real models] ModelShield: primary failure → retries → backup on a fresh session; workspace unchanged', async function () {
+    const primary = process.env.AXIOM_LIVE_PRIMARY;
+    const backup = process.env.AXIOM_LIVE_BACKUP;
+    const c = api.controller;
+    if (!primary || !backup || c.state.connection.kind !== 'connected') return this.skip();
+    this.timeout(240000);
+    const conf = vscode.workspace.getConfiguration('axiomForge');
+    await conf.update('models.primary', primary, vscode.ConfigurationTarget.Workspace);
+    await conf.update('models.backup', backup, vscode.ConfigurationTarget.Workspace);
+    const snapshot = () => fs.readdirSync(path.join(ws, 'pkg')).map((f) => f + ':' + fs.readFileSync(path.join(ws, 'pkg', f), 'utf8')).join('|');
+    const before = snapshot();
+    const states = [];
+    const t0 = Date.now();
+    const timer = setInterval(() => {
+      const r = JSON.stringify(c.state.recovery);
+      if (states[states.length - 1] !== r) states.push(r);
+    }, 50);
+    try {
+      await c.runTask({ text: 'Reply with the single word OK. Do not call any tools and do not change any files.', mentions: [] });
+    } finally {
+      clearInterval(timer);
+      const last = JSON.stringify(c.state.recovery);
+      if (states[states.length - 1] !== last) states.push(last);
+      await conf.update('models.primary', undefined, vscode.ConfigurationTarget.Workspace);
+      await conf.update('models.backup', undefined, vscode.ConfigurationTarget.Workspace);
+    }
+    console.log(`      [live model-shield] ${Date.now() - t0} ms; recovery states:\n        ${states.join('\n        ')}\n      session: ${JSON.stringify(c.state.session)}`);
+    assert.ok(states.some((s) => s.includes('"switching"') || s.includes('"fallback"') || s.includes(backup)), 'switched to the backup model');
+    assert.strictEqual(snapshot(), before, 'no file changed');
+  });
+
   it('inline edit without a selection warns instead of running', async () => {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
     const before = JSON.stringify(api.controller.state.session);

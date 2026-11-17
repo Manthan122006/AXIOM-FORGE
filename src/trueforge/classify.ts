@@ -16,6 +16,9 @@ export function classifyFailure(input: unknown): FailureClass {
   if (status === 401 || status === 403 || /\b(401|403)\b|unauthori[sz]ed|invalid[ _-]?(api[ _-]?)?key|api key not valid|incorrect api key|permission[ _-]denied|authentication|forbidden|invalid x-api-key/.test(msg)) return 'auth';
   if (status === 429 || /\b429\b|rate[ _-]?limit|quota|resource[ _-]?exhausted|too many requests/.test(msg)) return 'rate_limit';
   if (status === 404 || /model[^.]*not (found|exist|supported)|unknown model|no such model|model .* is not available|invalid model|not configured|model provider .* not found/.test(msg)) return 'bad_config';
+  // The provider refused the request itself (e.g. Groq rejecting `reasoning_content` echoed back by
+  // TrueForge for a reasoning model): retrying the same model can't help, another model might.
+  if (/\[model error\] request failed \((400|413|422)\)|is unsupported|not supported for this model/.test(msg)) return 'bad_config';
   if (/trueforge is not reachable/.test(msg)) return 'trueforge_error';
   if (/timed? ?out|etimedout|deadline|headers timeout|und_err_(headers|body)_timeout|connect_timeout/.test(msg)) return 'timeout';
   if (/econnrefused|enotfound|eai_again|ehostunreach|enetunreach|econnreset|socket hang up|fetch failed|network|getaddrinfo|outbound url blocked|connection (refused|error)|unreachable/.test(msg)) return 'unreachable';
@@ -37,7 +40,7 @@ export function describeFailure(c: FailureClass): string {
     case 'rate_limit':
       return 'The model provider is rate-limiting requests.';
     case 'bad_config':
-      return 'The configured model was not found or is not available.';
+      return 'The configured model was not found, is not available, or rejected the request.';
     case 'timeout':
       return 'The model provider did not respond in time.';
     case 'unreachable':

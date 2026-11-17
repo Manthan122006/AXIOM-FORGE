@@ -1,0 +1,17 @@
+PASS       agent definition                                                                  agents/axiom-agent.json: axiom-forge MCP, approval required for propose_edit, run_command
+PASS       TrueForge reachable                                                               http://localhost:8790 answered /api/v1/models
+PASS       models configured in TrueForge                                                    14 model(s): google-gemini/gemini-3-1-flash-lite, google-gemini/gemini-3-1-pro-preview, google-gemini/gemini-3-5-flash, google-gemini/gemini-3-5-flash-lite, google-gemini/gemini-3-6-flash, google-gemini/gemini-3-7-flash, …
+PASS       primary model exists                                                              google-gemini/gemini-3-5-flash
+PASS       backup model exists                                                               groq/gpt-oss-20b
+PASS       TrueForge lists the 7 MCP tools                                                   assemble_context, find_symbol, propose_edit, read_file, related_files, run_command, search_workspace (via a temporary MCP server)
+PASS       unknown model → bad_config (falls back)                                           422 → bad_config
+PASS       TrueForge down ≠ provider failure                                                 closed port → trueforge_error (ModelShield does not switch models for this)
+UNVERIFIED model calls read_file / propose_edit through TrueForge (MODEL_KEY_CHECKLIST 7–8)  not checked by preflight (needs a model run): see the live results in MODEL_KEY_CHECKLIST.md
+UNVERIFIED turn pauses on tool.approval_required; approve → write → resume (7, 9)            not checked by preflight (needs a model run): see the live results in MODEL_KEY_CHECKLIST.md
+UNVERIFIED deny → no write, model told why (10)                                              not checked by preflight (needs a model run): see the live results in MODEL_KEY_CHECKLIST.md
+UNVERIFIED cancel mid-turn → sessions.cancel, no write (11)                                  not checked by preflight (needs a model run): see the live results in MODEL_KEY_CHECKLIST.md
+UNVERIFIED approved arguments reach the MCP tool unchanged (12)                              not checked by preflight (needs a model run): see the live results in MODEL_KEY_CHECKLIST.md
+UNVERIFIED invalid primary key → backup model on a fresh session, workspace clean (13–16)    not checked by preflight (needs a model run): see the live results in MODEL_KEY_CHECKLIST.md
+UNVERIFIED Tasks A, B, C end to end (DEMO_SCRIPT.md + scripts/tasks/verify-task-*.sh)        not checked by preflight (needs a model run): see the live results in MODEL_KEY_CHECKLIST.md
+
+No failures; 0 blocked on keys; 7 model-dependent steps not checked by preflight.

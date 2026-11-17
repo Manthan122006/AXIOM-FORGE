@@ -23,6 +23,18 @@ function toolIdentity(call: TrueForge.ToolCall): { name: string; server: string 
   return { name: call.function?.name ?? 'unknown', server: null };
 }
 
+/**
+ * TrueForge invokes deferred (non-preloaded) MCP tools through its system tool `call_tool` with
+ * arguments `{ tool_name, input, mcp_server }` (observed live with 0.185.1, 18 Nov). Unwrap it so
+ * approval, grant fingerprints and the timeline see the real tool and the exact `input` the MCP
+ * server will receive.
+ */
+export function unwrapDeferred(name: string, server: string | null, args: Record<string, unknown> | null): { name: string; server: string | null; args: Record<string, unknown> | null } {
+  if (name !== 'call_tool' || server !== null || !args || typeof args.tool_name !== 'string') return { name, server, args };
+  const input = args.input && typeof args.input === 'object' && !Array.isArray(args.input) ? (args.input as Record<string, unknown>) : {};
+  return { name: args.tool_name, server: typeof args.mcp_server === 'string' ? args.mcp_server : null, args: input };
+}
+
 export function parseArgs(raw: string | undefined): Record<string, unknown> | null {
   if (!raw) return {};
   try {
@@ -162,8 +174,9 @@ export class TurnTracker {
     const msg = src ? this.messages.get(src) : [...this.messages.values()].find((m) => m.toolCalls?.some((c) => c.id === toolCallId));
     const call = msg?.toolCalls?.find((c) => c.id === toolCallId);
     if (!msg || !call) return undefined;
-    const { name, server } = toolIdentity(call);
-    return { toolCallId, toolName: name, server, args: parseArgs(call.function.arguments) ?? {}, rawArgs: call.function.arguments, threadId: msg.threadId };
+    const id = toolIdentity(call);
+    const { name, server, args } = unwrapDeferred(id.name, id.server, parseArgs(call.function.arguments));
+    return { toolCallId, toolName: name, server, args: args ?? {}, rawArgs: call.function.arguments, threadId: msg.threadId };
   }
 
   pendingApprovals(): string[] {
@@ -198,12 +211,12 @@ export class TurnTracker {
     }
     for (const call of msg.toolCalls ?? []) {
       if (!call.id) continue;
-      const { name, server } = toolIdentity(call);
       const raw = call.function.arguments;
       const existing = this.toolCalls.get(call.id);
       // While arguments stream in, the JSON is incomplete: only attempt a parse when it could be
       // complete (ends with "}"), so a 40 KB argument isn't re-parsed (and thrown on) per delta.
-      const args = !raw ? {} : raw.trimEnd().endsWith('}') ? parseArgs(raw) : null;
+      const ident = toolIdentity(call);
+      const { name, server, args } = unwrapDeferred(ident.name, ident.server, !raw ? {} : raw.trimEnd().endsWith('}') ? parseArgs(raw) : null);
       if (existing) {
         if (existing.toolName !== name || existing.server !== server || args) this.dirty.add(`tool:${call.id}`);
         existing.toolName = name;

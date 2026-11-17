@@ -68,3 +68,33 @@ describe('PerfLog', () => {
     expect(p.during(0, 100).map((s) => s.label).sort()).toEqual(['b', 'c']);
   });
 });
+
+import { classifyFailure as classify } from '../../src/trueforge/classify';
+
+describe('classifyFailure on messages recorded from live TrueForge runs (18 Nov)', () => {
+  it('Groq rejecting reasoning_content (HTTP 400) → bad_config: no retry, fall back', () => {
+    expect(classify("[Model Error] Request failed (400): 'messages.2' : for 'role:assistant' the following must be satisfied[('messages.2' : property 'reasoning_content' is unsupported)]")).toBe('bad_config');
+  });
+  it('Gemini 503 high demand → server (transient)', () => {
+    expect(classify('[Model Error] Request failed (503): This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.')).toBe('server');
+  });
+  it('provider headers timeout → timeout (transient)', () => {
+    expect(classify('[Model Error] Cannot connect to API: Headers Timeout Error')).toBe('timeout');
+  });
+});
+
+describe('deferred tools via TrueForge call_tool (observed live)', () => {
+  it('lookup unwraps call_tool → run_command with the exact input the MCP server receives', () => {
+    const t = new TurnTracker();
+    const args = JSON.stringify({ tool_name: 'run_command', input: { command: 'pytest tests/test_cli.py -q' }, mcp_server: 'axiom-forge' });
+    t.apply({ type: 'model.message', id: 'm', threadId: 'main', createdAt: 'x', content: null, toolCalls: [{ id: 'c1', type: 'function', function: { name: 'call_tool', arguments: args }, toolInfo: { type: 'truefoundry-system', name: 'call_tool' } }] } as Ev);
+    t.apply({ type: 'tool.approval_required', id: 'a', threadId: 'main', createdAt: 'x', toolCalls: [{ id: 'c1', sourceEventId: 'm' }] } as Ev);
+    expect(t.lookup('c1')).toMatchObject({ toolName: 'run_command', server: 'axiom-forge', args: { command: 'pytest tests/test_cli.py -q' } });
+    expect(t.toolCalls.get('c1')).toMatchObject({ toolName: 'run_command', server: 'axiom-forge', args: { command: 'pytest tests/test_cli.py -q' } });
+  });
+  it('call_tool for another server stays foreign (generic approval)', () => {
+    const t = new TurnTracker();
+    t.apply({ type: 'model.message', id: 'm', threadId: 'main', createdAt: 'x', content: null, toolCalls: [{ id: 'c2', type: 'function', function: { name: 'call_tool', arguments: '{"tool_name":"delete_all","input":{},"mcp_server":"other"}' }, toolInfo: { type: 'truefoundry-system', name: 'call_tool' } }] } as Ev);
+    expect(t.lookup('c2')).toMatchObject({ toolName: 'delete_all', server: 'other' });
+  });
+});

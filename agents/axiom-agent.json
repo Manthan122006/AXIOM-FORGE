@@ -12,7 +12,7 @@
         "name": "axiom-forge",
         "enable_tools": ["@all"],
         "require_approval_for_tools": ["propose_edit", "run_command"],
-        "preload_tools": ["assemble_context", "read_file", "propose_edit"],
+        "preload_tools": ["assemble_context", "read_file", "propose_edit", "run_command"],
         "preload": false
       }
     ],

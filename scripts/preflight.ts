@@ -102,11 +102,11 @@ void (async () => {
     'approved arguments reach the MCP tool unchanged (12)',
     'invalid primary key → backup model on a fresh session, workspace clean (13–16)',
     'Tasks A, B, C end to end (DEMO_SCRIPT.md + scripts/tasks/verify-task-*.sh)',
-  ]) row('UNVERIFIED', s, 'needs a real model in TrueForge');
+  ]) row('UNVERIFIED', s, 'not checked by preflight (needs a model run): see the live results in MODEL_KEY_CHECKLIST.md');
 
   const w = Math.max(...rows.map((r) => r[1].length));
   for (const [s, c, d] of rows) console.log(`${s.padEnd(10)} ${c.padEnd(w)}  ${d}`);
   const failed = rows.filter((r) => r[0] === 'FAIL').length;
-  console.log(`\n${failed ? `${failed} check(s) FAILED` : 'No failures'}; ${rows.filter((r) => r[0] === 'BLOCKED').length} blocked on keys; ${rows.filter((r) => r[0] === 'UNVERIFIED').length} model-dependent steps UNVERIFIED.`);
+  console.log(`\n${failed ? `${failed} check(s) FAILED` : 'No failures'}; ${rows.filter((r) => r[0] === 'BLOCKED').length} blocked on keys; ${rows.filter((r) => r[0] === 'UNVERIFIED').length} model-dependent steps not checked by preflight.`);
   process.exitCode = failed ? 1 : 0;
 })();

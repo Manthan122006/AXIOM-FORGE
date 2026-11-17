@@ -54,9 +54,9 @@ function describe(r: ModelRecoveryState): { cls: string; title: string; body: st
     case 'retrying':
       return { cls: 'wait', title: `Retrying ${r.model.split('/').pop()} (${r.attempt}/${r.maxAttempts})`, body: `Waiting ${(r.delayMs / 1000).toFixed(1)} s before the next attempt.` };
     case 'switching':
-      return { cls: 'wait', title: `Switching to backup model ${r.to.split('/').pop()}`, body: 'Starting a fresh TrueForge session with the same request. Nothing unapproved was written.' };
+      return { cls: 'wait', title: `Running on backup model ${r.to.split('/').pop()}`, body: `${r.from.split('/').pop()} failed, so AXIOM Forge started a fresh TrueForge session on the backup with the same request. Nothing unapproved was written.` };
     case 'recovered':
-      return { cls: 'ok', title: `Running on backup model ${r.model.split('/').pop()}`, body: 'The primary model failed; the backup took over automatically.' };
+      return { cls: 'ok', title: `Backup model ${r.model.split('/').pop()} completed the request`, body: 'The primary model failed; the backup took over automatically.' };
     case 'exhausted':
       return { cls: 'bad', title: 'No model could complete the request', body: `${r.message} Tried: ${r.tried.join(', ')}. Your files are unchanged.` };
   }

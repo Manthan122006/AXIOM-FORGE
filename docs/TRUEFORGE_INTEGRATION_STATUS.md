@@ -1,6 +1,8 @@
 # TrueForge Integration Status
 
-Pinned: **TrueForge server 0.185.1** (`npx -y @truefoundry/trueforge@0.185.1`), **@truefoundry/trueforge-sdk 0.185.0**, **@modelcontextprotocol/sdk 1.32.2**. Last updated 2026-11-17 21:00 IST.
+Pinned: **TrueForge server 0.185.1** (`npx -y @truefoundry/trueforge@0.185.1`), **@truefoundry/trueforge-sdk 0.185.0**, **@modelcontextprotocol/sdk 1.32.2**. Last updated 2026-11-18 00:35 IST.
+
+> **18 Nov, with real models:** propose_edit → approval pause → apply → resume, approved run_command (pytest exit 0), deny, cancel, approved-argument matching and ModelShield fallback (real 429 → Groq) are **verified live**. Task A passes on agent output. Found and fixed: deferred tools arrive as TrueForge's `call_tool`. Open: Groq `gpt-oss-20b` fails tool turns (`reasoning_content` 400); Gemini free-tier quotas (20/day, 5/min per model); Task B not yet completed. Full table: `MODEL_KEY_CHECKLIST.md` → "Live results".
 
 ## Verified against the live local server (real evidence)
 
