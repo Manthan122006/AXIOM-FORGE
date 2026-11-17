@@ -52,9 +52,20 @@ export const TASKS: EvalTask[] = [
   { id: 'H10 async install hint', task: 'Give a clearer install hint in the error raised when an async view is used without the async extra installed, and test it.', expected: ['src/flask/app.py', 'tests/test_async.py'] },
   { id: 'H11 shell banner names', task: 'Make the interactive shell command list the names provided by shell context processors in its banner.', expected: ['src/flask/cli.py'] },
   { id: 'H12 template attribute', task: 'Make get_template_attribute raise an error naming the template when the attribute is missing, with a templating test.', expected: ['src/flask/helpers.py', 'tests/test_templating.py'] },
+  // ---- Fresh set F1–F8: written and committed AFTER the Phase 3 ranking changes and scored once,
+  // with no ranking change afterwards. This is the honest generalisation number (H1–H12 were
+  // partly inspected while designing the changes; see RETRIEVAL_EVAL.md).
+  { id: 'F1 build error params', task: 'When building a URL fails, make the error message list the parameters the endpoint accepts, and test it.', expected: ['src/flask/sansio/app.py', 'tests/test_basic.py'] },
+  { id: 'F2 abort description', task: 'Make abort accept a description keyword that is passed to the HTTP exception, with tests.', expected: ['src/flask/helpers.py', 'tests/test_helpers.py'] },
+  { id: 'F3 cli runner env', task: 'Let the CLI test runner take default environment variables that apply to every invoke call, with a test.', expected: ['src/flask/testing.py', 'tests/test_testing.py'] },
+  { id: 'F4 accepts json', task: 'Add a request property that reports whether the client accepts a JSON response based on the Accept header, with a test.', expected: ['src/flask/wrappers.py', 'tests/test_request.py'] },
+  { id: 'F5 bp hooks endpoints', task: 'Let blueprint before_request hooks be limited to a given set of endpoints, with tests and an update to the blueprint docs.', expected: ['src/flask/sansio/blueprints.py', 'tests/test_blueprints.py', 'docs/blueprints.rst'] },
+  { id: 'F6 cookie size warning', task: 'Log a warning when the serialized session cookie is larger than browsers accept.', expected: ['src/flask/sessions.py'] },
+  { id: 'F7 routes reverse sort', task: 'Let the command that lists URL routes sort in reverse order, and test it.', expected: ['src/flask/cli.py', 'tests/test_cli.py'] },
+  { id: 'F8 response tuple headers', task: 'Make view return tuples accept headers given as a list of pairs together with a status, and test it.', expected: ['src/flask/app.py', 'tests/test_basic.py'] },
 ];
 
-const split = (id: string) => (id.startsWith('H') ? 'heldout' : 'dev');
+const split = (id: string) => (id.startsWith('H') ? 'heldout' : id.startsWith('F') ? 'fresh' : 'dev');
 
 async function main() {
   const engine = new ContextEngine('fixtures/flask');
@@ -75,7 +86,7 @@ async function main() {
     const noise = ranked.filter((p) => !t.expected.includes(p)).length;
     const dupes = ranked.length - new Set(ranked).size;
     const ranks = Object.fromEntries(t.expected.map((e) => [e, ranked.includes(e) ? ranked.indexOf(e) + 1 : null]));
-    rows.push({ id: t.id, split: split(t.id), inCtx, r5: at(5), r10: at(10), selected: ranked.length, noise, dupes, tokens: receipt.budget.usedTokens, budget: receipt.budget.maxTokens, ms: Math.round(ms), missing, ranks, top5: ranked.slice(0, 5) });
+    rows.push({ id: t.id, split: split(t.id), inCtx, r5: at(5), r10: at(10), selected: ranked.length, noise, dupes, tokens: receipt.budget.usedTokens, budget: receipt.budget.limitTokens, ms: Math.round(ms), missing, ranks, top5: ranked.slice(0, 5) });
   }
   if (process.argv.includes('--json')) return void console.log(JSON.stringify({ indexMs, rows }, null, 2));
   console.log(`index ${indexMs.toFixed(0)} ms\n`);
@@ -90,6 +101,7 @@ async function main() {
   console.log('');
   summary('dev', rows.filter((r) => r.split === 'dev'));
   summary('held-out', rows.filter((r) => r.split === 'heldout'));
+  summary('fresh', rows.filter((r) => r.split === 'fresh'));
   summary('all', rows);
 }
-void main();
+if (process.argv[1]?.endsWith("eval-retrieval.ts")) void main();
