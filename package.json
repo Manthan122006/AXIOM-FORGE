@@ -1,0 +1,149 @@
+{
+  "name": "axiom-forge",
+  "displayName": "AXIOM Forge",
+  "description": "Editor-native, repository-aware coding agent powered by TrueForge. Understand the code. Justify every change. Verify before delivery.",
+  "version": "0.1.0",
+  "publisher": "axiom",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "vscode": "^1.125.0",
+    "node": ">=22.14.0"
+  },
+  "categories": [
+    "AI",
+    "Programming Languages"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "axiomForge",
+          "title": "AXIOM Forge",
+          "icon": "media/axiom.svg"
+        }
+      ]
+    },
+    "views": {
+      "axiomForge": [
+        {
+          "type": "webview",
+          "id": "axiomForge.agent",
+          "name": "Agent"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "axiomForge.inlineEdit",
+        "title": "AXIOM Forge: Edit Selection",
+        "category": "AXIOM Forge"
+      },
+      {
+        "command": "axiomForge.cancel",
+        "title": "AXIOM Forge: Cancel Run",
+        "category": "AXIOM Forge"
+      },
+      {
+        "command": "axiomForge.reconnect",
+        "title": "AXIOM Forge: Reconnect to TrueForge",
+        "category": "AXIOM Forge"
+      },
+      {
+        "command": "axiomForge.setupTrueForge",
+        "title": "AXIOM Forge: Register MCP Server and Agent in TrueForge",
+        "category": "AXIOM Forge"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "axiomForge.inlineEdit",
+        "key": "ctrl+i",
+        "mac": "cmd+i",
+        "when": "editorTextFocus && editorHasSelection"
+      },
+      {
+        "command": "axiomForge.cancel",
+        "key": "ctrl+shift+escape",
+        "mac": "cmd+shift+escape",
+        "when": "axiomForge.running"
+      }
+    ],
+    "configuration": {
+      "title": "AXIOM Forge",
+      "properties": {
+        "axiomForge.trueforgeUrl": {
+          "type": "string",
+          "default": "http://localhost:8790",
+          "description": "Base URL of your local TrueForge server."
+        },
+        "axiomForge.agentName": {
+          "type": "string",
+          "default": "axiom-forge",
+          "description": "Name of the saved TrueForge agent to run."
+        },
+        "axiomForge.models.primary": {
+          "type": "string",
+          "default": "",
+          "description": "TrueForge model name for the primary model (as listed in TrueForge Settings → Models). Empty = use the agent's own model."
+        },
+        "axiomForge.models.backup": {
+          "type": "string",
+          "default": "",
+          "description": "TrueForge model name to fall back to automatically when the primary fails. Empty = no fallback."
+        },
+        "axiomForge.mcpPort": {
+          "type": "number",
+          "default": 7811,
+          "description": "Port for the AXIOM Forge MCP server (bound to 127.0.0.1 only)."
+        },
+        "axiomForge.contextBudgetTokens": {
+          "type": "number",
+          "default": 24000,
+          "description": "Estimated-token budget for automatically assembled context."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "npm run build:ext && npm run build:webview",
+    "build:ext": "node scripts/build-extension.mjs",
+    "build:webview": "vite build --config webview/vite.config.ts",
+    "dev:webview": "vite --config webview/vite.config.ts",
+    "watch": "node scripts/build-extension.mjs --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p webview/tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm run lint && npm test && npm run build",
+    "fixture:flask": "bash scripts/setup-flask-fixture.sh"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@truefoundry/trueforge-sdk": "0.185.0",
+    "diff": "9.0.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/vscode": "1.125.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "esbuild": "0.28.2",
+    "eslint": "10.15.0",
+    "prettier": "3.10.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.73.0",
+    "vite": "8.3.8",
+    "vitest": "5.1.0"
+  }
+}
