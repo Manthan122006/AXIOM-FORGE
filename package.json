@@ -122,7 +122,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "npm run typecheck && npm run lint && npm test && npm run build",
-    "fixture:flask": "bash scripts/setup-flask-fixture.sh"
+    "fixture:flask": "bash scripts/setup-flask-fixture.sh",
+    "test:vscode": "npm run build:ext && node tests/integration/runTest.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.2",
@@ -131,13 +132,16 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@types/mocha": "10.0.10",
     "@types/node": "22.20.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@types/vscode": "1.125.0",
     "@vitejs/plugin-react": "6.3.0",
+    "@vscode/test-electron": "3.1.0",
     "esbuild": "0.28.2",
     "eslint": "10.15.0",
+    "mocha": "12.0.3",
     "prettier": "3.10.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",

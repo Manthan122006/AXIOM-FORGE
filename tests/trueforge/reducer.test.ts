@@ -153,3 +153,11 @@ describe('ModelShield', () => {
     expect(backoffDelay(10, policy, () => 1)).toBe(8000);
   });
 });
+
+import { loopbackCandidates } from '../../src/trueforge/client';
+describe('loopbackCandidates', () => {
+  it('probes IPv6 and IPv4 loopback for localhost (TrueForge 0.185.1 binds [::1] on macOS)', () => {
+    expect(loopbackCandidates('http://localhost:8790')).toEqual(['http://localhost:8790', 'http://[::1]:8790', 'http://127.0.0.1:8790']);
+    expect(loopbackCandidates('https://tf.example.com/')).toEqual(['https://tf.example.com']);
+  });
+});

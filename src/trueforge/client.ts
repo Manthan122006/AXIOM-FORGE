@@ -9,23 +9,49 @@ export interface TurnInput {
   text: string;
 }
 
-export class TrueForgeConnection {
-  readonly sdk: TrueForgeClient;
+/**
+ * TrueForge standalone may bind only to IPv6 loopback ([::1]); verified with 0.185.1 on macOS, where
+ * 127.0.0.1:8790 refuses connections. For a localhost base URL we therefore probe each loopback form.
+ */
+export function loopbackCandidates(baseUrl: string): string[] {
+  const u = new URL(baseUrl);
+  if (!['localhost', '127.0.0.1', '[::1]', '::1'].includes(u.hostname)) return [baseUrl.replace(/\/$/, '')];
+  const port = u.port ? `:${u.port}` : '';
+  const forms = [`${u.protocol}//${u.hostname === '::1' ? '[::1]' : u.hostname}${port}`, `${u.protocol}//localhost${port}`, `${u.protocol}//[::1]${port}`, `${u.protocol}//127.0.0.1${port}`];
+  return [...new Set(forms)];
+}
 
-  constructor(readonly baseUrl: string) {
-    this.sdk = new TrueForgeClient({ baseUrl, timeoutInSeconds: 900 });
+export class TrueForgeConnection {
+  sdk: TrueForgeClient;
+  /** The base URL that actually answered (may differ from the configured one for loopback). */
+  baseUrl: string;
+
+  constructor(readonly configuredUrl: string) {
+    this.baseUrl = configuredUrl.replace(/\/$/, '');
+    this.sdk = new TrueForgeClient({ baseUrl: this.baseUrl, timeoutInSeconds: 900 });
   }
 
   /** Real reachability check (no fake "connected"): lists models via the HTTP API. */
   async health(signal?: AbortSignal): Promise<{ ok: true; models: string[] } | { ok: false; reason: string }> {
-    try {
-      const res = await fetch(`${this.baseUrl.replace(/\/$/, '')}/api/v1/models`, { signal: signal ?? AbortSignal.timeout(3000) });
-      if (!res.ok) return { ok: false, reason: `TrueForge responded HTTP ${res.status}` };
-      const body = (await res.json()) as { data?: Array<{ name?: string; id?: string }> };
-      return { ok: true, models: (body.data ?? []).map((m) => m.name ?? m.id ?? '').filter(Boolean) };
-    } catch (e) {
-      return { ok: false, reason: `TrueForge is not reachable at ${this.baseUrl} (${(e as Error).message})` };
+    let lastError = '';
+    for (const base of loopbackCandidates(this.baseUrl === this.configuredUrl.replace(/\/$/, '') ? this.configuredUrl : this.baseUrl)) {
+      try {
+        const res = await fetch(`${base}/api/v1/models`, { signal: signal ?? AbortSignal.timeout(2500) });
+        if (!res.ok) {
+          lastError = `HTTP ${res.status}`;
+          continue;
+        }
+        const body = (await res.json()) as { data?: Array<{ name?: string; id?: string }> };
+        if (base !== this.baseUrl) {
+          this.baseUrl = base;
+          this.sdk = new TrueForgeClient({ baseUrl: base, timeoutInSeconds: 900 });
+        }
+        return { ok: true, models: (body.data ?? []).map((m) => m.name ?? m.id ?? '').filter(Boolean) };
+      } catch (e) {
+        lastError = (e as Error).message;
+      }
     }
+    return { ok: false, reason: `TrueForge is not reachable at ${this.configuredUrl} (${lastError})` };
   }
 
   /** Session on a saved agent, optionally overriding the model (used by ModelShield for the backup). */

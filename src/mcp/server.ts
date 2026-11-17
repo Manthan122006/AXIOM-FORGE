@@ -43,6 +43,17 @@ const runCommandShape = {
   cwd: z.string().optional().describe('Workspace-relative working directory (default: workspace root).'),
 };
 
+/**
+ * Normalise gated-tool arguments exactly as the MCP server will see them (zod strips unknown keys),
+ * so the approval fingerprint made from the model's tool call matches the invocation TrueForge sends.
+ */
+export function normalizeGatedArgs(tool: string, args: unknown): Record<string, unknown> | null {
+  const schema = tool === TOOL.proposeEdit ? z.object(proposeEditShape) : tool === TOOL.runCommand ? z.object(runCommandShape) : null;
+  if (!schema) return null;
+  const r = schema.safeParse(args);
+  return r.success ? (r.data as Record<string, unknown>) : null;
+}
+
 const text = (t: string, isError = false) => ({ content: [{ type: 'text' as const, text: t }], ...(isError ? { isError: true } : {}) });
 
 function guard<A>(fn: (a: A) => Promise<ReturnType<typeof text>>) {

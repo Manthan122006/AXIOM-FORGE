@@ -1,6 +1,7 @@
 **
 !dist/**
 !media/**
+!agents/**
 !package.json
 !LICENSE
 !README.md
