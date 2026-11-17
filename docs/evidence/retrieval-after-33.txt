@@ -1,0 +1,45 @@
+index 34 ms
+
+task                        split    ctx   R@5   R@10  sel dup tokens   ms  ranks of expected files
+B (official)                dev     1.00  1.00  1.00   12   0  23620   41  cli.py:1 test_cli.py:5 cli.rst:3
+A (official, selection)     dev     1.00  1.00  1.00   10   0  23932   20  helpers.py:1
+E1 session samesite         dev     1.00  0.50  1.00   12   0  23909   16  sessions.py:1 test_basic.py:6
+E2 json sort keys           dev     1.00  1.00  1.00    9   0  22799   18  provider.py:1 test_json.py:2
+E3 run host env             dev     1.00  1.00  1.00   10   0  23963   19  cli.py:1 test_cli.py:4 cli.rst:2
+E4 blueprint twice          dev     1.00  1.00  1.00   10   0  23518   17  blueprints.py:2 test_blueprints.py:1
+E5 flash categories         dev     1.00  0.50  1.00   11   0  21093   14  helpers.py:1 test_basic.py:6
+E6 template filter          dev     1.00  0.67  1.00   12   0  23630   22  app.py:6 test_templating.py:3 templating.rst:1
+E7 class views methods      dev     1.00  1.00  1.00   12   0  20858   26  views.py:1 test_views.py:3 views.rst:2
+E8 test client json         dev     1.00  1.00  1.00   10   0  23907   18  testing.py:1 test_testing.py:2
+E9 instance path            dev     1.00  1.00  1.00   10   0  23836   20  app.py:5 test_instance_config.py:2
+E10 config from file signal dev     1.00  1.00  1.00   12   0  22924   15  config.py:5 signals.py:2 signals.rst:3 test_signals.py:1
+E11 json tag                dev     1.00  1.00  1.00    9   0  23245   23  tag.py:1 test_json_tag.py:2
+H1 prefixed env sep         heldout 1.00  1.00  1.00    6   0  15679   22  config.py:1 test_config.py:2 config.rst:3
+H2 log request path         heldout 1.00  1.00  1.00   12   0  23474   17  logging.py:1 test_logging.py:2 logging.rst:3
+H3 copy ctx async           heldout 1.00  0.50  1.00   12   0  23019   15  ctx.py:1 test_reqctx.py:7
+H4 form memory error        heldout 1.00  1.00  1.00   11   0  23961   23  wrappers.py:1 test_request.py:2
+H5 send dir name            heldout 1.00  1.00  1.00   11   0  23849   24  helpers.py:1 test_helpers.py:2
+H6 redirect debug msg       heldout 1.00  1.00  1.00   10   0  23996   42  debughelpers.py:1 test_basic.py:5
+H7 stream template list     heldout 1.00  1.00  1.00   11   0  23599   29  templating.py:1 test_templating.py:3 templating.rst:2
+H8 blueprint cli group      heldout 1.00  1.00  1.00    9   0  23377   15  blueprints.py:5 test_cli.py:4
+H9 auto options config      heldout 1.00  1.00  1.00   10   0  23989   22  app.py:4 config.rst:2
+H10 async install hint      heldout 0.50  0.50  0.50   12   0  21357   26  app.py:— test_async.py:3
+H11 shell banner names      heldout 1.00  1.00  1.00    8   0  23951   22  cli.py:1
+H12 template attribute      heldout 1.00  1.00  1.00   12   0  23746   21  helpers.py:1 test_templating.py:3
+F1 build error params       fresh   0.00  0.00  0.00   11   0  23963   25  app.py:— test_basic.py:—
+F2 abort description        fresh   1.00  1.00  1.00   10   0  23908   15  helpers.py:2 test_helpers.py:1
+F3 cli runner env           fresh   1.00  1.00  1.00    8   0  22410   22  testing.py:2 test_testing.py:5
+F4 accepts json             fresh   0.50  0.00  0.50    8   0  23944   23  wrappers.py:6 test_request.py:—
+F5 bp hooks endpoints       fresh   1.00  1.00  1.00   10   0  23994   20  blueprints.py:2 test_blueprints.py:3 blueprints.rst:5
+F6 cookie size warning      fresh   1.00  1.00  1.00   10   0  23741   18  sessions.py:1
+F7 routes reverse sort      fresh   1.00  1.00  1.00    9   0  23322   19  cli.py:1 test_cli.py:2
+F8 response tuple headers   fresh   1.00  0.00  1.00   12   0  23563   28  app.py:6 test_basic.py:9
+
+dev       precision@5 0.43 · share of context tokens spent on ground-truth files 26%
+dev       n=13 · tasks fully in top 5: 10/13 (77%) · mean R@5 0.90 · mean R@10 1.00 · in-context 1.00 · latency p50 19 ms max 41 ms · mean context 23172 tokens
+held-out  precision@5 0.40 · share of context tokens spent on ground-truth files 24%
+held-out  n=12 · tasks fully in top 5: 10/12 (83%) · mean R@5 0.92 · mean R@10 0.96 · in-context 0.96 · latency p50 22 ms max 42 ms · mean context 22833 tokens
+fresh     precision@5 0.25 · share of context tokens spent on ground-truth files 21%
+fresh     n= 8 · tasks fully in top 5: 5/8 (63%) · mean R@5 0.63 · mean R@10 0.81 · in-context 0.81 · latency p50 22 ms max 28 ms · mean context 23606 tokens
+all       precision@5 0.38 · share of context tokens spent on ground-truth files 24%
+all       n=33 · tasks fully in top 5: 25/33 (76%) · mean R@5 0.84 · mean R@10 0.94 · in-context 0.94 · latency p50 21 ms max 42 ms · mean context 23154 tokens

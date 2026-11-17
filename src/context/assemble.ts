@@ -7,8 +7,9 @@ import { findSymbol, type SymbolIndex } from './symbols';
 
 export const STRATEGY =
   'Hybrid local retrieval: explicit @mentions and the editor selection are always included; other files are scored by ' +
-  'IDF-weighted keyword hits, path/name matches, symbol definitions, one-hop import neighbours, and test/doc pairing; ' +
-  'then deduplicated and packed greedily into a token budget, sending outlines plus focused line windows for large files.';
+  'BM25 keyword relevance, file/folder-name matches, definitions of code identifiers named in the task, one-hop imports, ' +
+  'and test/doc pairing in both directions (scaled by evidence); then packed greedily into a token budget, sending ' +
+  'outlines plus focused line windows for large files.';
 
 export interface AssembleInput {
   task: string;
@@ -17,6 +18,8 @@ export interface AssembleInput {
   budgetTokens?: number;
   perFileCapTokens?: number;
   maxItems?: number;
+  /** Evaluation only: signal families to switch off (ablation study in scripts/eval-retrieval.ts). */
+  ablate?: string[];
 }
 
 export interface AssembleOutput {
@@ -39,8 +42,11 @@ const STOP = new Set(
 export function stem(word: string): string {
   let w = word.toLowerCase();
   for (const suf of ['ations', 'ation', 'ings', 'ing', 'ies', 'es', 'ed', 's']) {
-    if (w.length - suf.length >= 4 && w.endsWith(suf)) {
+    const min = suf === 's' ? 3 : 4;
+    if (w.length - suf.length >= min && w.endsWith(suf) && !(suf === 's' && w.endsWith('ss'))) {
       w = w.slice(0, -suf.length) + (suf === 'ies' ? 'y' : '');
+      // "tagging" → "tagg" → "tag", "mapped" → "mapp" → "map"
+      if ((suf === 'ing' || suf === 'ings' || suf === 'ed') && /([b-df-hj-np-tv-z])\1$/.test(w) && !/(ll|ss|zz)$/.test(w)) w = w.slice(0, -1);
       break;
     }
   }
@@ -84,6 +90,16 @@ export function extractTerms(task: string): string[] {
   return [...terms].slice(0, 40);
 }
 
+/** Code-shaped tokens in the task (snake_case, CamelCase, dotted names, backticked), lowercased. */
+export function identifierTerms(task: string): Set<string> {
+  const out = new Set<string>();
+  for (const m of task.matchAll(/`([^`]{2,60})`/g)) out.add(m[1]!.toLowerCase());
+  for (const m of task.matchAll(/\b[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+\b/g)) out.add(m[0].toLowerCase());
+  for (const m of task.matchAll(/\b[a-z]+[A-Z][A-Za-z0-9]*\b|\b[A-Z][a-z0-9]+[A-Z][A-Za-z0-9]*\b/g)) out.add(m[0].toLowerCase());
+  for (const m of task.matchAll(/\b[A-Za-z_]\w*\.[A-Za-z_]\w*\b/g)) if (!/\.(py|rst|md|ts|js)$/.test(m[0])) out.add(m[0].toLowerCase());
+  return out;
+}
+
 function categorize(rel: string, f: FileEntry): RelevanceCategory {
   if (/(^|\/)tests?\//.test(rel) || /(^|\/)test_[^/]+\.py$/.test(rel) || /\.(test|spec)\.[jt]sx?$/.test(rel)) return 'test';
   if (f.lang === 'docs') return 'documentation';
@@ -118,7 +134,10 @@ export function assembleContext(
     if (!c) cands.set(f.rel, (c = { f, score: 0, signals: [], symbols: new Set(), hitLines: [], forced: false }));
     return c;
   };
+  const off = new Set(input.ablate ?? []);
+  const family: Record<string, string> = { identifier: 'symbol', symbol_def: 'symbol', test_pair: 'pairing', doc_pair: 'pairing', tested_by: 'pairing', documented_by: 'pairing', import: 'imports' };
   const add = (c: Candidate, signal: string, weight: number, detail: string) => {
+    if (off.has(family[signal] ?? signal)) return;
     c.score += weight;
     c.signals.push({ signal, weight: Math.round(weight * 10) / 10, detail });
   };
@@ -154,60 +173,107 @@ export function assembleContext(
     }
   }
 
-  // 2. Keyword evidence with IDF so ubiquitous words ("flask") don't dominate
+  // 2. Keyword evidence: BM25 (IDF + term-frequency saturation + file-length normalisation), so big
+  //    files that mention everything once don't outrank a focused file, and ubiquitous words don't dominate.
   const N = index.files.length || 1;
   const df = new Map<string, number>();
   for (const t of terms) df.set(t, index.files.reduce((n, f) => n + (f.lower.includes(t) ? 1 : 0), 0));
+  const avgLen = index.files.reduce((n, f) => n + f.lower.length, 0) / N || 1;
+  const K1 = 1.2;
+  const B = 0.75;
+  const idfOf = (t: string) => {
+    const d = df.get(t) ?? 0;
+    return Math.log(1 + (N - d + 0.5) / (d + 0.5));
+  };
+  const idents = identifierTerms(input.task);
   for (const f of index.files) {
     let kw = 0;
-    const hitTerms: string[] = [];
+    const hitTerms: Array<[string, number]> = [];
+    const norm = K1 * (1 - B + (B * f.lower.length) / avgLen);
     for (const t of terms) {
-      const d = df.get(t)!;
-      if (!d || !f.lower.includes(t)) continue;
-      const idf = Math.log(1 + N / d);
-      const count = Math.min(f.lower.split(t).length - 1, 10);
-      kw += idf * (1 + Math.log(count));
-      hitTerms.push(t);
+      if (!df.get(t) || !f.lower.includes(t)) continue;
+      const tf = Math.min(f.lower.split(t).length - 1, 50);
+      const s = idfOf(t) * ((tf * (K1 + 1)) / (tf + norm));
+      kw += s;
+      hitTerms.push([t, s]);
     }
     if (kw > 0) {
-      const c = cand(f);
-      add(c, 'keyword', Math.min(kw * 1.5, 35), `mentions ${hitTerms.slice(0, 5).map((t) => `"${t}"`).join(', ')}`);
+      hitTerms.sort((x, y) => y[1] - x[1]);
+      add(cand(f), 'keyword', Math.min(kw * 2.5, 60), `mentions ${hitTerms.slice(0, 5).map(([t]) => `"${t}"`).join(', ')}`);
     }
-    // path / name match
+    // path / name match: count distinct file-name parts matched (so "config" + "configuration" count once),
+    // plus a weaker match on the parent directory name (json/tag.py for "json").
     const fileStem = path.basename(f.rel).replace(/\.[^.]+$/, '').replace(/^test_/, '').toLowerCase();
-    const parts = [fileStem, ...fileStem.split(/[_\-.]/)];
-    const pathHits = terms.filter((t) => t.length >= 3 && parts.some((p) => p.length >= 3 && namesFile(t, p)));
-    if (pathHits.length) add(cand(f), 'path', 25 * Math.min(pathHits.length, 2), `file name matches "${pathHits[0]}"`);
+    const nameParts = [...new Set([fileStem, ...fileStem.split(/[_\-.]/)])].filter((p) => p.length >= 3);
+    const matchedParts = nameParts.filter((p) => terms.some((t) => t.length >= 3 && namesFile(t, p)));
+    // a whole-stem match subsumes its parts
+    const distinct = matchedParts.includes(fileStem) ? 1 + matchedParts.filter((p) => p !== fileStem && !fileStem.startsWith(p)).length : matchedParts.length;
+    if (distinct) {
+      const t = terms.find((x) => matchedParts.some((p) => namesFile(x, p)))!;
+      add(cand(f), 'path', 25 * Math.min(distinct, 2), `file name matches "${t}"`);
+    }
+    const dir = path.basename(path.dirname(f.rel)).toLowerCase();
+    if (dir.length >= 3 && !['src', 'lib', 'tests', 'test', 'docs', 'doc'].includes(dir) && terms.some((t) => namesFile(t, dir))) {
+      add(cand(f), 'path', 10, `folder name matches "${dir}"`);
+    }
   }
 
-  // 3. Symbol definitions named in the task
+  // 3. Symbol definitions named in the task. A code-shaped identifier (snake_case, CamelCase, dotted,
+  //    or in backticks) that is defined in a file is the strongest non-explicit signal; a plain English
+  //    word that happens to equal a function name ("get", "error") is weak and shrinks with how many
+  //    definitions share that name. Definitions inside test files count for less.
   for (const t of terms) {
-    for (const d of symbols.byName.get(t) ?? findSymbol(symbols, t).slice(0, 5)) {
-      if (d.kind === 'variable') continue;
+    const defs = findSymbol(symbols, t).filter((d) => d.kind !== 'variable');
+    if (!defs.length) continue;
+    const isIdent = idents.has(t);
+    if (!isIdent && t.length < 4) continue;
+    for (const d of defs.slice(0, 8)) {
       const f = index.byPath.get(d.rel);
       if (!f) continue;
       const c = cand(f);
       if (c.symbols.has(d.name)) continue;
       c.symbols.add(d.name);
       c.hitLines.push(d.line);
-      add(c, 'symbol_def', d.kind === 'command' ? 30 : 20, `defines ${d.kind} \`${d.name}\` (L${d.line})`);
+      const inTest = categorize(f.rel, f) === 'test';
+      const base = d.kind === 'command' ? 30 : isIdent ? 45 : 20 / Math.sqrt(defs.length);
+      add(c, isIdent ? 'identifier' : 'symbol_def', inTest ? base / 3 : base, `defines ${d.kind} \`${d.name}\` (L${d.line})`);
     }
   }
 
-  // 4. Relationship propagation from the strongest implementation candidates
-  const leaders = [...cands.values()]
+  // 4. Relationship propagation, scaled by the evidence of the file it comes from:
+  //    implementation → its tests/docs/imports, and (strong pairs only) a well-matched test or doc
+  //    page → the implementation it is named after.
+  const own = new Map([...cands.values()].map((c) => [c.f.rel, c.score]));
+  const implLeaders = [...cands.values()]
     .filter((c) => c.forced || categorize(c.f.rel, c.f) === 'implementation')
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
-  for (const leader of leaders) {
+    .sort((x, y) => y.score - x.score)
+    .slice(0, 4);
+  const topImpl = implLeaders[0]?.score || 1;
+  for (const leader of implLeaders) {
+    const strength = leader.forced ? 1 : Math.min(1, leader.score / topImpl);
+    if (strength < 0.4) continue;
     for (const e of neighbours(graph, leader.f.rel)) {
       const otherRel = e.from === leader.f.rel ? e.to : e.from;
       const f = index.byPath.get(otherRel);
       if (!f) continue;
       const c = cand(f);
-      const w = e.kind === 'tests' ? (wantsTests ? 30 : 18) : e.kind === 'documents' ? (wantsDocs ? 28 : 12) : 8;
-      if (c.signals.some((s) => s.signal === `${e.kind}_pair` && s.detail.includes(leader.f.rel))) continue;
-      add(c, e.kind === 'imports' ? 'import' : `${e.kind === 'tests' ? 'test' : 'doc'}_pair`, w, `${e.reason} (related to ${leader.f.rel})`);
+      const sig = e.kind === 'imports' ? 'import' : e.kind === 'tests' ? 'test_pair' : 'doc_pair';
+      if (c.signals.some((x) => x.signal === sig && x.detail.includes(leader.f.rel))) continue;
+      const base = e.kind === 'tests' ? (wantsTests ? 30 : 18) : e.kind === 'documents' ? (wantsDocs ? 28 : 12) : 8;
+      add(c, sig, base * strength * (e.strength === 'strong' || e.kind === 'imports' ? 1 : 0.5), `${e.reason} (related to ${leader.f.rel})`);
+    }
+  }
+  const topAll = Math.max(1, ...own.values());
+  for (const c of [...cands.values()]) {
+    const cat = categorize(c.f.rel, c.f);
+    if (cat !== 'test' && cat !== 'documentation') continue;
+    const ev = own.get(c.f.rel) ?? 0;
+    if (ev < topAll * 0.5) continue;
+    for (const e of neighbours(graph, c.f.rel)) {
+      if (e.strength !== 'strong' || e.from !== c.f.rel) continue;
+      const f = index.byPath.get(e.to);
+      if (!f) continue;
+      add(cand(f), cat === 'test' ? 'tested_by' : 'documented_by', Math.min(25, ev * 0.3), `${e.reason} (${c.f.rel} matches the task)`);
     }
   }
 

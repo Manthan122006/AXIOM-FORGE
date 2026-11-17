@@ -5,7 +5,8 @@
 import { existsSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ContextEngine } from '../../src/context/engine';
-import { extractTerms } from '../../src/context/assemble';
+import { extractTerms, identifierTerms, stem } from '../../src/context/assemble';
+import { TASKS } from '../../scripts/eval-retrieval';
 
 const ROOT = 'fixtures/flask';
 const hasFixture = existsSync(`${ROOT}/src/flask/cli.py`);
@@ -28,12 +29,11 @@ describe.skipIf(!hasFixture)('context engine on Flask 3.1.3 (fixture)', () => {
     expect(receipt.repo.estTokensTotal).toBeGreaterThan(receipt.budget.limitTokens * 5);
   });
 
-  // Phase 2 audit: relaxed from "top 5" to "in context and top 6" after generic ranking changes
-  // (stemming, intent words) raised mean in-context recall on 13 tasks from 0.81 to 0.90; see docs/RETRIEVAL_EVAL.md.
-  it('Task B: puts implementation, test and docs in context (top 6) without file names', async () => {
+  // Phase 2 relaxed this to top 6; Phase 3's generic BM25/pairing changes put it back in the top 5.
+  it('Task B: puts implementation, test and docs in the top 5 without file names', async () => {
     const { receipt } = await engine.assemble({ task: TASK_B });
-    const top6 = receipt.selected.slice(0, 6).map((s) => s.path);
-    expect(top6).toEqual(expect.arrayContaining(['src/flask/cli.py', 'tests/test_cli.py', 'docs/cli.rst']));
+    const top5 = receipt.selected.slice(0, 5).map((s) => s.path);
+    expect(top5).toEqual(expect.arrayContaining(['src/flask/cli.py', 'tests/test_cli.py', 'docs/cli.rst']));
     const byPath = Object.fromEntries(receipt.selected.map((s) => [s.path, s]));
     expect(byPath['src/flask/cli.py']!.category).toBe('implementation');
     expect(byPath['tests/test_cli.py']!.category).toBe('test');
@@ -97,6 +97,23 @@ describe.skipIf(!hasFixture)('context engine on Flask 3.1.3 (fixture)', () => {
     expect(r.matches.every((m) => m.rel.startsWith('src/'))).toBe(true);
     expect(r.matches.some((m) => m.rel === 'src/flask/cli.py')).toBe(true);
   });
+
+  // Regression floor over the whole 33-task benchmark (scripts/eval-retrieval.ts), set at the measured
+  // Phase 3 values so a ranking change that loses ground fails. Raise only after a new measurement;
+  // never edit tasks to pass.
+  it('benchmark floors: >=25/33 tasks fully in top 5, mean in-context recall >= 0.93', async () => {
+    let full = 0;
+    let inCtx = 0;
+    for (const t of TASKS) {
+      const { receipt } = await engine.assemble({ task: t.task, ...(t.selection ? { selection: t.selection } : {}) });
+      const ranked = receipt.selected.map((x) => x.path);
+      if (t.expected.every((e) => ranked.slice(0, 5).includes(e))) full++;
+      inCtx += t.expected.filter((e) => ranked.includes(e)).length / t.expected.length;
+    }
+    expect(TASKS.length).toBe(33);
+    expect(full).toBeGreaterThanOrEqual(25);
+    expect(inCtx / TASKS.length).toBeGreaterThanOrEqual(0.93);
+  });
 });
 
 describe('extractTerms', () => {
@@ -105,6 +122,21 @@ describe('extractTerms', () => {
     expect(t).toEqual(expect.arrayContaining(['cli', 'command', 'config', 'json', 'secret', 'password', 'token', 'key']));
     expect(t).not.toContain('the');
     expect(t).not.toContain('must');
+  });
+});
+
+describe('retrieval text helpers', () => {
+  it('recognises code-shaped identifiers only', () => {
+    const ids = identifierTerms('Make get_template_attribute and `send_file` work with FormDataRoutingRedirect and Config.from_prefixed_env, not the word template.');
+    expect([...ids]).toEqual(expect.arrayContaining(['get_template_attribute', 'send_file', 'formdataroutingredirect', 'config.from_prefixed_env']));
+    expect(ids.has('template')).toBe(false);
+  });
+  it('stems doubled consonants and short plurals but keeps -ss words', () => {
+    expect(stem('tagging')).toBe('tag');
+    expect(stem('tags')).toBe('tag');
+    expect(stem('signals')).toBe('signal');
+    expect(stem('class')).toBe('class');
+    expect(stem('installed')).toBe('install');
   });
 });
 

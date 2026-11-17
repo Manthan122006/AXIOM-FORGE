@@ -12,6 +12,8 @@ export interface Edge {
   to: string;
   kind: 'imports' | 'tests' | 'documents';
   reason: string;
+  /** strong = naming convention / doc page named after the module; weak = inferred from imports or references. */
+  strength?: 'strong' | 'weak';
 }
 
 export interface RelationGraph {
@@ -86,7 +88,7 @@ export function buildRelations(index: RepoIndex, symbols: SymbolIndex): Relation
     const stem = path.basename(t.rel, '.py').replace(/^test_/, '');
     for (const s of sources) {
       if (path.basename(s.rel, '.py') === stem) {
-        addEdge(g, { from: t.rel, to: s.rel, kind: 'tests', reason: `naming convention: ${path.basename(t.rel)} ↔ ${path.basename(s.rel)}` });
+        addEdge(g, { from: t.rel, to: s.rel, kind: 'tests', strength: 'strong', reason: `naming convention: ${path.basename(t.rel)} ↔ ${path.basename(s.rel)}` });
       }
     }
     for (const e of g.out.get(t.rel) ?? []) {
@@ -103,7 +105,7 @@ export function buildRelations(index: RepoIndex, symbols: SymbolIndex): Relation
     for (const d of docs) {
       const dStem = path.basename(d.rel).replace(/\.(rst|md|txt)$/, '');
       if (dStem === stem && stem !== '__init__') {
-        addEdge(g, { from: d.rel, to: s.rel, kind: 'documents', reason: `doc page ${path.basename(d.rel)} matches module ${stem}` });
+        addEdge(g, { from: d.rel, to: s.rel, kind: 'documents', strength: 'strong', reason: `doc page ${path.basename(d.rel)} matches module ${stem}` });
       } else if (d.text.includes(`${mod}`) && d.lower.split(mod.toLowerCase()).length > 3) {
         addEdge(g, { from: d.rel, to: s.rel, kind: 'documents', reason: `references \`${mod}\` repeatedly` });
       }

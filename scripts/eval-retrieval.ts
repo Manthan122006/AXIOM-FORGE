@@ -67,12 +67,31 @@ export const TASKS: EvalTask[] = [
 
 const split = (id: string) => (id.startsWith('H') ? 'heldout' : id.startsWith('F') ? 'fresh' : 'dev');
 
+async function ablation(engine: ContextEngine) {
+  console.log('ablation (all 33 tasks): signal family switched off → tasks fully in top 5 · mean R@5 · in-context');
+  for (const fam of ['none', 'keyword', 'path', 'symbol', 'imports', 'pairing']) {
+    let full = 0;
+    let r5 = 0;
+    let ctx = 0;
+    for (const t of TASKS) {
+      const { receipt } = await engine.assemble({ task: t.task, ...(t.selection ? { selection: t.selection } : {}), ablate: fam === 'none' ? [] : [fam] });
+      const ranked = receipt.selected.map((x) => x.path);
+      const hit5 = t.expected.filter((e) => ranked.slice(0, 5).includes(e)).length / t.expected.length;
+      full += hit5 === 1 ? 1 : 0;
+      r5 += hit5;
+      ctx += t.expected.filter((e) => ranked.includes(e)).length / t.expected.length;
+    }
+    console.log(`  ${fam.padEnd(8)} ${String(full).padStart(2)}/${TASKS.length} · ${(r5 / TASKS.length).toFixed(2)} · ${(ctx / TASKS.length).toFixed(2)}`);
+  }
+}
+
 async function main() {
   const engine = new ContextEngine('fixtures/flask');
   const t0 = performance.now();
   await engine.ready();
   const indexMs = performance.now() - t0;
-  const rows: Array<{ id: string; split: string; inCtx: number; r5: number; r10: number; selected: number; noise: number; dupes: number; tokens: number; budget: number; ms: number; missing: string[]; ranks: Record<string, number | null>; top5: string[] }> = [];
+  if (process.argv.includes('--ablate')) return void (await ablation(engine));
+  const rows: Array<{ id: string; split: string; inCtx: number; r5: number; r10: number; selected: number; noise: number; dupes: number; tokens: number; budget: number; ms: number; missing: string[]; ranks: Record<string, number | null>; top5: string[]; p5: number; useful: number }> = [];
   for (const t of TASKS) {
     // warm-up run is excluded from latency so the first task isn't penalised by JIT
     if (rows.length === 0) await engine.assemble({ task: t.task });
@@ -86,7 +105,9 @@ async function main() {
     const noise = ranked.filter((p) => !t.expected.includes(p)).length;
     const dupes = ranked.length - new Set(ranked).size;
     const ranks = Object.fromEntries(t.expected.map((e) => [e, ranked.includes(e) ? ranked.indexOf(e) + 1 : null]));
-    rows.push({ id: t.id, split: split(t.id), inCtx, r5: at(5), r10: at(10), selected: ranked.length, noise, dupes, tokens: receipt.budget.usedTokens, budget: receipt.budget.limitTokens, ms: Math.round(ms), missing, ranks, top5: ranked.slice(0, 5) });
+    const p5 = ranked.slice(0, 5).filter((p) => t.expected.includes(p)).length / Math.min(5, ranked.length || 1);
+    const useful = receipt.selected.filter((x) => t.expected.includes(x.path)).reduce((a, x) => a + x.estTokens, 0) / Math.max(1, receipt.budget.usedTokens);
+    rows.push({ p5, useful, id: t.id, split: split(t.id), inCtx, r5: at(5), r10: at(10), selected: ranked.length, noise, dupes, tokens: receipt.budget.usedTokens, budget: receipt.budget.limitTokens, ms: Math.round(ms), missing, ranks, top5: ranked.slice(0, 5) });
   }
   if (process.argv.includes('--json')) return void console.log(JSON.stringify({ indexMs, rows }, null, 2));
   console.log(`index ${indexMs.toFixed(0)} ms\n`);
@@ -96,6 +117,9 @@ async function main() {
     const mean = (k: 'r5' | 'r10' | 'inCtx') => rs.reduce((a, r) => a + r[k], 0) / rs.length;
     const ms = rs.map((r) => r.ms).sort((a, b) => a - b);
     const tok = rs.reduce((a, r) => a + r.tokens, 0) / rs.length;
+    const p5 = rs.reduce((a, r) => a + r.p5, 0) / rs.length;
+    const useful = rs.reduce((a, r) => a + r.useful, 0) / rs.length;
+    console.log(`${label.padEnd(9)} precision@5 ${p5.toFixed(2)} · share of context tokens spent on ground-truth files ${(100 * useful).toFixed(0)}%`);
     console.log(`${label.padEnd(9)} n=${String(rs.length).padStart(2)} · tasks fully in top 5: ${rs.filter((r) => r.r5 === 1).length}/${rs.length} (${((100 * rs.filter((r) => r.r5 === 1).length) / rs.length).toFixed(0)}%) · mean R@5 ${mean('r5').toFixed(2)} · mean R@10 ${mean('r10').toFixed(2)} · in-context ${mean('inCtx').toFixed(2)} · latency p50 ${ms[Math.floor(ms.length / 2)]} ms max ${ms[ms.length - 1]} ms · mean context ${Math.round(tok)} tokens`);
   };
   console.log('');
