@@ -62,6 +62,11 @@ Two systematic causes: **(1)** large catch-all files (`app.py`, `sansio/app.py`,
 - Try a lower BM25 `b` for code than for prose, or a per-language average length.
 - Write ≥ 10 more fresh tasks *before* trying either, commit them, and report the before/after on those only.
 
+## 18 Nov: two generic fixes found during the product demo
+- A file- or folder-name match now only counts for words that appear in fewer than half the repo's files. Before, "flask" (in almost every file) made `templating.py`, `testing.py`, `__init__.py`, `typing.py` look relevant to any question mentioning Flask. Question words ("where", "whether", "why", …) joined the stop list.
+- The bundle header line for each file is now charged to the budget, so the whole bundle stays within 24k (it overran by ~120 tokens).
+- 33-task benchmark: **unchanged** (25/33 fully in top 5, R@5 0.84, in-context 0.94; fresh 5/8).
+
 ## History
 - Phase 1 engine, 13 tasks: mean R@5 0.74, in-context 0.81 (with task-specific stop words, removed in Phase 2).
 - Phase 2, 13 tasks: R@5 0.74, in-context 0.90, 5/13 fully in top 5.

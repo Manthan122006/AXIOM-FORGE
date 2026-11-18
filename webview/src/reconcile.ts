@@ -54,5 +54,6 @@ export function reconcile(prev: AxiomState, next: AxiomState): AxiomState {
     undoStack: same(prev.undoStack, next.undoStack) ? prev.undoStack : next.undoStack,
     verification: reconcileRecord(prev.verification, next.verification),
     recovery: same(prev.recovery, next.recovery) ? prev.recovery : next.recovery,
+    models: next.models === undefined || same(prev.models, next.models) ? prev.models : next.models,
   };
 }

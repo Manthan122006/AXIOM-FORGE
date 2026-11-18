@@ -106,11 +106,11 @@ export async function startPreview() {
   patch((s) => ({ ...s, session: { sessionId: 'preview', turnId: 'preview', model: 'google-gemini/gemini-3-5-flash', modelSlot: 'primary', status: 'running' } }));
   pushEv({ kind: 'user_message', id: 'u1', text: fixture.task, at: now() });
   if (mode === 'fallback') {
-    patch((s) => ({ ...s, recovery: { kind: 'failed', model: 'google-gemini/gemini-3-5-flash', failure: 'auth', message: '401 API key not valid.' } }));
+    patch((s) => ({ ...s, recovery: { kind: 'failed', model: 'google-gemini/gemini-3-5-flash', failure: 'auth', message: '[Model Error] Request failed (400): API key not valid. Please pass a valid API key.' } }));
     await wait(fast ? 0 : 900);
-    patch((s) => ({ ...s, recovery: { kind: 'switching', from: 'google-gemini/gemini-3-5-flash', to: 'groq/llama-4-scout' } }));
-    await wait(fast ? 0 : 900);
-    patch((s) => ({ ...s, recovery: { kind: 'recovered', model: 'groq/llama-4-scout', slot: 'backup' }, session: { ...s.session, model: 'groq/llama-4-scout', modelSlot: 'backup' } }));
+    // Same sequence as the real ModelShield: 'recovered' is only emitted after the backup run is done,
+    // so while the run (and its review) is in progress the banner stays on 'switching'.
+    patch((s) => ({ ...s, recovery: { kind: 'switching', from: 'google-gemini/gemini-3-5-flash', to: 'groq/qwen-3-8-27b' }, session: { ...s.session, model: 'groq/qwen-3-8-27b', modelSlot: 'backup' } }));
   }
   pushEv(tool('call-ctx', 'assemble_context', { task: fixture.task }));
   await wait(fast ? 0 : 500);

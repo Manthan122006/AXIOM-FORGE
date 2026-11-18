@@ -18,6 +18,7 @@ export const EMPTY_STATE: AxiomState = {
   undoStack: [],
   verification: {},
   recovery: { kind: 'healthy', model: '' },
+  models: { primary: null, backup: null },
 };
 
 type Listener = () => void;

@@ -17,6 +17,7 @@ export const Header = memo(function Header() {
   const slot = useAxiom((s) => s.session.modelSlot);
   const running = useAxiom((s) => s.session.status === 'running' || s.session.status === 'paused');
   const sessionId = useAxiom((s) => s.session.sessionId);
+  const configured = useAxiom((s) => s.models);
 
   const tfDot = conn === 'connected' ? 'ok' : conn === 'connecting' ? 'wait' : 'bad';
   return (
@@ -33,10 +34,18 @@ export const Header = memo(function Header() {
         <span className={`dot ${mcp === 'listening' ? 'ok' : mcp === 'error' ? 'bad' : ''}`} aria-hidden="true" />
         Tools<span className="sr-only">: {mcp}</span>
       </span>
-      <span className="pill code" title={model ? `Model configured in TrueForge${slot ? ` (${slot})` : ''}` : 'No run yet'}>
-        <span className={`dot ${running ? 'run' : model && conn === 'connected' ? 'ok' : ''}`} aria-hidden="true" />
-        {model ? `${model.split('/').pop()}${slot === 'backup' ? ' · backup' : ''}` : 'model'}
-      </span>
+      {model ? (
+        <span className="pill code" title={`Model of the current run${slot ? ` (${slot})` : ''}`}>
+          <span className={`dot ${running ? 'run' : conn === 'connected' ? 'ok' : ''}`} aria-hidden="true" />
+          {`${model.split('/').pop()}${slot === 'backup' ? ' · backup' : ''}`}
+        </span>
+      ) : (
+        <span className="pill code" title={modelTitle(configured)}>
+          <span className={`dot ${configured.primary?.listed ? 'ok' : configured.primary?.listed === false ? 'bad' : ''}`} aria-hidden="true" />
+          {configured.primary ? configured.primary.name.split('/').pop() : 'no model set'}
+          {configured.backup && <span className="muted"> +backup</span>}
+        </span>
+      )}
       {sessionId && sessionId !== 'preview' && (
         <button className="btn" title={`Open TrueForge session ${sessionId}`} onClick={() => post({ type: 'openSessionInTrueForge' })}>
           Session
@@ -45,3 +54,9 @@ export const Header = memo(function Header() {
     </header>
   );
 });
+
+function modelTitle(m: { primary: { name: string; listed: boolean | null } | null; backup: { name: string; listed: boolean | null } | null }): string {
+  const line = (label: string, x: { name: string; listed: boolean | null } | null) =>
+    x ? `${label}: ${x.name} (${x.listed === null ? 'TrueForge unreachable' : x.listed ? 'listed in TrueForge' : 'NOT listed in TrueForge'})` : `${label}: not set (axiomForge.models.${label.toLowerCase()})`;
+  return `${line('Primary', m.primary)}\n${line('Backup', m.backup)}\nListed means TrueForge knows the model; quota is only known when it runs.`;
+}

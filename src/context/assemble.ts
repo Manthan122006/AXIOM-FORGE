@@ -34,7 +34,7 @@ const STOP = new Set(
   ('a an and are as at be by can do does for from has have how i in into is it its our should so that the their then ' +
     'there these this to use used using via was we were what when which while who will with would also any all each ' +
     'every other well like same must new not of on or make makes made add adds update updates instead too they them ' +
-    'so its than such one two way support supports allow allows let lets')
+    'so its than such one two way support supports allow allows let lets where whether why whose whom does did')
     .split(/\s+/),
 );
 
@@ -186,6 +186,9 @@ export function assembleContext(
     return Math.log(1 + (N - d + 0.5) / (d + 0.5));
   };
   const idents = identifierTerms(input.task);
+  // A word that appears in most files (the project's own name, e.g. "flask") can't tell files apart,
+  // so it doesn't count as a file- or folder-name match either (seen in the 18 Nov demo).
+  const informative = (t: string) => (df.get(t) ?? 0) / N < 0.5;
   for (const f of index.files) {
     let kw = 0;
     const hitTerms: Array<[string, number]> = [];
@@ -205,15 +208,15 @@ export function assembleContext(
     // plus a weaker match on the parent directory name (json/tag.py for "json").
     const fileStem = path.basename(f.rel).replace(/\.[^.]+$/, '').replace(/^test_/, '').toLowerCase();
     const nameParts = [...new Set([fileStem, ...fileStem.split(/[_\-.]/)])].filter((p) => p.length >= 3);
-    const matchedParts = nameParts.filter((p) => terms.some((t) => t.length >= 3 && namesFile(t, p)));
+    const matchedParts = nameParts.filter((p) => terms.some((t) => t.length >= 3 && informative(t) && namesFile(t, p)));
     // a whole-stem match subsumes its parts
     const distinct = matchedParts.includes(fileStem) ? 1 + matchedParts.filter((p) => p !== fileStem && !fileStem.startsWith(p)).length : matchedParts.length;
     if (distinct) {
-      const t = terms.find((x) => matchedParts.some((p) => namesFile(x, p)))!;
+      const t = terms.find((x) => informative(x) && matchedParts.some((p) => namesFile(x, p)))!;
       add(cand(f), 'path', 25 * Math.min(distinct, 2), `file name matches "${t}"`);
     }
     const dir = path.basename(path.dirname(f.rel)).toLowerCase();
-    if (dir.length >= 3 && !['src', 'lib', 'tests', 'test', 'docs', 'doc'].includes(dir) && terms.some((t) => namesFile(t, dir))) {
+    if (dir.length >= 3 && !['src', 'lib', 'tests', 'test', 'docs', 'doc'].includes(dir) && terms.some((t) => informative(t) && namesFile(t, dir))) {
       add(cand(f), 'path', 10, `folder name matches "${dir}"`);
     }
   }
@@ -322,13 +325,15 @@ export function assembleContext(
       body = text;
       inclusion = ranges.length ? { mode: 'ranges', ranges } : { mode: 'outline' };
     }
-    const cost = estimateTokens(body) + 20;
+    const reason = summarize(c, category);
+    // Cost = the file's section (heading + body) + its line in the bundle header, so the budget
+    // covers the whole bundle the model receives, not just the file bodies.
+    const cost = estimateTokens(body) + 20 + estimateTokens(`- ${c.f.rel} [${category}] ${reason}\n`);
     if (used + cost > budget && !c.forced) {
       excluded.push({ path: c.f.rel, reason: 'over_budget', detail: `needs ~${cost} tokens, ${budget - used} left`, score: round(c.score) });
       continue;
     }
     used += cost;
-    const reason = summarize(c, category);
     selected.push({
       path: c.f.rel,
       category,

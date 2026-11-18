@@ -263,6 +263,16 @@ export interface AxiomState {
   undoStack: UndoEntry[];
   verification: Record<string, VerificationResult>;
   recovery: ModelRecoveryState;
+  /**
+   * Configured models (VS Code settings) and whether TrueForge's model list contains them, refreshed
+   * with every health check. "listed" means TrueForge knows the model, not that its quota is left.
+   */
+  models: { primary: ConfiguredModel | null; backup: ConfiguredModel | null };
+}
+
+export interface ConfiguredModel {
+  name: string;
+  listed: boolean | null; // null = TrueForge not reachable, unknown
 }
 
 /** Extension → webview. The webview is a pure function of AxiomState. */

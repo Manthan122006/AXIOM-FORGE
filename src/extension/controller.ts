@@ -86,6 +86,7 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
     undoStack: [],
     verification: {},
     recovery: { kind: 'healthy', model: '' },
+    models: { primary: null, backup: null },
   };
 
   constructor(
@@ -230,6 +231,12 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
     const h = await this.tf.health();
     const wasConnected = this.state.connection.kind === 'connected';
     this.state.connection = h.ok ? { kind: 'connected', baseUrl: this.tf.baseUrl } : { kind: 'disconnected', reason: h.reason };
+    // Configured primary/backup and whether TrueForge lists them (replaced only when it changes).
+    const listed = (name: string) => (h.ok ? h.models.includes(name) : null);
+    const p = cfg().get<string>('models.primary', '') || this.agentModel || '';
+    const b = cfg().get<string>('models.backup', '');
+    const models = { primary: p ? { name: p, listed: listed(p) } : null, backup: b ? { name: b, listed: listed(b) } : null };
+    if (JSON.stringify(models) !== JSON.stringify(this.state.models)) this.state.models = models;
     if (h.ok && this.mcp && (register || !wasConnected)) {
       try {
         await registerMcp({ base: this.tf.baseUrl, mcpUrl: this.mcp.url });
