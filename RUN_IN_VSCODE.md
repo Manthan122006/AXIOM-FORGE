@@ -59,6 +59,7 @@ A second window, the **Extension Development Host**, opens. That window is the p
 | What you see | What to do |
 |---|---|
 | F5 asks "Select debugger" or nothing happens | You opened the wrong folder. Open the folder containing `package.json` (step 1). |
+| npm warns `allow-scripts … esbuild, fsevents` | Harmless: the build still works. |
 | `Cannot find module` / build error | Run `npm ci && npm run build` again. |
 | Overview shows TrueForge **offline** | The step 3 terminal isn't running, or something else holds port 8790. |
 | MCP shows **not registered** / tools fail | TrueForge was started without `OUTBOUND_URL_ALLOWED_HOSTS` (step 3). Restart it, then in the dev window run ⌘⇧P → **Developer: Reload Window**. |
