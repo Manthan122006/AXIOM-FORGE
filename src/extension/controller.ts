@@ -15,7 +15,7 @@ import { TrueForgeConnection } from '../trueforge/client';
 import { runWithShield, type AttemptOutcome } from '../trueforge/modelShield';
 import { TurnTracker } from '../trueforge/reducer';
 import { loadAgentDefinition, registerMcp, setupTrueForge } from '../trueforge/setup';
-import { runCommand, type CommandResult } from '../verification/commandRunner';
+import type { CommandResult } from '../verification/commandRunner';
 import { DiffView } from './diffView';
 import { VsCodeWorkspaceHost } from './vscodeHost';
 
@@ -367,8 +367,6 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
       }
       case 'undo':
         return this.undo(m.proposalId);
-      case 'runVerification':
-        return this.runUserVerification(m.command);
       case 'mentionQuery': {
         const items = await this.engine.mentionCandidates(m.query);
         void surface.webview.postMessage({ type: 'mentionResults', query: m.query, items } satisfies HostToWebview);
@@ -488,6 +486,7 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
         // scripts/measure-request.ts), so low-quota backup models can finish the turn.
         preferSaved: model === this.agentModel && !run.inline,
         inlineManifest: loadAgentDefinition(this.ctx.asAbsolutePath(path.join('agents', run.inline ? 'axiom-agent-inline.json' : 'axiom-agent.json')), model).manifest,
+        signal: run.abort.signal,
       });
       run.sessionId = sessionId;
       this.state.session = { sessionId, turnId: null, model, modelSlot: slot, status: 'running' };
@@ -719,15 +718,6 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
     };
     this.state.verification = { ...this.state.verification, [id]: result };
     this.pushEvent({ kind: 'verification', id: `verification:${id}`, resultId: id, at: new Date().toISOString() });
-  }
-
-  private async runUserVerification(command: string) {
-    this.verificationStarted(command);
-    try {
-      this.verificationFinished(await runCommand(command, { workspaceRoot: this.root }));
-    } catch (e) {
-      vscode.window.showErrorMessage((e as Error).message);
-    }
   }
 
   private markVerificationStale() {

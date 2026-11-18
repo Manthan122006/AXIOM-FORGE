@@ -49,12 +49,14 @@ export class VsCodeWorkspaceHost implements WorkspaceHost {
     const full = new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length));
     edit.replace(uri, full, text);
     if (!(await vscode.workspace.applyEdit(edit))) throw new Error(`VS Code refused the edit to ${rel}`);
-    await doc.save();
+    // A failed save must fail the write: otherwise the change is reported applied while the disk
+    // (which tests and Proof read) still has the old file.
+    if (!(await doc.save())) throw new Error(`VS Code could not save ${rel}`);
   }
 
   async deleteFile(rel: string): Promise<void> {
     const edit = new vscode.WorkspaceEdit();
     edit.deleteFile(this.uri(rel), { ignoreIfNotExists: true });
-    await vscode.workspace.applyEdit(edit);
+    if (!(await vscode.workspace.applyEdit(edit))) throw new Error(`VS Code refused to delete ${rel}`);
   }
 }

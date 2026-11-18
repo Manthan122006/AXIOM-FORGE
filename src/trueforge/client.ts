@@ -21,6 +21,8 @@ export function loopbackCandidates(baseUrl: string): string[] {
   return [...new Set(forms)];
 }
 
+export const SESSION_CREATE_TIMEOUT_MS = 30_000;
+
 export class TrueForgeConnection {
   sdk: TrueForgeClient;
   /** The base URL that actually answered (may differ from the configured one for loopback). */
@@ -60,12 +62,16 @@ export class TrueForgeConnection {
    * format) with `model.name` set to the requested model. Both paths are TrueForge sessions.
    * Errors carry TrueForge's HTTP status and message (e.g. 422 "provider not configured").
    */
-  async createSession(opts: { agentName: string; model: string; inlineManifest?: Record<string, unknown>; preferSaved: boolean }): Promise<string> {
+  async createSession(opts: { agentName: string; model: string; inlineManifest?: Record<string, unknown>; preferSaved: boolean; signal?: AbortSignal }): Promise<string> {
+    // Session creation answers in well under a second; without a deadline a stalled TrueForge would
+    // hold the run (and ignore Stop) until fetch's 5-minute header timeout or the SDK's 15-minute one.
+    const deadline = AbortSignal.timeout(SESSION_CREATE_TIMEOUT_MS);
+    const signal = opts.signal ? AbortSignal.any([opts.signal, deadline]) : deadline;
     if (opts.preferSaved) {
-      const list = await this.sdk.agents.list();
+      const list = await this.sdk.agents.list(undefined, { abortSignal: signal });
       const saved = list.data.find((a) => a.name === opts.agentName);
       if (saved && saved.manifest.model.name === opts.model) {
-        const { data } = await this.sdk.sessions.create({ agent: { name: opts.agentName } });
+        const { data } = await this.sdk.sessions.create({ agent: { name: opts.agentName } }, { abortSignal: signal });
         return data.id;
       }
     }
@@ -75,6 +81,7 @@ export class TrueForgeConnection {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ agent: { spec: manifest } }),
+      signal,
     });
     const body = (await res.json().catch(() => ({}))) as { data?: { id: string }; error?: { message?: string } };
     if (!res.ok || !body.data) {

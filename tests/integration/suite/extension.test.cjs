@@ -101,6 +101,30 @@ describe('AXIOM Forge in VS Code', () => {
     assert.strictEqual(fs.readFileSync(file, 'utf8'), before, 'undo restored the exact pre-image');
   });
 
+  it('a save that fails is reported as failed, never as applied (disk unchanged)', async () => {
+    const c = api.controller;
+    const rel = 'pkg/readonly_target.py';
+    const file = path.join(ws, rel);
+    const before = 'def flag():\n    return True\n';
+    fs.writeFileSync(file, before);
+    fs.chmodSync(file, 0o444);
+    const doc = await vscode.workspace.openTextDocument(file);
+    try {
+      const p = c.safeChange.stage({ toolCallId: 't-ro', sessionId: 's', turnId: 'turn', path: rel, rationale: 'test', baseText: before, proposedText: before.replace('True', 'False') });
+      c.safeChange.decideAll(p.id, 'accepted');
+      c.safeChange.closeReview(p.id);
+      const out = await c.safeChange.apply(p.id);
+      assert.strictEqual(out.status, 'failed', `a read-only file must not be reported applied: ${out.message}`);
+      assert.strictEqual(fs.readFileSync(file, 'utf8'), before, 'disk unchanged');
+    } finally {
+      // Clean up without touching editors (later tests count tabs): make the file writable, let the
+      // pending buffer save, then remove the file.
+      fs.chmodSync(file, 0o644);
+      if (doc.isDirty) await doc.save();
+      fs.rmSync(file, { force: true });
+    }
+  });
+
   it('propose_edit through MCP refuses without approval (no write)', async () => {
     const { Client } = require(path.join(__dirname, '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/client/index.js'));
     const { StreamableHTTPClientTransport } = require(path.join(__dirname, '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/client/streamableHttp.js'));
@@ -399,7 +423,8 @@ describe('AXIOM Forge in VS Code', () => {
     const tabs = () => vscode.window.tabGroups.all.flatMap((g) => g.tabs).filter((t) => t.label === 'AXIOM Forge');
     await vscode.commands.executeCommand('axiomForge.openWorkspace');
     await new Promise((r) => setTimeout(r, 500));
-    assert.strictEqual(tabs().length, 1, 'one workspace tab');
+    const all = () => vscode.window.tabGroups.all.map((g) => `[${g.tabs.map((t) => t.label).join(', ')}]`).join(' ');
+    assert.strictEqual(tabs().length, 1, `one workspace tab; open tabs: ${all()}`);
     await vscode.commands.executeCommand('axiomForge.openWorkspace');
     await new Promise((r) => setTimeout(r, 300));
     assert.strictEqual(tabs().length, 1, 'second call reveals the same tab');

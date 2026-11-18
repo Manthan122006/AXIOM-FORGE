@@ -300,7 +300,6 @@ export type WebviewToHost =
   | { type: 'submitReview' } // sends allow/deny for the pending approval
   | { type: 'openDiff'; proposalId: string }
   | { type: 'undo'; proposalId: string }
-  | { type: 'runVerification'; command: string }
   | { type: 'mentionQuery'; query: string }
   | { type: 'openSessionInTrueForge' }
   /** Open a workspace file (path-jailed by the host). */
