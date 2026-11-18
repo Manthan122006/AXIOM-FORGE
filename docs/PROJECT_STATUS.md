@@ -1,6 +1,8 @@
 # AXIOM Forge — Project Status
 
-_Last updated: Tue 17 Nov 2026, Phase 3. Repo: local git, `main` + 4 feature branches (no teammate commits yet). No remote yet._
+_Last updated: Wed 18 Nov 2026, 09:50 IST. Repo: local git, `main` + 4 feature branches (no teammate commits yet). No remote yet (`gh` not installed; commands in TEAM_PROGRESS)._
+
+> **Live with real models (18 Nov):** approval pause/approve/deny/cancel, argument matching, approved `pytest`, ModelShield fallback (real 429 → Groq) and Task C shape (3/3 clean) verified. Task A passes on agent output. **Task B not yet passing** (best attempt: 4/5 checks). 177 unit tests, 11/11 VS Code tests, clean clone passes, publish check passes.
 
 > **Phase 3 (current):** `npm run check` → **155 tests pass**; `npm run test:vscode` → **11/11** in real VS Code (adds same-file merge + multi-file change set + buffer/disk rollback). Retrieval on a 33-task benchmark: **25/33** tasks fully in top 5 (was 18/33), in-context recall 0.94; **on 8 fresh tasks: 5/8, no gain** (`RETRIEVAL_EVAL.md`). Stall investigation with CPU profiles: the largest stalls are VS Code's own; AXIOM's repeated work fixed (`PERFORMANCE.md`). Preflight without keys: 5 pass, 3 blocked on keys, 7 model steps unverified.
 >

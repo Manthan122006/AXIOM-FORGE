@@ -5,6 +5,9 @@
 - **Gemini free tier: 20 requests/day and 5/minute per model.** Long turns can hit the per-minute limit mid-run; daily quotas run out after a few runs. Plan rehearsals and recording around it, or use a paid key.
 - Gemini occasionally returns no response headers before TrueForge's timeout (`Headers Timeout`, ~30–64 s); classified `timeout` and retried by ModelShield.
 
+- **Task B on the Gemini free tier** needs pacing (`axiomForge.pacing.minSecondsBetweenSteps`, e.g. 16 s): requests grow to ~60k tokens late in the turn and the limit is 250k input tokens/minute/model. Weaker free models (flash-lite) may produce code that passes the tests but not our stricter checker (case-sensitive masking, 18 Nov).
+- Pacing holds every tool result, including parallel calls of one step, so it is slower than strictly needed; it is off by default.
+
 ## Not yet verified
 - Task B end to end on agent output; inline ⌘I UI and agent sidebar with a live model; same-file merging triggered by a real model. Tool calls, approval, deny, cancel, argument matching and fallback ARE verified live (`MODEL_KEY_CHECKLIST.md`, live results).
 - **Extension-host responsiveness (A3).** Phase 3 profiled it (`PERFORMANCE.md`): the largest stalls in the VS Code test instance (1.5–2.4 s) are VS Code's own work (self time ≥ 85% VS Code). AXIOM's avoidable repeated work was fixed (MCP server pooling, patch-only webview posts, dirty-row timeline sync, lazy index rebuild). That test instance runs identical code 60–200× slower than plain Node, for reasons not established, so its absolute numbers are an upper bound. Not yet measured in a normal F5 session or during a real model stream: use `axiomForge.perfLog` + **Show Performance Report**.

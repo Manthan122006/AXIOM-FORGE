@@ -79,3 +79,22 @@ Inline edits (Tasks A and C) now use `agents/axiom-agent-inline.json`: only `rea
 |---|---|---|
 | Input tokens of one request (TrueForge `turn.done` metrics, Groq qwen, no-tool turn; `scripts/measure-request.ts`) | 2,802 | **1,114** (−60%) |
 | Live Task-C-shaped run in real VS Code (primary `gemini-3-5-flash` real 429 → backup `groq/qwen-3-8-27b`) | 1 of 3 tries got the edit applied, then hit the 7k tokens/min limit | **3 of 3 clean**: edit proposed, accepted, applied, `turn.done{done}`, banner "Backup model … completed the request" (71 s, 29 s, 36 s; runs 60 s apart) |
+
+### 18 Nov morning (09:00–09:45 IST)
+**Quota probe** (one cheap request per model): available: `gemini-3-1-flash-lite`, `gemini-3-5-flash-lite`, `gemini-flash-lite-latest`; 503 high demand: `gemini-3-6/3-7/3-8-flash`, `gemini-flash-latest`; 429: `gemini-3-5-flash` (daily, used yesterday), `gemini-3-1-pro-preview`, `gemini-4-argon/carbon` (no usable free quota). **Daily free quotas reset at midnight Pacific = 13:30 IST.**
+
+| Task B attempt | Result |
+|---|---|
+| `gemini-3-1-flash-lite`, no pacing | 429 after 33 s: **250k input tokens/minute** (10 requests, two 24k receipts in history) |
+| `gemini-flash-lite-latest`, pacing 13 s | 100 s; edit loop on `tests/test_cli.py` (model invented a line 3×) → TPM 429 again |
+| `gemini-3-1-flash-lite`, pacing 16 s, 16k receipt | 7.3 min; changed `cli.py`, `test_cli.py`, `docs/cli.rst`; fixed its own failing test; `pytest tests/test_cli.py` **59 passed**; `verify-task-b.sh`: --help ✅, test ✅, docs ✅, ≥3 files ✅, **masking ❌** (case-sensitive: `session_secret_value` leaked). Turn ended on TPM 429 before its summary. **Not counted as a Task B pass.** |
+
+Changes from these runs: opt-in step pacing (`axiomForge.pacing.minSecondsBetweenSteps`, `proof.ts --pace`), `proof.ts --budget`, and an actionable "old_text not found" message that shows where the first lines match and the real text there.
+
+**Next Task B attempt:** after 13:30 IST, on `gemini-3-5-flash` (stronger, fresh 20/day):
+```bash
+bash scripts/tasks/reset-fixture.sh
+npx tsx scripts/proof.ts --model google-gemini/gemini-3-5-flash --pace 16 --budget 16000 --prompt "<Task B instruction>"
+bash scripts/tasks/verify-task-b.sh
+```
+**Invalid-key fallback:** prepared, not run (needs the `gemini-broken` provider; see `TASK_C_RECORDING.md`).

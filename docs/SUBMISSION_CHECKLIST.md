@@ -27,9 +27,10 @@
 
 ## Artefact 3: GitHub repository (public before the deadline)
 - [ ] Repo created, `main` pushed; branches merged
-- [ ] README clean-clone steps tested on a second Mac
+- [x] Clean clone + `npm ci` + `npm run check` passes (18 Nov, local scratch clone)
+- [ ] README clean-clone steps (incl. F5) tested on a second Mac
 - [ ] `LICENSE` (MIT) present; third-party attributions in README
-- [ ] `config/models.example.json` present; no keys in the repo or its history (grep of all history: 0 matches on 17 Nov; re-run right before publishing, plus `gitleaks detect` if available)
+- [ ] `config/models.example.json` present; `bash scripts/check-publish.sh` → PASS right before the first push and before the deadline (PASS on 18 Nov)
 - [ ] `skills-lock.json`/`.agents` decision: they live in the parent folder, not the repo. Mention in write-up section 7 if relevant
 - [ ] Opened in a private window to confirm it's public
 

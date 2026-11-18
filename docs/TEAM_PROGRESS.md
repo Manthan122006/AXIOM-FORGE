@@ -1,6 +1,6 @@
 # Team Progress & Handoffs (Phase 3)
 
-_Updated Tue 17 Nov 2026, night. Re-run the inspection command below before every update; never mark a teammate's task done without their commit and evidence._
+_Updated Wed 18 Nov 2026, 09:50 IST. Re-run the inspection command below before every update; never mark a teammate's task done without their commit and evidence._
 
 ## Actual contributions (from git, not from plans)
 
@@ -28,6 +28,27 @@ All commits on `main` were made in Claude Code sessions on Manthan's machine (au
 | TrueForge prep | preflight `7320025`, proof uses the extension's staging path `424ca32` | `docs/evidence/preflight-no-keys.txt` |
 
 ---
+
+## Today's exact actions (18 Nov): supersede the older task lists below where they overlap
+
+**Manthan**
+1. Create an **empty** GitHub repo (no README/licence, so nothing to merge), e.g. `axiom-forge`, public. Then from the repo folder:
+   ```bash
+   bash scripts/check-publish.sh
+   git remote add origin https://github.com/<owner>/axiom-forge.git
+   git push -u origin main
+   git push origin feat/trueforge-client feat/webview-ui feat/mcp-tools feat/context-engine
+   ```
+   Add Vivan, Toheed and Kunjal as collaborators. (Commits use `manthan@axiom.local`; GitHub won't link them to your profile. That's cosmetic, so leave it unless you want to rewrite before the first push.)
+2. In TrueForge, add provider **`gemini-broken`** (Google Gemini type, any invalid key text, one model), then run the invalid-key test in `TASK_C_RECORDING.md`.
+3. After **13:30 IST**: Task B on `gemini-3-5-flash` with `--pace 16 --budget 16000` (commands in `MODEL_KEY_CHECKLIST.md`), then `verify-task-b.sh`. If it passes, repeat through the sidebar UI with `axiomForge.pacing.minSecondsBetweenSteps: 16`.
+4. Record A → B → C per `DEMO_SCRIPT.md` and `TASK_C_RECORDING.md`.
+
+**Vivan**: after the push: clone on your Mac, follow README from scratch incl. F5; record the result in `FINAL_TEST_MATRIX.md`. Check the ModelShield banner texts (*Running on backup model …*, *Backup model … completed the request*) and the Proof panel in a live run; screenshots at 360/420/520 px. No redesigns this phase.
+
+**Toheed**: after the push: review `src/mcp/pacer.ts`, `nearestMatchHint` in `src/safety/proposeEditArgs.ts` (it returns file text to the model: confirm the path jail and secret-file rules still bound what can be shown), `scripts/check-publish.sh`; run it yourself; run the `security-review` skill on `src/mcp` + `src/safety`.
+
+**Kunjal**: after the push: own `FINAL_TEST_MATRIX.md`; re-run `npm run check`, `npm run test:vscode` and `bash scripts/tasks/verify-task-*.sh` after each merge; continue F9+ retrieval tasks as planned below (no ranking changes before new tasks are committed).
 
 ## Manthan: TrueForge integration, ModelShield, final integration, model verification
 **Files:** `src/trueforge/*`, `src/extension/controller.ts`, `src/extension/activate.ts`, `agents/axiom-agent.json`, `scripts/proof.ts`, `scripts/preflight.ts`, `scripts/setup-trueforge.ts`, `docs/TRUEFORGE_INTEGRATION_STATUS.md`, `docs/MODEL_KEY_CHECKLIST.md`.

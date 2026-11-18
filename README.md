@@ -55,6 +55,7 @@ git clone <this repo> axiom-forge && cd axiom-forge && npm ci && npm run build
   - Several edits the agent makes to the **same file** in one step are merged into **one** diff; overlapping edits are refused, never silently overwritten.
   - Everything you approve in one review is applied **together**: all files are checked first, and if one can't be written the others are restored (not crash-atomic; see limitations).
 - **Stop run** cancels the TrueForge turn; anything not yet applied is discarded.
+- **Free-tier model keys:** set `axiomForge.pacing.minSecondsBetweenSteps` (e.g. 16 for Gemini free tier) so agent-mode runs stay under per-minute quotas. Inline edits use a compact agent definition and don't need it.
 - **Performance:** set `axiomForge.perfLog: true`, then run **AXIOM Forge: Show Performance Report** for per-operation timings. Stalls over 250 ms are logged with the AXIOM work that ran during them ([docs/PERFORMANCE.md](docs/PERFORMANCE.md)).
 
 ## Tests
@@ -67,6 +68,7 @@ bash scripts/tasks/verify-task-b.sh   # Task B: pytest, flask --help, masked JSO
 bash scripts/tasks/verify-task-c.sh   # Task C: git status clean
 bash scripts/tasks/reset-fixture.sh   # restore fixtures/flask to pristine 3.1.3
 npx tsx scripts/eval-retrieval.ts     # 33-task retrieval benchmark (see docs/RETRIEVAL_EVAL.md)
+bash scripts/check-publish.sh         # before every push: no keys, private data or local files in files or history
 ```
 
 ## Security notes

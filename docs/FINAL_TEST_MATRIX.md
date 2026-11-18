@@ -4,8 +4,8 @@ Legend: ✅ passed (real) · 🧪 passed with a labelled simulation · ⏳ block
 
 | Area | Test | How | Last result | Date |
 |---|---|---|---|---|
-| Build | typecheck, lint, unit, build | `npm run check` | ✅ 155 tests | 17 Nov (Phase 3) |
-| VS Code | activation, commands, MCP, TrueForge tool listing | `npm run test:vscode` | ✅ 11/11 | 17 Nov (Phase 3) |
+| Build | typecheck, lint, unit, build | `npm run check` | ✅ 177 tests | 18 Nov |
+| VS Code | activation, commands, MCP, TrueForge tool listing | `npm run test:vscode` | ✅ 11/11 (+2 opt-in live tests) | 18 Nov |
 | VS Code | WorkspaceEdit apply + exact undo | same | ✅ | 17 Nov |
 | VS Code | native diff tab + per-hunk CodeLens; accept 1 / reject 1 | same (dev-harness proposal, **not model output**) | 🧪 | 17 Nov |
 | VS Code | conflict on unsaved user edit | same | ✅ | 17 Nov |
@@ -24,7 +24,8 @@ Legend: ✅ passed (real) · 🧪 passed with a labelled simulation · ⏳ block
 | Perf | stall attribution (CPU profile, owner split) | `AXIOM_PROFILE=… npm run test:vscode` + `scripts/analyze-cpuprofile.mjs` | ✅ largest stalls are VS Code's own | 17 Nov |
 | Perf | MCP server pooling; patch posts; dirty-row sync | `scripts/bench-*.ts`, `[perf]` report in `test:vscode` | ✅ | 17 Nov |
 | Perf | live Task B with `axiomForge.perfLog` | Show Performance Report | ⏳ | |
-| TrueForge | preflight without keys | `scripts/preflight.ts` | ✅ 5 pass, 3 blocked, 7 unverified | 17 Nov |
+| TrueForge | preflight with keys (both agent definitions) | `scripts/preflight.ts` | ✅ no failures, nothing blocked | 18 Nov |
+| Task C | invalid-key primary → immediate switch, no retries | `AXIOM_LIVE_EXPECT_AUTH=1` live test (`TASK_C_RECORDING.md`) | ⏳ needs the `gemini-broken` provider (user step) | |
 | UI | no rerender of static rows during streaming | browser measurement (`window.__axiomRenders`) | ✅ | 17 Nov |
 | UI | AA contrast, 5 colours × 2 themes | `webview/src/theme.test.ts` | ✅ | 17 Nov |
 | UI | 360/420/520 px, focus ring, no overflow, reduced-motion rule | browser preview | ✅ (preview) | 17 Nov |
@@ -36,8 +37,9 @@ Legend: ✅ passed (real) · 🧪 passed with a labelled simulation · ⏳ block
 | TrueForge | recorded real streams replayed | `tests/trueforge/recorded.test.ts` | ✅ 6 tests | 18 Nov |
 | TrueForge | subagent visible in session | Task B | ⏳ | |
 | Task A | official verification `False` on **agent** output | `verify-task-a.sh` | ✅ PASS (via proof.ts; ⌘I UI ⏳) | 18 Nov |
-| Task B | pytest, --help, masked JSON, ≥3 files on **agent** output | `verify-task-b.sh` | ⏳ | |
+| Task B | pytest, --help, masked JSON, ≥3 files on **agent** output | `verify-task-b.sh` | ❌ attempt on gemini-3-1-flash-lite (paced): 4/5 checks ok, pytest 59 passed, **masking case-sensitive → FAIL** (`docs/evidence/taskB-agent-attempt-*`). Re-run after 13:30 IST on gemini-3-5-flash | 18 Nov |
 | Task C | primary failure → fallback → backup edit accepted and applied | live `test:vscode` (`AXIOM_LIVE_TASKC=1`) | ✅ 3/3 clean with the compact inline profile (real 429 → Groq qwen → edit applied → done) | 18 Nov |
 | Checker sanity | verify scripts fail on clean tree, pass on a hand-written reference fix | Phase 1 run | ✅ (reference fix = **test of the checker only**) | 17 Nov |
-| Clean clone | README steps from scratch on a 2nd Mac | Vivan or Kunjal | ⏳ (needs remote) | |
-| Secrets | no keys in history | `git log -p --all \| grep -E 'AIza…|gsk_…|sk-…|ghp_…'` | ✅ 0 matches (gitleaks not installed; re-run before publishing) | 17 Nov |
+| Clean clone | `git clone` + `npm ci` + `npm run check` | local clone in a scratch folder | ✅ 168 passed, 10 skipped (Flask fixture not fetched) after fixing `.gitignore` (tests/fixtures was untracked) | 18 Nov |
+| Clean clone | README steps on a 2nd Mac incl. F5 | Vivan or Kunjal | ⏳ (needs remote) | |
+| Secrets | keys, private keys, org ids, home path in files + history | `bash scripts/check-publish.sh` | ✅ PASS (1 WARN: local username in one old evidence log in history) | 18 Nov |

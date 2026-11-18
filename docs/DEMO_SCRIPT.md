@@ -35,7 +35,7 @@ Title card or voice-over: "AXIOM Forge: a VS Code coding agent on TrueForge. It 
 
 ## 1:00–2:35 Task B — agent mode
 1. `bash scripts/tasks/reset-fixture.sh` (cut).
-2. Sidebar composer, type exactly the Task B instruction (no file names) → Run.
+2. Sidebar composer, type exactly the Task B instruction (no file names) → Run. On a Gemini **free** key set `axiomForge.pacing.minSecondsBetweenSteps: 16` first (free tier: 250k input tokens and 5 requests per minute per model); the run then takes several minutes, and the instruction→diff part must stay uncut. A paid key avoids this. **Rehearse Task B until `verify-task-b.sh` passes on the agent's own output before recording**: the last attempt (18 Nov, flash-lite) masked keys case-sensitively and failed.
 3. Show: **Context assembled** step → expand the **Context Receipt** (files, reasons, budget meter "x k / 24k", "Left out"); the **repo-scout** subagent step; read/search tool steps.
 4. When proposals arrive: the "Changes to review" dock lists ≥3 files; open one diff; accept hunks (reject one if a hunk is unnecessary, which shows per-hunk control); **Apply**. If the model edited `cli.py` twice in one step, the card says *combines 2 edits from the agent into one diff*: point at it (B2/B3). All approved files apply together.
 5. Agent runs `pytest tests/test_cli.py -q` → modal approval → **Proof** shows `passed · exit 0`.
@@ -44,7 +44,7 @@ Title card or voice-over: "AXIOM Forge: a VS Code coding agent on TrueForge. It 
 8. `git status --short` → ≥3 files.
 
 ## 2:35–3:35 Task C — resilience
-1. `bash scripts/tasks/reset-fixture.sh` (cut). In TrueForge Settings, break the Gemini key (off camera, or show the field with the value hidden).
+1. `bash scripts/tasks/reset-fixture.sh` (cut). Primary failure: switch `axiomForge.models.primary` to the `gemini-broken` provider (invalid key, set up per `TASK_C_RECORDING.md`; your real key stays untouched) (off camera, or show the field with the value hidden).
 2. Wait ≥ 60 s after any earlier Groq use (free tier: 7k input tokens/minute), then repeat Task A exactly. Inline edits use the compact agent `agents/axiom-agent-inline.json`.
 3. Show the banner: *Retrying …* (only for transient failures) → *Running on backup model …* → *Backup model … completed the request*. The editor stays usable: scroll and type in another file while it runs.
 4. Before accepting: terminal `git status` → clean. Then accept → `FLASK_DEBUG=off python -c "…"` → **False**.
