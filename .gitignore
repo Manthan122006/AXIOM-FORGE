@@ -19,3 +19,10 @@ demo-video/composition/assets/music/bed-audio.json
 demo-video/composition/.hyperframes/
 demo-video/*.mp4
 demo-video/*.log
+demo-video/final/*.mp4
+demo-video/final/*.log
+demo-video/final/composition/assets/footage/
+demo-video/final/composition/assets/music/*.wav
+demo-video/final/composition/assets/music/*.mp3
+demo-video/final/composition/assets/music/bed-audio.json
+demo-video/final/composition/.hyperframes/

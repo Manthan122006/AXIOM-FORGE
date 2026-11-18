@@ -1,0 +1,8 @@
+n1a	AI can write code.
+n1b	But can it understand the repository? Two hundred and sixteen files. Nearly three hundred thousand tokens.
+n1c	Can it justify the changes it proposes?
+n1d	And can it prove they actually work?
+n8a	AI should not just write code.
+n8b	It should understand, justify, and verify every change.
+n8c	Axiom Forge.
+s7a	Finally, proof. The agent asks before it runs anything. Only allow-listed commands, and never a shell.
