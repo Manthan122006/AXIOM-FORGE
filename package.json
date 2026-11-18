@@ -105,7 +105,7 @@
         "axiomForge.models.primary": {
           "type": "string",
           "default": "",
-          "description": "TrueForge model name for the primary model (as listed in TrueForge Settings \u2192 Models). Empty = use the agent's own model."
+          "description": "TrueForge model name for the primary model (as listed in TrueForge Settings → Models). Empty = use the agent's own model."
         },
         "axiomForge.models.backup": {
           "type": "string",
@@ -162,6 +162,7 @@
     }
   },
   "scripts": {
+    "setup": "npm ci && npm run build && npm run fixture:flask",
     "build": "npm run build:ext && npm run build:webview",
     "build:ext": "node scripts/build-extension.mjs",
     "build:webview": "vite build --config webview/vite.config.ts",
