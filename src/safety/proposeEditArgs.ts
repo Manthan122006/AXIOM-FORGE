@@ -55,7 +55,7 @@ export function computeProposedText(current: string | null, args: ProposeEditArg
     const first = text.indexOf(oldText);
     if (first === -1) {
       throw new EditSpecError(
-        `Edit ${i + 1}: old_text was not found in ${args.path}. Re-read the file and copy the exact text, including indentation.`,
+        `Edit ${i + 1}: old_text was not found in ${args.path}. ${nearestMatchHint(text, oldText)}Copy old_text exactly from the file, including indentation.`,
       );
     }
     if (text.indexOf(oldText, first + 1) !== -1) {
@@ -64,4 +64,26 @@ export function computeProposedText(current: string | null, args: ProposeEditArg
     text = text.slice(0, first) + newText + text.slice(first + oldText.length);
   });
   return crlf ? text.replace(/\n/g, '\r\n') : text;
+}
+
+/**
+ * When old_text isn't in the file, show the model where its first lines DO match and what the file
+ * actually contains there, so it can fix the edit in one step instead of guessing again (seen live:
+ * a model invented the third line of a function three times in a row, burning quota each time).
+ */
+export function nearestMatchHint(fileText: string, oldText: string): string {
+  const want = oldText.split('\n');
+  const have = fileText.split('\n');
+  let best = { at: -1, len: 0 };
+  for (let i = 0; i < have.length; i++) {
+    let n = 0;
+    while (n < want.length && i + n < have.length && have[i + n] === want[n]) n++;
+    if (n > best.len) best = { at: i, len: n };
+  }
+  if (best.len === 0) return 'None of its lines match the file. ';
+  const show = have.slice(best.at, best.at + Math.min(want.length + 2, 40));
+  return (
+    `Its first ${best.len} line(s) match at line ${best.at + 1}, but line ${best.at + best.len + 1} differs. ` +
+    `The file there actually reads (lines ${best.at + 1}-${best.at + show.length}):\n${show.join('\n')}\n`
+  );
 }

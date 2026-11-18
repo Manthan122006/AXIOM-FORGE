@@ -7,7 +7,7 @@
  *   5. on tool.approval_required for propose_edit: stages the diff, prints hunks, then allows or denies (--deny)
  *   6. --cancel-after <n>: calls sessions.cancel after n events
  *
- *   npx tsx scripts/proof.ts --model <name> [--workspace fixtures/flask] [--prompt "..."] [--deny] [--cancel-after 5]
+ *   npx tsx scripts/proof.ts --model <name> [--workspace fixtures/flask] [--prompt "..."] [--deny] [--cancel-after 5] [--pace <s>] [--budget <tokens>]
  *
  * Without a configured model provider the turn is expected to end in an error; that output is
  * recorded too and is real evidence of the failure path.
@@ -15,6 +15,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { ContextEngine } from '../src/context/engine';
+import { StepPacer } from '../src/mcp/pacer';
 import { startMcpHttpServer, TOOL } from '../src/mcp/server';
 import { ApprovalRegistry } from '../src/safety/approvals';
 import { SafeChange } from '../src/safety/safeChange';
@@ -43,7 +44,9 @@ async function main() {
   const approvals = new ApprovalRegistry();
   const safeChange = new SafeChange(host);
   const engine = new ContextEngine(workspace);
-  const mcp = await startMcpHttpServer({ host, engine, approvals, safeChange, onReceipt: (r) => console.log(`[receipt] ${r.selected.length} files, ${r.budget.usedTokens}/${r.budget.limitTokens} tokens`) }, 7811);
+  const paceS = Number(arg('pace') ?? 0);
+  const budget = arg('budget') ? Number(arg('budget')) : undefined;
+  const mcp = await startMcpHttpServer({ host, engine, approvals, safeChange, ...(paceS > 0 ? { pacer: new StepPacer(() => paceS * 1000), onPaced: (ms: number) => console.log(`[pace] held ${Math.round(ms)} ms`) } : {}), ...(budget ? { budgetTokens: () => budget } : {}), onReceipt: (r) => console.log(`[receipt] ${r.selected.length} files, ${r.budget.usedTokens}/${r.budget.limitTokens} tokens`) }, 7811);
   console.log(`[mcp] listening ${mcp.url}`);
 
   const agentFile = path.join(__dirname, '..', 'agents', 'axiom-agent.json');

@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { lineOps, mergeFileVersions } from '../../src/safety/merge';
 import { SafeChange } from '../../src/safety/safeChange';
 import { stageProposeEdits } from '../../src/safety/stage';
+import { computeProposedText } from '../../src/safety/proposeEditArgs';
 import { NodeWorkspaceHost, type WorkspaceHost } from '../../src/workspace/host';
 
 const lines = (n: number) => Array.from({ length: n }, (_, i) => `line ${i + 1}`).join('\n') + '\n';
@@ -295,5 +296,18 @@ describe('applyChangeSet (multi-file, all-or-nothing with rollback)', () => {
     expect(r.outcomes[1]!.message).toMatch(/changed while the change set was being applied/);
     expect(read('a.py')).toBe(lines(10));
     expect(read('b.py')).toBe('someone else\n');
+  });
+});
+
+describe('propose_edit not-found hint (live failure 18 Nov)', () => {
+  it('points at the matching lines and shows the real text when a model invents a line', () => {
+    const file = 'class T:\n    def test_all_methods(self, invoke):\n        output = invoke(["routes"]).output\n        assert "GET, HEAD, OPTIONS, POST" not in output\n'; 
+    const bad = '    def test_all_methods(self, invoke):\n        output = invoke(["routes"]).output\n        assert "GET" in output';
+    expect(() => computeProposedText(file, { path: 't.py', rationale: 'r', edits: [{ old_text: bad, new_text: 'x' }] })).toThrow(
+      /first 2 line\(s\) match at line 2, but line 4 differs[\s\S]*assert "GET, HEAD, OPTIONS, POST" not in output/,
+    );
+  });
+  it('says so when nothing matches', () => {
+    expect(() => computeProposedText('a\nb\n', { path: 't.py', rationale: 'r', edits: [{ old_text: 'zzz', new_text: 'x' }] })).toThrow(/None of its lines match/);
   });
 });

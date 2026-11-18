@@ -1,0 +1,6 @@
+  ok   'config' listed in flask --help
+  ok   tests/test_cli.py covers the command
+  ok   docs/cli.rst documents it
+  FAIL unmasked=['session_secret_value'] leaked=['lowercase-secret'] normal_ok=True
+  ok   diff touches >= 3 files
+TASK B: FAIL

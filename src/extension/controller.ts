@@ -2,6 +2,7 @@ import path from 'node:path';
 import * as vscode from 'vscode';
 import { ContextEngine } from '../context/engine';
 import { GATED_TOOLS, MCP_SERVER_NAME, normalizeGatedArgs, startMcpHttpServer, TOOL, type RunningMcpServer } from '../mcp/server';
+import { StepPacer } from '../mcp/pacer';
 import { resolveWorkspacePath } from '../mcp/pathJail';
 import { ApprovalRegistry } from '../safety/approvals';
 import { SafeChange } from '../safety/safeChange';
@@ -161,6 +162,8 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
           safeChange: this.safeChange,
           budgetTokens: () => cfg().get<number>('contextBudgetTokens', 24_000),
           runSignal: () => this.run?.abort.signal,
+          pacer: new StepPacer(() => Math.max(0, cfg().get<number>('pacing.minSecondsBetweenSteps', 0)) * 1000),
+          onPaced: (ms) => this.log(`paced agent step: held a tool result ${Math.round(ms)} ms (axiomForge.pacing.minSecondsBetweenSteps)`),
           onReceipt: (r) => {
             this.state.receipts = { ...this.state.receipts, [r.id]: r };
             this.pushEvent({ kind: 'context_receipt', id: `receipt:${r.id}`, receiptId: r.id, at: r.createdAt });

@@ -121,6 +121,13 @@
           "default": false,
           "description": "Show developer commands (review harness that stages a sample, non-model proposal)."
         },
+        "axiomForge.pacing.minSecondsBetweenSteps": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 60,
+          "description": "Free-tier quotas: hold each tool result until this many seconds have passed since the previous one, so the agent's model requests stay under per-minute limits (e.g. 13 for Gemini free tier). 0 = off."
+        },
         "axiomForge.perfLog": {
           "type": "boolean",
           "default": false,

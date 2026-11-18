@@ -11,6 +11,7 @@ import { proposeEditShape } from '../safety/proposeEditArgs';
 import type { ApplyOutcome, SafeChange } from '../safety/safeChange';
 import { runCommand, type CommandResult } from '../verification/commandRunner';
 import type { WorkspaceHost } from '../workspace/host';
+import type { StepPacer } from './pacer';
 import { PathPolicyError, resolveWorkspacePath } from './pathJail';
 
 export const MCP_SERVER_NAME = 'axiom-forge';
@@ -39,6 +40,9 @@ export interface McpDeps {
   commandTimeoutMs?: number;
   /** Abort signal of the active run; a cancelled run kills its running command. */
   runSignal?: () => AbortSignal | undefined;
+  /** Opt-in spacing of agent steps for free-tier quotas (src/mcp/pacer.ts). Shared by pooled servers. */
+  pacer?: StepPacer;
+  onPaced?: (ms: number) => void;
 }
 
 const runCommandShape = {
@@ -74,6 +78,16 @@ function guard<A>(fn: (a: A) => Promise<ReturnType<typeof text>>) {
 }
 
 export function buildMcpServer(deps: McpDeps): McpServer {
+  // Every tool result passes the (opt-in) pacer before it returns to TrueForge.
+  const paced = <A,>(fn: (a: A) => Promise<ReturnType<typeof text>>) =>
+    guard(async (a: A) => {
+      const r = await fn(a);
+      if (deps.pacer) {
+        const ms = await deps.pacer.beforeResult(deps.runSignal?.());
+        if (ms > 0) deps.onPaced?.(ms);
+      }
+      return r;
+    });
   const server = new McpServer(
     { name: MCP_SERVER_NAME, version: '0.1.0' },
     {
@@ -96,7 +110,7 @@ export function buildMcpServer(deps: McpDeps): McpServer {
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    guard(async ({ task, mentions }) => {
+    paced(async ({ task, mentions }) => {
       const { receipt, bundle } = await deps.engine.assemble({ task, mentions: mentions ?? [], budgetTokens: deps.budgetTokens?.() ?? 24_000 });
       deps.onReceipt?.(receipt);
       return text(bundle);
@@ -115,7 +129,7 @@ export function buildMcpServer(deps: McpDeps): McpServer {
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    guard(async ({ path, start_line, end_line }) => {
+    paced(async ({ path, start_line, end_line }) => {
       const { rel } = resolveWorkspacePath(deps.host.root, path, 'read');
       if (!(await deps.host.exists(rel))) return text(`File not found: ${rel}`, true);
       const lines = (await deps.host.readText(rel)).split('\n');
@@ -144,7 +158,7 @@ export function buildMcpServer(deps: McpDeps): McpServer {
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    guard(async ({ query, glob, regex, max_results }) => {
+    paced(async ({ query, glob, regex, max_results }) => {
       const r = await deps.engine.search(query, { ...(glob ? { glob } : {}), isRegex: regex ?? false, maxResults: max_results ?? 50 });
       if (!r.matches.length) return text(`No matches for "${query}".`);
       const lines = r.matches.map((m) => `${m.rel}:${m.line}: ${m.text}`).join('\n');
@@ -160,7 +174,7 @@ export function buildMcpServer(deps: McpDeps): McpServer {
       inputSchema: { name: z.string().min(1).describe('Symbol name, e.g. "get_debug_flag" or "FlaskGroup.get_command".') },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    guard(async ({ name }) => {
+    paced(async ({ name }) => {
       const r = await deps.engine.symbol(name);
       if (!r.definitions.length && !r.references.length) return text(`No symbol named "${name}".`);
       const defs = r.definitions.map((d) => `def  ${d.rel}:${d.line}  ${d.signature}`).join('\n');
@@ -177,7 +191,7 @@ export function buildMcpServer(deps: McpDeps): McpServer {
       inputSchema: { path: z.string() },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    guard(async ({ path }) => {
+    paced(async ({ path }) => {
       const { rel } = resolveWorkspacePath(deps.host.root, path, 'read');
       const edges = await deps.engine.related(rel);
       if (!edges.length) return text(`No known relations for ${rel}.`);
@@ -195,7 +209,7 @@ export function buildMcpServer(deps: McpDeps): McpServer {
       inputSchema: proposeEditShape,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },
-    guard(async (args) => {
+    paced(async (args) => {
       const grant = deps.approvals.consume<{ proposalId: string }>(TOOL.proposeEdit, args);
       if (!grant) {
         return text(
@@ -248,7 +262,7 @@ export function buildMcpServer(deps: McpDeps): McpServer {
       inputSchema: runCommandShape,
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     },
-    guard(async (args) => {
+    paced(async (args) => {
       const grant = deps.approvals.consume(TOOL.runCommand, args);
       if (!grant) return text('Not run: this command was not approved by the user in AXIOM Forge.', true);
       const cwd = args.cwd ? resolveWorkspacePath(deps.host.root, args.cwd, 'read').abs : deps.host.root;

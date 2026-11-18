@@ -34,16 +34,22 @@ const rows: Array<[Status, string, string]> = [];
 const row = (s: Status, check: string, detail: string) => rows.push([s, check, detail]);
 
 void (async () => {
-  // 1. Agent definition (the committed file the extension sends inline)
-  try {
-    const def = loadAgentDefinition(path.resolve('agents/axiom-agent.json'), primary ?? 'MODEL');
-    const m = def.manifest as { instructions?: string; mcp_servers?: Array<{ name: string; require_approval_for_tools?: string[]; preload_tools?: string[] }>; model?: { name?: string } };
-    const srv = m.mcp_servers?.find((s) => s.name === 'axiom-forge');
-    const gated = new Set(srv?.require_approval_for_tools ?? []);
-    const ok = !!m.instructions && !!srv && gated.has('propose_edit') && gated.has('run_command');
-    row(ok ? 'PASS' : 'FAIL', 'agent definition', ok ? `agents/axiom-agent.json: axiom-forge MCP, approval required for ${[...gated].join(', ')}` : 'missing instructions, MCP server or approval list');
-  } catch (e) {
-    row('FAIL', 'agent definition', (e as Error).message);
+  // 1. Agent definitions (the committed files the extension sends inline): agent mode and inline edits.
+  for (const [file, mustGate, tools] of [
+    ['agents/axiom-agent.json', ['propose_edit', 'run_command'], null],
+    ['agents/axiom-agent-inline.json', ['propose_edit'], ['read_file', 'propose_edit']],
+  ] as const) {
+    try {
+      const def = loadAgentDefinition(path.resolve(file), primary ?? 'MODEL');
+      const m = def.manifest as { instructions?: string; mcp_servers?: Array<{ name: string; enable_tools?: string[]; require_approval_for_tools?: string[] }> };
+      const srv = m.mcp_servers?.find((s) => s.name === 'axiom-forge');
+      const gated = new Set(srv?.require_approval_for_tools ?? []);
+      const toolsOk = !tools || JSON.stringify(srv?.enable_tools ?? []) === JSON.stringify(tools);
+      const ok = !!m.instructions && !!srv && mustGate.every((t) => gated.has(t)) && toolsOk;
+      row(ok ? 'PASS' : 'FAIL', `agent definition ${path.basename(file)}`, ok ? `approval required for ${[...gated].join(', ')}${tools ? `; tools limited to ${tools.join(', ')}` : ''}` : 'missing instructions, MCP server, approval list or tool limit');
+    } catch (e) {
+      row('FAIL', `agent definition ${path.basename(file)}`, (e as Error).message);
+    }
   }
 
   // 2. TrueForge reachable (real HTTP, IPv4/IPv6 loopback probing)

@@ -1,0 +1,13 @@
+    ✔ registers its commands (287ms)
+    ✔ starts the MCP server on 127.0.0.1
+    ✔ reports real TrueForge connectivity and TrueForge can list our tools (997ms)
+    ✔ SafeChange applies only accepted hunks through WorkspaceEdit and undo restores the file (23048ms)
+    ✔ propose_edit through MCP refuses without approval (no write) (3990ms)
+    ✔ [E/F] dev harness: native diff tab + per-hunk CodeLens + accept 1 / reject 1 + apply + undo (24158ms)
+    ✔ [E/F] conflict: a user edit after staging blocks the apply (7058ms)
+    ✔ [D-G, approval simulated] approved propose_edit via MCP applies through WorkspaceEdit; approved run_command records Proof (3455ms)
+    ✔ [Phase 3, approval simulated] same-file edits merge into one diff; multi-file change set applies via WorkspaceEdit; a failed write rolls back the editor buffer and disk (22673ms)
+    ✔ [B/I/J, real TrueForge] unconfigured primary + backup → classified bad_config, both tried, workspace unchanged (9294ms)
+    ✔ inline edit without a selection warns instead of running (1257ms)
+  11 passing (2m)
+  2 pending

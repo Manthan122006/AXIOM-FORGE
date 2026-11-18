@@ -337,6 +337,11 @@ describe('AXIOM Forge in VS Code', () => {
     console.log(`      [live model-shield] ${Date.now() - t0} ms; recovery states:\n        ${states.join('\n        ')}\n      session: ${JSON.stringify(c.state.session)}`);
     assert.ok(states.some((s) => s.includes('"switching"') || s.includes('"fallback"') || s.includes(backup)), 'switched to the backup model');
     assert.strictEqual(snapshot(), before, 'no file changed');
+    if (process.env.AXIOM_LIVE_EXPECT_AUTH === '1') {
+      // Invalid-key scenario: classified auth, NO retries on the primary, immediate switch.
+      assert.ok(states.some((s) => s.includes('"failure":"auth"')), 'primary failure classified as auth');
+      assert.ok(!states.some((s) => s.includes('"retrying"') && s.includes(primary)), 'no retries on an invalid key');
+    }
   });
 
   // Opt-in LIVE Task-C-shaped run on the real extension path (costs provider quota):

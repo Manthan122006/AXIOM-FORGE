@@ -1,8 +1,9 @@
-PASS       agent definition                                                                  agents/axiom-agent.json: axiom-forge MCP, approval required for propose_edit, run_command
+PASS       agent definition axiom-agent.json                                                 approval required for propose_edit, run_command
+PASS       agent definition axiom-agent-inline.json                                          approval required for propose_edit; tools limited to read_file, propose_edit
 PASS       TrueForge reachable                                                               http://localhost:8790 answered /api/v1/models
-PASS       models configured in TrueForge                                                    14 model(s): google-gemini/gemini-3-1-flash-lite, google-gemini/gemini-3-1-pro-preview, google-gemini/gemini-3-5-flash, google-gemini/gemini-3-5-flash-lite, google-gemini/gemini-3-6-flash, google-gemini/gemini-3-7-flash, …
+PASS       models configured in TrueForge                                                    15 model(s): google-gemini/gemini-3-1-flash-lite, google-gemini/gemini-3-1-pro-preview, google-gemini/gemini-3-5-flash, google-gemini/gemini-3-5-flash-lite, google-gemini/gemini-3-6-flash, google-gemini/gemini-3-7-flash, …
 PASS       primary model exists                                                              google-gemini/gemini-3-5-flash
-PASS       backup model exists                                                               groq/gpt-oss-20b
+PASS       backup model exists                                                               groq/qwen-3-8-27b
 PASS       TrueForge lists the 7 MCP tools                                                   assemble_context, find_symbol, propose_edit, read_file, related_files, run_command, search_workspace (via a temporary MCP server)
 PASS       unknown model → bad_config (falls back)                                           422 → bad_config
 PASS       TrueForge down ≠ provider failure                                                 closed port → trueforge_error (ModelShield does not switch models for this)

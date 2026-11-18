@@ -1,0 +1,113 @@
+diff --git a/docs/cli.rst b/docs/cli.rst
+index a72e6d51..6412d0aa 100644
+--- a/docs/cli.rst
++++ b/docs/cli.rst
+@@ -518,6 +518,21 @@ script is available. Note that you don't need to set ``--app``. ::
+ .. _console script: https://packaging.python.org/tutorials/packaging-projects/#console-scripts
+ 
+ 
++Configuring the Application
++---------------------------
++
++You can print the loaded configuration for the application using the ``config``
++command. This will print the configuration as JSON, masking any values that
++contain "SECRET", "PASSWORD", "TOKEN", or "KEY". ::
++
++    $ flask config
++    {
++        "DEBUG": false,
++        "SECRET_KEY": "***",
++        ...
++    }
++
++
+ PyCharm Integration
+ -------------------
+ 
+diff --git a/src/flask/cli.py b/src/flask/cli.py
+index ed11f256..548cad6b 100644
+--- a/src/flask/cli.py
++++ b/src/flask/cli.py
+@@ -594,6 +594,7 @@ class FlaskGroup(AppGroup):
+             self.add_command(run_command)
+             self.add_command(shell_command)
+             self.add_command(routes_command)
++            self.add_command(config_command)
+ 
+         self._loaded_plugin_commands = False
+ 
+@@ -1115,6 +1116,30 @@ def routes_command(sort: str, all_methods: bool) -> None:
+         click.echo(template.format(*row))
+ 
+ 
++@click.command("config", short_help="Show the config for the app.")
++@with_appcontext
++def config_command() -> None:
++    """Show the config for the app. Masking the values of any key containing
++    SECRET, PASSWORD, TOKEN or KEY as "***".
++    """
++    import json
++
++    config = dict(current_app.config)
++    mask_keys = {"SECRET", "PASSWORD", "TOKEN", "KEY"}
++
++    for key in config:
++        if any(mask in key for mask in mask_keys):
++            config[key] = "***"
++
++    def _json_encoder(obj: t.Any) -> t.Any:
++        try:
++            return str(obj)
++        except Exception:
++            return repr(obj)
++
++    click.echo(json.dumps(config, indent=4, sort_keys=True, default=_json_encoder))
++
++
+ cli = FlaskGroup(
+     name="flask",
+     help="""\
+diff --git a/tests/test_cli.py b/tests/test_cli.py
+index e254c1dd..74b0338c 100644
+--- a/tests/test_cli.py
++++ b/tests/test_cli.py
+@@ -517,15 +517,36 @@ class TestRoutes:
+         assert result.exit_code == 0
+         assert "Host" in result.output
+ 
++class TestConfig:
++    def test_config(self, runner):
++        def create_app():
++            app = Flask(__name__)
++            app.config["SECRET_KEY"] = "secret"
++            app.config["PASSWORD"] = "password"
++            app.config["TOKEN"] = "token"
++            app.config["KEY"] = "key"
++            app.config["DEBUG"] = True
++            return app
++
++        cli = FlaskGroup(create_app=create_app)
++        result = runner.invoke(cli, ["config"])
++        assert result.exit_code == 0
++        output = result.output
++        assert '"SECRET_KEY": "***"' in output
++        assert '"PASSWORD": "***"' in output
++        assert '"TOKEN": "***"' in output
++        assert '"KEY": "***"' in output
++        # DEBUG is set to False by default in Flask test apps
++        assert '"DEBUG": false' in output
++
+ 
+ def dotenv_not_available():
+     try:
+-        import dotenv  # noqa: F401
++        import dotenv
++        return False
+     except ImportError:
+         return True
+ 
+-    return False
+-
+ 
+ need_dotenv = pytest.mark.skipif(
+     dotenv_not_available(), reason="dotenv is not installed"
