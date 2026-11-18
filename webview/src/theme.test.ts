@@ -1,7 +1,7 @@
 /**
- * WCAG 2.x contrast check for the five semantic colours (docs/DESIGN_SYSTEM.md claims ≥ 4.5:1 as text)
- * against the default VS Code sidebars: Dark Modern #181818 and Light Modern #F8F8F8.
- * Values are read from styles.css so the test fails if the CSS drifts.
+ * WCAG 2.x contrast for the AXIOM Forge palette (docs/AXIOM_DESIGN_SYSTEM.md): every semantic colour
+ * and the muted text must reach 4.5:1 on BOTH our base background and our raised surface, in dark and
+ * light; white on the primary button too. Values are read from styles.css so drift fails the test.
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -20,15 +20,18 @@ const contrast = (a: string, b: string) => {
   return (x! + 0.05) / (y! + 0.05);
 };
 
-const NAMES = ['act', 'run', 'ok', 'wait', 'bad'];
+const TEXT = ['fg', 'muted', 'act', 'run', 'ok', 'wait', 'bad'];
 
-describe('semantic colour contrast (WCAG AA, 4.5:1)', () => {
-  const dark = block(':root {');
-  const light = block("body.vscode-light,");
-  it.each(NAMES)('dark --ax-%s on #181818', (n) => {
-    expect(contrast(read(dark, n), '#181818')).toBeGreaterThanOrEqual(4.5);
-  });
-  it.each(NAMES)('light --ax-%s on #F8F8F8', (n) => {
-    expect(contrast(read(light, n), '#f8f8f8')).toBeGreaterThanOrEqual(4.5);
+describe.each([
+  ['dark', block(':root {')],
+  ['light', block('body.vscode-light,')],
+])('%s palette', (_name, src) => {
+  for (const surface of ['bg', 'surface', 'surface-2']) {
+    it.each(TEXT)(`--ax-%s on --ax-${surface} ≥ 4.5:1`, (n) => {
+      expect(contrast(read(src, n), read(src, surface))).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+  it('white on the primary button ≥ 4.5:1', () => {
+    expect(contrast('#ffffff', read(src, 'act-strong'))).toBeGreaterThanOrEqual(4.5);
   });
 });

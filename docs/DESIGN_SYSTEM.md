@@ -1,3 +1,5 @@
+> **Superseded on 18 Nov 2026 by `AXIOM_DESIGN_SYSTEM.md`** (new palette, seven-area navigation, the Trace). Kept for history.
+
 # AXIOM Forge — Design System (frontend-design pass 1)
 
 **Subject:** a code-review instrument that lives in the VS Code sidebar. **Audience:** engineers (and judges) watching an agent change a real repository. **Primary job:** make it obvious, at a glance, *what the agent looked at, what it wants to change, and what has actually been verified*.

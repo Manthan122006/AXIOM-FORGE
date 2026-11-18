@@ -395,6 +395,18 @@ describe('AXIOM Forge in VS Code', () => {
     assert.match(after, /return False/);
   });
 
+  it('[UI] "Open Workspace" opens one full-size AXIOM Forge tab (reused on a second call)', async () => {
+    const tabs = () => vscode.window.tabGroups.all.flatMap((g) => g.tabs).filter((t) => t.label === 'AXIOM Forge');
+    await vscode.commands.executeCommand('axiomForge.openWorkspace');
+    await new Promise((r) => setTimeout(r, 500));
+    assert.strictEqual(tabs().length, 1, 'one workspace tab');
+    await vscode.commands.executeCommand('axiomForge.openWorkspace');
+    await new Promise((r) => setTimeout(r, 300));
+    assert.strictEqual(tabs().length, 1, 'second call reveals the same tab');
+    assert.ok(api.controller.state.workspace, 'workspace stats are in the state the UI renders');
+    await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+  });
+
   it('inline edit without a selection warns instead of running', async () => {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
     const before = JSON.stringify(api.controller.state.session);

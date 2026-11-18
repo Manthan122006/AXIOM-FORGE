@@ -361,6 +361,7 @@ export function assembleContext(
     excluded,
     budget: { limitTokens: budget, usedTokens: used, perFileCapTokens: perFileCap, estimator: 'chars_div_4', truncated: selected.some((s) => s.inclusion.mode !== 'full') },
     repo: { files: index.files.length, indexedLines: index.totalLines, estTokensTotal: Math.ceil(index.totalChars / 4) },
+    relations: relationsAmong(graph, selected.map((s) => s.path)),
   };
   const header =
     `AXIOM Forge context for: ${input.task}\n` +
@@ -410,4 +411,21 @@ function summarize(c: Candidate, category: RelevanceCategory): string {
   const lead =
     category === 'test' ? 'Tests' : category === 'documentation' ? 'Docs' : category === 'configuration' ? 'Config' : category === 'explicit_mention' ? 'Mentioned' : category === 'selection' ? 'Selection' : 'Code';
   return pair && pair !== top[0] ? `${lead}: ${first}; ${pair.detail}` : `${lead}: ${first}`;
+}
+
+/** Edges of the relation graph whose both ends are in `paths` (deduplicated). Real graph data only. */
+function relationsAmong(graph: RelationGraph, paths: string[]): Array<{ from: string; to: string; kind: 'imports' | 'tests' | 'documents' }> {
+  const set = new Set(paths);
+  const seen = new Set<string>();
+  const out: Array<{ from: string; to: string; kind: 'imports' | 'tests' | 'documents' }> = [];
+  for (const p of paths) {
+    for (const e of neighbours(graph, p)) {
+      if (!set.has(e.from) || !set.has(e.to) || e.from === e.to) continue;
+      const key = `${e.from}>${e.to}>${e.kind}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ from: e.from, to: e.to, kind: e.kind });
+    }
+  }
+  return out;
 }

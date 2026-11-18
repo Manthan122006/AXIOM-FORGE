@@ -139,6 +139,8 @@ export interface ContextReceipt {
   budget: ContextBudget;
   /** Index stats so judges can see the repo is bigger than the context. */
   repo: { files: number; indexedLines: number; estTokensTotal: number };
+  /** Relationships BETWEEN the selected files, from the engine's relation graph (imports, tests, docs). */
+  relations?: Array<{ from: string; to: string; kind: 'imports' | 'tests' | 'documents' }>;
 }
 
 // ───────────────────────── SafeChange ─────────────────────────
@@ -246,7 +248,7 @@ export type ModelRecoveryState =
   | { kind: 'healthy'; model: string }
   | { kind: 'failed'; model: string; failure: FailureClass; message: string }
   | { kind: 'retrying'; model: string; attempt: number; maxAttempts: number; delayMs: number }
-  | { kind: 'switching'; from: string; to: string }
+  | { kind: 'switching'; from: string; to: string; /** why the previous model was abandoned */ failure?: FailureClass }
   | { kind: 'recovered'; model: string; slot: 'backup' }
   | { kind: 'exhausted'; tried: string[]; message: string };
 
@@ -268,6 +270,8 @@ export interface AxiomState {
    * with every health check. "listed" means TrueForge knows the model, not that its quota is left.
    */
   models: { primary: ConfiguredModel | null; backup: ConfiguredModel | null };
+  /** The open workspace and its index size (null until indexed). */
+  workspace: { name: string; files: number; lines: number; symbols: number } | null;
 }
 
 export interface ConfiguredModel {
@@ -298,4 +302,8 @@ export type WebviewToHost =
   | { type: 'undo'; proposalId: string }
   | { type: 'runVerification'; command: string }
   | { type: 'mentionQuery'; query: string }
-  | { type: 'openSessionInTrueForge' };
+  | { type: 'openSessionInTrueForge' }
+  /** Open a workspace file (path-jailed by the host). */
+  | { type: 'openFile'; path: string; line?: number }
+  /** Run one of AXIOM Forge's own commands (allowlisted by the host). */
+  | { type: 'command'; id: 'inlineEdit' | 'reconnect' | 'setupTrueForge' | 'perfReport' | 'openWorkspace' };

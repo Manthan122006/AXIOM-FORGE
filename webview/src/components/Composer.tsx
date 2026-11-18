@@ -8,7 +8,7 @@ type Suggestion = { kind: 'file' | 'symbol'; label: string; detail: string };
  * Composer. Input text is local state (typing never touches the global store — rerender-defer-reads).
  * "@" opens file/symbol suggestions from the host's context engine.
  */
-export function Composer() {
+export function Composer({ seed }: { seed?: { text: string; n: number } | null }) {
   const running = useAxiom((s) => s.session.status === 'running' || s.session.status === 'paused');
   const connected = useAxiom((s) => s.connection.kind === 'connected');
   const [text, setText] = useState('');
@@ -17,6 +17,18 @@ export function Composer() {
   const [items, setItems] = useState<Suggestion[]>([]);
   const [active, setActive] = useState(0);
   const ref = useRef<HTMLTextAreaElement>(null);
+
+  // A picked example or quick action prefills the box (the user still decides to run it).
+  useEffect(() => {
+    if (!seed) return;
+    setText(seed.text);
+    requestAnimationFrame(() => {
+      const el = ref.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(seed.text.length, seed.text.length);
+    });
+  }, [seed]);
 
   useEffect(() => {
     onMentionResults((r) => {
@@ -114,7 +126,7 @@ export function Composer() {
             rows={2}
             value={text}
             aria-label="Ask AXIOM Forge"
-            placeholder={connected ? 'Describe the change. @ to mention a file or symbol' : 'Waiting for TrueForge…'}
+            placeholder={connected ? 'Describe the change you want. Type @ to point at a file or symbol.' : 'Waiting for TrueForge to connect…'}
             onChange={(e) => {
               setText(e.target.value);
               updateQuery(e.target.value, e.target.selectionStart);
@@ -135,8 +147,8 @@ export function Composer() {
         </div>
       </div>
       <div className="hint">
-        <span>{running ? 'The agent is working. Stop discards anything not yet applied.' : 'Enter to run · Shift+Enter for a new line'}</span>
-        <span>Edits need your approval</span>
+        <span>{running ? 'The agent is working. Stop discards anything not yet applied.' : 'Enter runs the task. Shift+Enter adds a line.'}</span>
+        <span>Every edit waits for your approval</span>
       </div>
     </div>
   );

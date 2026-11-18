@@ -19,6 +19,7 @@ export const EMPTY_STATE: AxiomState = {
   verification: {},
   recovery: { kind: 'healthy', model: '' },
   models: { primary: null, backup: null },
+  workspace: null,
 };
 
 type Listener = () => void;

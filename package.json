@@ -44,6 +44,12 @@
         "category": "AXIOM Forge"
       },
       {
+        "command": "axiomForge.openWorkspace",
+        "title": "AXIOM Forge: Open Workspace",
+        "category": "AXIOM Forge",
+        "icon": "$(screen-full)"
+      },
+      {
         "command": "axiomForge.cancel",
         "title": "AXIOM Forge: Cancel Run",
         "category": "AXIOM Forge"
@@ -144,6 +150,13 @@
         {
           "command": "axiomForge.cancel",
           "when": "axiomForge.running"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "axiomForge.openWorkspace",
+          "when": "view == axiomForge.agent",
+          "group": "navigation"
         }
       ]
     }

@@ -50,6 +50,13 @@ All commits on `main` were made in Claude Code sessions on Manthan's machine (au
 
 **Kunjal**: after the push: own `FINAL_TEST_MATRIX.md`; re-run `npm run check`, `npm run test:vscode` and `bash scripts/tasks/verify-task-*.sh` after each merge; continue F9+ retrieval tasks as planned below (no ranking changes before new tasks are committed).
 
+## UI redesign (18 Nov): ownership and next steps
+Done locally on `main` (not pushed): seven-area UI, full-size tab, the Trace, new design system (`AXIOM_DESIGN_SYSTEM.md`, `UX_ARCHITECTURE.md`, `VISUAL_QA_REPORT.md`).
+- **Manthan** (product direction, approval): reload the demo window, walk all seven areas, approve or redirect the direction before anyone polishes further.
+- **Vivan** (visual implementation, motion): screenshots inside VS Code at 300/420/600 px in dark, light and high-contrast; keyboard-only pass; plain-language receipt reasons; map edge routing.
+- **Toheed** (state integration, safety): review the new `openFile` (path-jailed) and `command` (allowlisted) messages and the multi-surface controller; confirm approvals still go through one review per run when both surfaces are open.
+- **Kunjal** (Context visualization, QA): check `receipt.relations` on other repositories; extend `derive.test.ts`; keep `VISUAL_QA_REPORT.md` current.
+
 ## Manthan: TrueForge integration, ModelShield, final integration, model verification
 **Files:** `src/trueforge/*`, `src/extension/controller.ts`, `src/extension/activate.ts`, `agents/axiom-agent.json`, `scripts/proof.ts`, `scripts/preflight.ts`, `scripts/setup-trueforge.ts`, `docs/TRUEFORGE_INTEGRATION_STATUS.md`, `docs/MODEL_KEY_CHECKLIST.md`.
 **Tasks, in order**

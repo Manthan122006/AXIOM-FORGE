@@ -25,6 +25,14 @@ export interface TaskRequest {
   inline?: { rel: string; startLine: number; endLine: number; selectedText: string };
 }
 
+interface Surface {
+  webview: vscode.Webview;
+  /** Last value sent per state slice (by reference) and timeline rows changed since. */
+  posted: Partial<Record<keyof AxiomState, unknown>>;
+  dirtyRows: Set<number>;
+  needFull: boolean;
+}
+
 class Cancelled extends Error {
   constructor() {
     super('cancelled');
@@ -55,15 +63,13 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
   readonly diff: DiffView;
   private tf: TrueForgeConnection;
   private mcp: RunningMcpServer | null = null;
-  private view: vscode.WebviewView | null = null;
+  /** Every open AXIOM UI (sidebar view, workspace tab). Each tracks what it has already been sent. */
+  private surfaces = new Set<Surface>();
+  private panel: vscode.WebviewPanel | null = null;
   private run: ActiveRun | null = null;
   private timeline: AgentEvent[] = [];
   private timelineIdx = new Map<string, number>();
   private postTimer: NodeJS.Timeout | null = null;
-  /** Patch protocol: what the webview already has (by reference) and which timeline rows changed. */
-  private posted: Partial<Record<keyof AxiomState, unknown>> = {};
-  private dirtyRows = new Set<number>();
-  private needFullPost = true;
   private postStats = { full: 0, patches: 0, bytes: 0, maxMs: 0 };
   private healthTimer: NodeJS.Timeout | null = null;
   private agentModel: string | null = null;
@@ -87,6 +93,7 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
     verification: {},
     recovery: { kind: 'healthy', model: '' },
     models: { primary: null, backup: null },
+    workspace: null,
   };
 
   constructor(
@@ -152,7 +159,13 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
   async start(): Promise<void> {
     this.startStallDetector();
     this.lastOp = 'activation';
-    void this.engine.ready().then(() => this.engine.stats().then((s) => this.log(`indexed ${s.files} files, ${s.lines} lines, ${s.symbols} symbols`)));
+    void this.engine.ready().then(() =>
+      this.engine.stats().then((s) => {
+        this.log(`indexed ${s.files} files, ${s.lines} lines, ${s.symbols} symbols`);
+        this.state.workspace = { name: path.basename(this.root), files: s.files, lines: s.lines, symbols: s.symbols };
+        this.schedulePost();
+      }),
+    );
     const port = cfg().get<number>('mcpPort', 7811);
     try {
       this.mcp = await startMcpHttpServer(
@@ -284,23 +297,43 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
   // ───────────────────────── webview ─────────────────────────
 
   resolveWebviewView(view: vscode.WebviewView): void {
-    this.view = view;
-    const dist = vscode.Uri.joinPath(this.ctx.extensionUri, 'dist', 'webview');
-    view.webview.options = { enableScripts: true, localResourceRoots: [dist] };
-    const nonce = Array.from({ length: 24 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]).join('');
-    const js = view.webview.asWebviewUri(vscode.Uri.joinPath(dist, 'main.js'));
-    const css = view.webview.asWebviewUri(vscode.Uri.joinPath(dist, 'index.css'));
-    const csp = `default-src 'none'; style-src ${view.webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; font-src ${view.webview.cspSource}; img-src ${view.webview.cspSource} data:;`;
-    view.webview.html = `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="${css}"><title>AXIOM Forge</title></head><body><div id="root"></div><script type="module" nonce="${nonce}" src="${js}"></script></body></html>`;
-    view.webview.onDidReceiveMessage((m: WebviewToHost) => void this.onMessage(m));
-    view.onDidDispose(() => (this.view = null));
+    const surface = this.attach(view.webview, 'sidebar');
+    view.onDidDispose(() => this.surfaces.delete(surface));
   }
 
-  private async onMessage(m: WebviewToHost): Promise<void> {
+  /** "AXIOM Forge: Open Workspace": the same app full-size in an editor tab (one instance, revealed if open). */
+  openWorkspace(): void {
+    if (this.panel) return this.panel.reveal(vscode.ViewColumn.Active);
+    const dist = vscode.Uri.joinPath(this.ctx.extensionUri, 'dist', 'webview');
+    const panel = vscode.window.createWebviewPanel('axiomForge.workspace', 'AXIOM Forge', vscode.ViewColumn.Active, { enableScripts: true, localResourceRoots: [dist], retainContextWhenHidden: true });
+    panel.iconPath = vscode.Uri.joinPath(this.ctx.extensionUri, 'media', 'axiom.svg');
+    const surface = this.attach(panel.webview, 'panel');
+    this.panel = panel;
+    panel.onDidDispose(() => {
+      this.surfaces.delete(surface);
+      this.panel = null;
+    });
+  }
+
+  private attach(webview: vscode.Webview, kind: 'sidebar' | 'panel'): Surface {
+    const dist = vscode.Uri.joinPath(this.ctx.extensionUri, 'dist', 'webview');
+    webview.options = { enableScripts: true, localResourceRoots: [dist] };
+    const nonce = Array.from({ length: 24 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]).join('');
+    const js = webview.asWebviewUri(vscode.Uri.joinPath(dist, 'main.js'));
+    const css = webview.asWebviewUri(vscode.Uri.joinPath(dist, 'index.css'));
+    const csp = `default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; font-src ${webview.cspSource}; img-src ${webview.cspSource} data:;`;
+    webview.html = `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="${css}"><title>AXIOM Forge</title></head><body data-surface="${kind}"><div id="root"></div><script type="module" nonce="${nonce}" src="${js}"></script></body></html>`;
+    const surface: Surface = { webview, posted: {}, dirtyRows: new Set(), needFull: true };
+    this.surfaces.add(surface);
+    webview.onDidReceiveMessage((m: WebviewToHost) => void this.onMessage(m, surface));
+    return surface;
+  }
+
+  private async onMessage(m: WebviewToHost, surface: Surface): Promise<void> {
     switch (m.type) {
       case 'ready':
         // a new or reloaded webview has nothing yet: send everything once, then patches
-        this.needFullPost = true;
+        surface.needFull = true;
         return this.postNow();
       case 'send':
         return this.runTask({ text: m.text, mentions: m.mentions });
@@ -316,13 +349,29 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
         return void this.submitReview();
       case 'openDiff':
         return this.diff.open(m.proposalId, this.root);
+      case 'openFile': {
+        let abs: string;
+        try {
+          abs = resolveWorkspacePath(this.root, m.path, 'read').abs;
+        } catch (e) {
+          return void vscode.window.showWarningMessage((e as Error).message);
+        }
+        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(abs));
+        const pos = new vscode.Position(Math.max(0, (m.line ?? 1) - 1), 0);
+        return void (await vscode.window.showTextDocument(doc, { preview: true, selection: new vscode.Range(pos, pos) }));
+      }
+      case 'command': {
+        const allowed = { inlineEdit: 'axiomForge.inlineEdit', reconnect: 'axiomForge.reconnect', setupTrueForge: 'axiomForge.setupTrueForge', perfReport: 'axiomForge.perfReport', openWorkspace: 'axiomForge.openWorkspace' } as const;
+        const id = allowed[m.id];
+        return id ? void vscode.commands.executeCommand(id) : undefined;
+      }
       case 'undo':
         return this.undo(m.proposalId);
       case 'runVerification':
         return this.runUserVerification(m.command);
       case 'mentionQuery': {
         const items = await this.engine.mentionCandidates(m.query);
-        void this.view?.webview.postMessage({ type: 'mentionResults', query: m.query, items } satisfies HostToWebview);
+        void surface.webview.postMessage({ type: 'mentionResults', query: m.query, items } satisfies HostToWebview);
         return;
       }
       case 'openSessionInTrueForge':
@@ -398,6 +447,8 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
           attempt: (model, info) => this.attempt(run, model, model === primary ? 'primary' : 'backup', prompt, info.freshSession),
           onState: (s) => {
             this.state.recovery = s;
+            // Keep the routing history (ModelShield view); 'healthy' at run start is not an event.
+            if (s.kind !== 'healthy' || this.state.timeline.some((e) => e.kind === 'recovery')) this.pushEvent({ kind: 'recovery', id: `recovery:${Date.now()}:${s.kind}`, state: s, at: new Date().toISOString() });
             this.log(`model shield: ${JSON.stringify(s)}`);
             this.schedulePost();
           },
@@ -697,11 +748,11 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
     const at = this.timelineIdx.get(ev.id);
     if (at === undefined) {
       this.timelineIdx.set(ev.id, this.timeline.length);
-      this.dirtyRows.add(this.timeline.length);
+      for (const sf of this.surfaces) sf.dirtyRows.add(this.timeline.length);
       this.timeline.push(ev);
     } else {
       this.timeline[at] = ev;
-      this.dirtyRows.add(at);
+      for (const sf of this.surfaces) sf.dirtyRows.add(at);
     }
     this.schedulePost();
   }
@@ -734,28 +785,32 @@ export class AxiomController implements vscode.WebviewViewProvider, vscode.Dispo
   private postNow() {
     this.state.timeline = this.timeline;
     this.updateStatusBar();
-    if (!this.view) return;
+    for (const sf of this.surfaces) this.postTo(sf);
+  }
+
+  /** Full state once per surface, then patches: only changed slices and changed timeline rows. */
+  private postTo(sf: Surface) {
     const t0 = performance.now();
     let msg: HostToWebview;
-    if (this.needFullPost) {
+    if (sf.needFull) {
       msg = { type: 'state', state: this.state };
-      for (const k of Object.keys(this.state) as Array<keyof AxiomState>) this.posted[k] = this.state[k];
-      this.needFullPost = false;
+      for (const k of Object.keys(this.state) as Array<keyof AxiomState>) sf.posted[k] = this.state[k];
+      sf.needFull = false;
       this.postStats.full++;
     } else {
       const patch: Record<string, unknown> = {};
       for (const k of Object.keys(this.state) as Array<keyof AxiomState>) {
-        if (k === 'timeline' || this.state[k] === this.posted[k]) continue;
+        if (k === 'timeline' || this.state[k] === sf.posted[k]) continue;
         patch[k] = this.state[k];
-        this.posted[k] = this.state[k];
+        sf.posted[k] = this.state[k];
       }
-      const set = [...this.dirtyRows].sort((a, b) => a - b).map((i): [number, AgentEvent] => [i, this.timeline[i]!]);
+      const set = [...sf.dirtyRows].sort((a, b) => a - b).map((i): [number, AgentEvent] => [i, this.timeline[i]!]);
       if (!set.length && !Object.keys(patch).length) return;
       msg = { type: 'patch', patch: patch as Partial<Omit<AxiomState, 'timeline'>>, ...(set.length ? { timeline: { length: this.timeline.length, set } } : {}) };
       this.postStats.patches++;
     }
-    this.dirtyRows.clear();
-    void this.view.webview.postMessage(msg);
+    sf.dirtyRows.clear();
+    void sf.webview.postMessage(msg);
     const ms = performance.now() - t0;
     perf.record('webview.post', t0, ms);
     this.postStats.maxMs = Math.max(this.postStats.maxMs, ms);

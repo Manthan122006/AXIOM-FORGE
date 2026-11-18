@@ -12,6 +12,9 @@ mkdirSync(path.join(ws, 'pkg'));
 writeFileSync(path.join(ws, 'pkg', 'flags.py'), 'def get_flag():\n    """Return the flag."""\n    return True\n');
 writeFileSync(path.join(ws, 'tests_flags.py'), 'from pkg.flags import get_flag\n');
 writeFileSync(path.join(ws, 'pkg', 'long.py'), Array.from({ length: 20 }, (_, i) => `value_${i + 1} = ${i + 1}`).join('\n') + '\n');
+// Own MCP port, so a running dev/demo window (which holds 7811) can't make the suite fail.
+mkdirSync(path.join(ws, '.vscode'));
+writeFileSync(path.join(ws, '.vscode', 'settings.json'), JSON.stringify({ 'axiomForge.mcpPort': Number(process.env.AXIOM_TEST_MCP_PORT ?? 7812) }));
 
 await runTests({
   vscodeExecutablePath: exe,

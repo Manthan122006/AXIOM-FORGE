@@ -1,8 +1,9 @@
 import { memo } from 'react';
 import type { AgentEvent, ToolCallState } from '../../../src/shared/contracts';
-import { useAxiom } from '../store';
+import { durationMs, formatMs } from '../derive';
+import { post, useAxiom } from '../store';
+import { useNav } from '../ui/nav';
 import { Markdown } from './Markdown';
-import { Receipt } from './Receipt';
 
 const PHASE: Record<ToolCallState['phase'], { label: string; cls: string; node: string }> = {
   requested: { label: 'requested', cls: 'muted', node: 'act' },
@@ -23,8 +24,7 @@ function toolDetail(c: ToolCallState): string {
   if (typeof a.command === 'string') return a.command;
   if (typeof a.query === 'string') return `"${a.query}"${a.glob ? ` in ${a.glob}` : ''}`;
   if (typeof a.name === 'string') return a.name;
-  if (typeof a.task === 'string') return a.task;
-  return '';
+  return ''; // assemble_context's task is the user's own request, already shown above
 }
 
 const TOOL_LABEL: Record<string, string> = {
@@ -41,18 +41,28 @@ const TOOL_LABEL: Record<string, string> = {
 const ToolStep = memo(function ToolStep({ call }: { call: ToolCallState }) {
   const p = PHASE[call.phase];
   const detail = toolDetail(call);
+  const ms = durationMs(call);
+  const file = typeof call.args.path === 'string' ? call.args.path : null;
   return (
-    <li className="step">
-      <span className={`node ${p.node}`} aria-hidden="true" />
+    <li className={`step tool p-${call.phase}`}>
+      <span className={`node ${p.node}${call.phase === 'running' || call.phase === 'awaiting_approval' ? ' live' : ''}`} aria-hidden="true" />
       <details>
         <summary className="step-head">
           <span className="step-title">{TOOL_LABEL[call.toolName] ?? call.toolName}</span>
-          <span className="step-detail code muted" title={detail}>
+          <span className="step-detail code" title={detail}>
             {detail}
           </span>
-          <span className={`step-state ${p.cls}`}>{p.label}</span>
+          <span className={`step-state ${p.cls}`}>
+            {p.label}
+            {ms !== null ? <span className="step-ms num"> {formatMs(ms)}</span> : null}
+          </span>
         </summary>
-        {call.resultPreview && <div className="tool-result">{call.resultPreview}</div>}
+        {file ? (
+          <button className="linkish code" onClick={() => post({ type: 'openFile', path: file, ...(typeof call.args.start_line === 'number' ? { line: call.args.start_line } : {}) })}>
+            Open {file}
+          </button>
+        ) : null}
+        {call.resultPreview ? <div className="tool-result">{call.resultPreview}</div> : null}
       </details>
     </li>
   );
@@ -78,7 +88,7 @@ const Step = memo(function Step({ ev }: { ev: AgentEvent }) {
     case 'assistant_text':
       return (
         <li className="step">
-          <span className={`node ${ev.streaming ? 'run' : ''}`} aria-hidden="true" />
+          <span className={`node ${ev.streaming ? 'run live' : 'act'}`} aria-hidden="true" />
           <div className="assistant" aria-live={ev.streaming ? 'polite' : undefined}>
             <Markdown text={ev.text} />
             {ev.streaming && <span className="caret" aria-hidden="true" />}
@@ -125,17 +135,30 @@ const Step = memo(function Step({ ev }: { ev: AgentEvent }) {
 
 function ReceiptStep({ receiptId }: { receiptId: string }) {
   const receipt = useAxiom((s) => s.receipts[receiptId]);
+  const nav = useNav();
   if (!receipt) return null;
+  const top = receipt.selected.slice(0, 3);
   return (
-    <li className="step">
+    <li className="step receipt-step">
       <span className="node ok" aria-hidden="true" />
-      <div className="step-head">
-        <span className="step-title">Context assembled</span>
-        <span className="step-detail muted num">
-          {receipt.selected.length} files · {(receipt.budget.usedTokens / 1000).toFixed(1)}k of {(receipt.budget.limitTokens / 1000).toFixed(0)}k tokens
-        </span>
+      <div>
+        <div className="step-head">
+          <span className="step-title">Context assembled</span>
+        </div>
+        <p className="receipt-sum num">
+          {receipt.selected.length} of {receipt.repo.files} files, {(receipt.budget.usedTokens / 1000).toFixed(1)}k of {(receipt.budget.limitTokens / 1000).toFixed(0)}k tokens
+        </p>
+        <ul className="receipt-peek">
+          {top.map((s) => (
+            <li key={s.path} className="code">
+              {s.path}
+            </li>
+          ))}
+        </ul>
+        <button className="linkish" onClick={() => nav.go('context', { receiptId })}>
+          See why these files were chosen
+        </button>
       </div>
-      <Receipt receipt={receipt} />
     </li>
   );
 }
@@ -143,7 +166,7 @@ function ReceiptStep({ receiptId }: { receiptId: string }) {
 export function Timeline() {
   const timeline = useAxiom((s) => s.timeline);
   return (
-    <ol className="rail" aria-label="Agent activity">
+    <ol className="tl" aria-label="Agent activity">
       {timeline.map((ev) => (
         <Step key={ev.id} ev={ev} />
       ))}

@@ -72,7 +72,7 @@ export async function runWithShield(policy: ShieldPolicy, deps: ShieldDeps): Pro
   for (let m = 0; m < models.length; m++) {
     const model = models[m]!;
     tried.push(model);
-    if (m > 0) deps.onState({ kind: 'switching', from: models[m - 1]!, to: model });
+    if (m > 0) deps.onState({ kind: 'switching', from: models[m - 1]!, to: model, failure: lastFailure });
     for (let attemptNo = 1; ; attemptNo++) {
       if (deps.signal?.aborted) return { kind: 'cancelled' };
       const outcome = await deps.attempt(model, { attemptNo, freshSession: m > 0 || attemptNo > 1 });

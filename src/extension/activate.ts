@@ -23,6 +23,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<{ controll
   register('axiomForge.cancel', () => c.cancel('command'));
   register('axiomForge.reconnect', () => c.reconnect());
   register('axiomForge.perfReport', () => c.showPerfReport());
+  register('axiomForge.openWorkspace', () => c.openWorkspace());
   register('axiomForge.setupTrueForge', () => c.setupTrueForge());
   register('axiomForge.submitReview', () => c.submitReview());
   register('axiomForge.dev.stageSample', () => c.devStageSample());

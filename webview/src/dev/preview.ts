@@ -12,8 +12,15 @@ const now = () => new Date().toISOString();
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const patch = (fn: (s: AxiomState) => AxiomState) => setState(fn(getState()));
 const pushEv = (ev: AgentEvent) => patch((s) => ({ ...s, timeline: [...s.timeline, ev] }));
-const setTool = (id: string, change: Partial<ToolCallState>) =>
-  patch((s) => ({ ...s, timeline: s.timeline.map((e) => (e.kind === 'tool_call' && e.call.toolCallId === id ? { ...e, call: { ...e.call, ...change } } : e)) }));
+const setTool = (id: string, change: Partial<ToolCallState>) => {
+  const done = change.phase === 'succeeded' || change.phase === 'failed' || change.phase === 'denied';
+  patch((s) => ({ ...s, timeline: s.timeline.map((e) => (e.kind === 'tool_call' && e.call.toolCallId === id ? { ...e, call: { ...e.call, ...change, ...(done ? { finishedAt: now() } : {}) } } : e)) }));
+};
+/** Mirrors the controller: ModelShield transitions update the banner AND are kept in the timeline. */
+const shield = (r: AxiomState['recovery']) => {
+  patch((s) => ({ ...s, recovery: r }));
+  pushEv({ kind: 'recovery', id: `recovery:${Date.now()}:${r.kind}`, state: r, at: now() });
+};
 
 function tool(id: string, toolName: string, args: Record<string, unknown>): AgentEvent {
   return { kind: 'tool_call', id: `tool:${id}`, threadId: 'main', call: { toolCallId: id, server: 'axiom-forge', toolName, args, phase: 'running', startedAt: now() } };
@@ -96,21 +103,25 @@ export async function startPreview() {
     connection: { kind: 'connected', baseUrl: 'http://localhost:8790' },
     mcp: { kind: 'listening', url: 'http://127.0.0.1:7811/mcp' },
     recovery: { kind: 'healthy', model: 'google-gemini/gemini-3-5-flash' },
+    // Real index size of fixtures/flask; model names as configured in the demo profile.
+    workspace: { name: 'flask', files: 216, lines: 34379, symbols: 1741 },
+    models: { primary: { name: 'google-gemini/gemini-3-5-flash', listed: true }, backup: { name: 'groq/qwen-3-8-27b', listed: true } },
   });
   if (mode === 'empty') return;
   if (mode === 'offline') {
     patch((s) => ({ ...s, connection: { kind: 'disconnected', reason: 'TrueForge is not reachable at http://localhost:8790 (fetch failed)' } }));
     return;
   }
-  const fast = mode === 'review' || mode === 'fallback';
+  const fast = mode === 'review' || mode === 'fallback' || mode === 'done';
   patch((s) => ({ ...s, session: { sessionId: 'preview', turnId: 'preview', model: 'google-gemini/gemini-3-5-flash', modelSlot: 'primary', status: 'running' } }));
   pushEv({ kind: 'user_message', id: 'u1', text: fixture.task, at: now() });
   if (mode === 'fallback') {
-    patch((s) => ({ ...s, recovery: { kind: 'failed', model: 'google-gemini/gemini-3-5-flash', failure: 'auth', message: '[Model Error] Request failed (400): API key not valid. Please pass a valid API key.' } }));
+    shield({ kind: 'failed', model: 'google-gemini/gemini-3-5-flash', failure: 'auth', message: '[Model Error] Request failed (400): API key not valid. Please pass a valid API key.' });
     await wait(fast ? 0 : 900);
     // Same sequence as the real ModelShield: 'recovered' is only emitted after the backup run is done,
     // so while the run (and its review) is in progress the banner stays on 'switching'.
-    patch((s) => ({ ...s, recovery: { kind: 'switching', from: 'google-gemini/gemini-3-5-flash', to: 'groq/qwen-3-8-27b' }, session: { ...s.session, model: 'groq/qwen-3-8-27b', modelSlot: 'backup' } }));
+    shield({ kind: 'switching', from: 'google-gemini/gemini-3-5-flash', to: 'groq/qwen-3-8-27b', failure: 'auth' });
+    patch((s) => ({ ...s, session: { ...s.session, model: 'groq/qwen-3-8-27b', modelSlot: 'backup' } }));
   }
   pushEv(tool('call-ctx', 'assemble_context', { task: fixture.task }));
   await wait(fast ? 0 : 500);
@@ -130,7 +141,12 @@ export async function startPreview() {
   patch((s) => ({
     ...s,
     session: { ...s.session, status: 'paused' },
-    proposals: Object.fromEntries(fixture.proposals.map((p) => [p.id, p as unknown as ProposedEdit])),
+    proposals: Object.fromEntries(fixture.proposals.map((p) => [p.id, { ...(p as unknown as ProposedEdit), createdAt: now() }])),
     approval: { kind: 'pending', toolCallId: fixture.proposals[0]!.toolCallId, proposalIds: fixture.proposals.map((p) => p.id) },
   }));
+  if (mode === 'done') {
+    // Completed state: accept everything, apply, then the (simulated) check runs to the end.
+    for (const p of fixture.proposals) handle({ type: 'acceptAll', proposalIds: [p.id] });
+    handle({ type: 'submitReview' });
+  }
 }

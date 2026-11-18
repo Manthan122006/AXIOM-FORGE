@@ -55,5 +55,6 @@ export function reconcile(prev: AxiomState, next: AxiomState): AxiomState {
     verification: reconcileRecord(prev.verification, next.verification),
     recovery: same(prev.recovery, next.recovery) ? prev.recovery : next.recovery,
     models: next.models === undefined || same(prev.models, next.models) ? prev.models : next.models,
+    workspace: next.workspace === undefined || same(prev.workspace, next.workspace) ? prev.workspace : next.workspace,
   };
 }
