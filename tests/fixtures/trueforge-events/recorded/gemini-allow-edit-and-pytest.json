@@ -1,0 +1,534 @@
+{
+  "recordedAt": "2026-11-17T18:52:15.967Z",
+  "trueforge": "http://localhost:8790",
+  "model": "google-gemini/gemini-3-5-flash",
+  "sessionId": "01m7ndm5qjt2rcszbfb9xhz3rn",
+  "prompt": "Use propose_edit to add a one-line comment '# axiom proof' at the top of src/flask/__main__.py, then verify with run_command: pytest tests/test_cli.py -q",
+  "events": [
+    {
+      "type": "turn.created",
+      "id": "01m7ndm5qqxvtfw0wtksx26r57",
+      "turnId": "01m7ndm5qn24g2zfabqqyqsyjn",
+      "previousTurnId": null,
+      "input": [
+        {
+          "type": "user.message",
+          "content": "Use propose_edit to add a one-line comment '# axiom proof' at the top of src/flask/__main__.py, then verify with run_command: pytest tests/test_cli.py -q"
+        }
+      ],
+      "state": {
+        "status": "running"
+      },
+      "createdAt": "2026-11-17T18:52:03.702Z",
+      "threadId": null
+    },
+    {
+      "type": "mcp.initialize",
+      "id": "01m7ndm5qxz8gxz4p77b39xc0p",
+      "createdAt": "2026-11-17T18:52:03.709Z",
+      "threadId": "main",
+      "mcpServers": [
+        {
+          "name": "axiom-forge",
+          "id": "axiom-forge",
+          "transportType": "streamable-http"
+        }
+      ]
+    },
+    {
+      "type": "model.message",
+      "threadId": "main",
+      "createdAt": "2026-11-17T18:52:03.709Z",
+      "id": "01m7ndm5qxz8gxz4p77b39xc0q",
+      "model": {
+        "name": "google-gemini/gemini-3-5-flash",
+        "params": {
+          "maxTokens": 8192,
+          "temperature": 0.1
+        }
+      }
+    },
+    {
+      "toolCalls": [
+        {
+          "toolInfo": {
+            "type": "mcp",
+            "name": "assemble_context",
+            "serverId": "axiom-forge",
+            "serverName": "axiom-forge"
+          },
+          "index": 0,
+          "id": "call_2270728688312310759",
+          "type": "function",
+          "function": {
+            "name": "assemble_context",
+            "arguments": ""
+          }
+        }
+      ],
+      "type": "model.message.delta",
+      "id": "01m7ndm5qxz8gxz4p77b39xc0q",
+      "threadId": "main",
+      "createdAt": "2026-11-17T18:52:06.109Z"
+    },
+    {
+      "toolCalls": [
+        {
+          "index": 0,
+          "function": {
+            "arguments": "{\"task\":\"Use propose_edit to add a one-line comment '# axiom proof' at the top of src/flask/__main__.py, then verify with run_command: pytest tests/test_cli.py -q\"}"
+          }
+        }
+      ],
+      "type": "model.message.delta",
+      "id": "01m7ndm5qxz8gxz4p77b39xc0q",
+      "threadId": "main"
+    },
+    {
+      "type": "model.message.delta",
+      "id": "01m7ndm5qxz8gxz4p77b39xc0q",
+      "threadId": "main",
+      "finishReason": "tool_calls",
+      "usage": {
+        "inputTokens": 2534,
+        "outputTokens": 300,
+        "cacheReadTokens": 0,
+        "inputTokensBreakdown": {
+          "harness": 1234,
+          "skills": 0,
+          "instructions": 566,
+          "toolDefinitions": 708,
+          "messages": 26
+        }
+      }
+    },
+    {
+      "toolCallId": "call_2270728688312310759",
+      "content": "AXIOM Forge context for: Use propose_edit to add a one-line comment '# axiom proof' at the top of src/flask/__main__.py, then verify with run_command: pytest tests/test_cli.py -q\nRepository: 216 files, ~285471 tokens total; this bundle uses ~14472/24000 tokens.\nSelected files (most relevant first):\n- src/flask/cli.py [implementation] Code: defines function `run_command` (L943)\n- tests/test_cli.py [test] Tests: mentions \"run_command\", \"pytest\", \"command\", \"cli\", \"run\"; naming convention: test_cli.py ↔ cli.py (related to src/flask/cli.py)\n- docs/cli.rst [documentation] Docs: mentions \"command\", \"edit\", \"src\", \"cli\", \"run_command\"; doc page cli.rst matches module cli (related to src/flask/cli.py)\n- src/flask/__main__.py [implementation] Code: file name matches \"__main__.py\"\n- pyproject.toml [configuration] Config: mentions \"src\", \"pytest\", \"top\", \"command\", \"main\"\n- src/flask/app.py [implementation] Code: mentions \"main\", \"cli\", \"command\", \"run\", \"top\"\n\n### src/flask/cli.py  (ranges: L398-443, L579-624, L875-920, L928-973, L989-1034, L1115-1136; why: Code: defines function `run_command` (L943))\n[outline of 1136 lines]\n   37| class NoAppException(click.UsageError):\n   41| def find_best_app(module: ModuleType) -> Flask:\n   94| def _called_with_wrong_args(f: t.Callable[..., Flask]) -> bool:\n  120| def find_app_by_string(module: ModuleType, app_name: str) -> Flask:\n  200| def prepare_import(path: str) -> str:\n  230| def locate_app(\n  236| def locate_app(\n  241| def locate_app(\n  267| def get_version(ctx: click.Context, param: click.Parameter, value: t.Any) -> None:\n  293| class ScriptInfo:\n  305| def __init__(\n  333| def load_app(self) -> Flask:\n  380| def with_appcontext(f: F) -> F:\n  395| def decorator(ctx: click.Context, /, *args: t.Any, **kwargs: t.Any) -> t.Any:\n  405| class AppGroup(click.Group):\n  413| def command(  # type: ignore[override]\n  422| def decorator(f: t.Callable[..., t.Any]) -> click.Command:\n  429| def group(  # type: ignore[override]\n  440| def _set_app(ctx: click.Context, param: click.Option, value: str | None) -> str | None:\n  468| def _set_debug(ctx: click.Context, param: click.Option, value: bool) -> bool | None:\n  493| def _env_file_callback(\n  531| class FlaskGroup(AppGroup):\n  563| def __init__(\n  600| def _load_plugin_commands(self) -> None:\n  617| def get_command(self, ctx: click.Context, name: str) -> click.Command | None:\n  644| def list_commands(self, ctx: click.Context) -> list[str]:\n  665| def make_context(\n  686| def parse_args(self, ctx: click.Context, args: list[str]) -> list[str]:\n  699| def _path_is_ancestor(path: str, other: str) -> bool:\n  706| def load_dotenv(\n  774| def show_server_banner(debug: bool, app_import_path: str | None) -> None:\n  788| class CertParamType(click.ParamType):\n  796| def __init__(self) -> None:\n  799| def convert(\n  836| def _validate_key(ctx: click.Context, param: click.Parameter, value: t.Any) -> t.Any:\n  875| class SeparatedPathType(click.Path):\n  881| def convert(\n  943| def run_command(\n  943| command \"run\" → run_command\n  971| def app(\n 1009| def shell_command() -> None:\n 1009| command \"shell\" → shell_command\n 1069| def routes_command(sort: str, all_methods: bool) -> None:\n 1069| command \"routes\" → routes_command\n 1130| def main() -> None:\n[lines 398-443]\n  398|             ctx.with_resource(app.app_context())\n  399| \n  400|         return ctx.invoke(f, *args, **kwargs)\n  401| \n  402|     return update_wrapper(decorator, f)  # type: ignore[return-value]\n  403| \n  404| \n  405| class AppGroup(click.Group):\n  406|     \"\"\"This works similar to a regular click :class:`~click.Group` but it\n  407|     changes the behavior of the :meth:`command` decorator so that it\n  408|     automatically wraps the functions in :func:`with_appcontext`.\n  409| \n  410|     Not to be confused with :class:`FlaskGroup`.\n  411|     \"\"\"\n  412| \n  413|     def command(  # type: ignore[override]\n  414|         self, *args: t.Any, **kwargs: t.Any\n  415|     ) -> t.Callable[[t.Callable[..., t.Any]], click.Command]:\n  416|         \"\"\"This works exactly like the method of the same name on a regular\n  417|         :class:`click.Group` but it wraps callbacks in :func:`with_appcontext`\n  418|         unless it's disabled by passing ``with_appcontext=False``.\n  419|         \"\"\"\n  420|         wrap_for_ctx = kwargs.pop(\"with_appcontext\", True)\n  421| \n  422|         def decorator(f: t.Callable[..., t.Any]) -> click.Command:\n  423|             if wrap_for_ctx:\n  424|                 f = with_appcontext(f)\n  425|             return super(AppGroup, self).command(*args, **kwargs)(f)  # type: ignore[no-any-return]\n  426| \n  427|         return decorator\n  428| \n  429|     def group(  # type: ignore[override]\n  430|         self, *args: t.Any, **kwargs: t.Any\n  431|     ) -> t.Callable[[t.Callable[..., t.Any]], click.Group]:\n  432|         \"\"\"This works exactly like the method of the same name on a regular\n  433|         :class:`click.Group` but it defaults the group class to\n  434|         :class:`AppGroup`.\n  435|         \"\"\"\n  436|         kwargs.setdefault(\"cls\", AppGroup)\n  437|         return super().group(*args, **kwargs)  # type: ignore[no-any-return]\n  438| \n  439| \n  440| def _set_app(ctx: click.Context, param: click.Option, value: str | None) -> str | None:\n  441|     if value is None:\n  442|         return None\n  443| \n[lines 579-624]\n  579|         if add_version_option:\n  580|             params.append(version_option)\n  581| \n  582|         if \"context_settings\" not in extra:\n  583|             extra[\"context_settings\"] = {}\n  584| \n  585|         extra[\"context_settings\"].setdefault(\"auto_envvar_prefix\", \"FLASK\")\n  586| \n  587|         super().__init__(params=params, **extra)\n  588| \n  589|         self.create_app = create_app\n  590|         self.load_dotenv = load_dotenv\n  591|         self.set_debug_flag = set_debug_flag\n  592| \n  593|         if add_default_commands:\n  594|             self.add_command(run_command)\n  595|             self.add_command(shell_command)\n  596|             self.add_command(routes_command)\n  597| \n  598|         self._loaded_plugin_commands = False\n  599| \n  600|     def _load_plugin_commands(self) -> None:\n  601|         if self._loaded_plugin_commands:\n  602|             return\n  603| \n  604|         if sys.version_info >= (3, 10):\n  605|             from importlib import metadata\n  606|         else:\n  607|             # Use a backport on Python < 3.10. We technically have\n  608|             # importlib.metadata on 3.8+, but the API changed in 3.10,\n  609|             # so use the backport for consistency.\n  610|             import importlib_metadata as metadata  # pyright: ignore\n  611| \n  612|         for ep in metadata.entry_points(group=\"flask.commands\"):\n  613|             self.add_command(ep.load(), ep.name)\n  614| \n  615|         self._loaded_plugin_commands = True\n  616| \n  617|     def get_command(self, ctx: click.Context, name: str) -> click.Command | None:\n  618|         self._load_plugin_commands()\n  619|         # Look up built-in and plugin commands, which should be\n  620|         # available even if the app fails to load.\n  621|         rv = super().get_command(ctx, name)\n  622| \n  623|         if rv is not None:\n  624|             return rv\n[lines 875-920]\n  875| class SeparatedPathType(click.Path):\n  876|     \"\"\"Click option type that accepts a list of values separated by the\n  877|     OS's path separator (``:``, ``;`` on Windows). Each value is\n  878|     validated as a :class:`click.Path` type.\n  879|     \"\"\"\n  880| \n  881|     def convert(\n  882|         self, value: t.Any, param: click.Parameter | None, ctx: click.Context | None\n  883|     ) -> t.Any:\n  884|         items = self.split_envvar_value(value)\n  885|         # can't call no-arg super() inside list comprehension until Python 3.12\n  886|         super_convert = super().convert\n  887|         return [super_convert(item, param, ctx) for item in items]\n  888| \n  889| \n  890| @click.command(\"run\", short_help=\"Run a development server.\")\n  891| @click.option(\"--host\", \"-h\", default=\"127.0.0.1\", help=\"The interface to bind to.\")\n  892| @click.option(\"--port\", \"-p\", default=5000, help=\"The port to bind to.\")\n  893| @click.option(\n  894|     \"--cert\",\n  895|     type=CertParamType(),\n  896|     help=\"Specify a certificate file to use HTTPS.\",\n  897|     is_eager=True,\n  898| )\n  899| @click.option(\n  900|     \"--key\",\n  901|     type=click.Path(exists=True, dir_okay=False, resolve_path=True),\n  902|     callback=_validate_key,\n  903|     expose_value=False,\n  904|     help=\"The key file to use when specifying a certificate.\",\n  905| )\n  906| @click.option(\n  907|     \"--reload/--no-reload\",\n  908|     default=None,\n  909|     help=\"Enable or disable the reloader. By default the reloader \"\n  910|     \"is active if debug is enabled.\",\n  911| )\n  912| @click.option(\n  913|     \"--debugger/--no-debugger\",\n  914|     default=None,\n  915|     help=\"Enable or disable the debugger. By default the debugger \"\n  916|     \"is active if debug is enabled.\",\n  917| )\n  918| @click.option(\n  919|     \"--with-threads/--without-threads\",\n  920|     default=True,\n[lines 928-973]\n  928|         \"Extra files that trigger a reload on change. Multiple paths\"\n  929|         f\" are separated by {os.path.pathsep!r}.\"\n  930|     ),\n  931| )\n  932| @click.option(\n  933|     \"--exclude-patterns\",\n  934|     default=None,\n  935|     type=SeparatedPathType(),\n  936|     help=(\n  937|         \"Files matching these fnmatch patterns will not trigger a reload\"\n  938|         \" on change. Multiple patterns are separated by\"\n  939|         f\" {os.path.pathsep!r}.\"\n  940|     ),\n  941| )\n  942| @pass_script_info\n  943| def run_command(\n  944|     info: ScriptInfo,\n  945|     host: str,\n  946|     port: int,\n  947|     reload: bool,\n  948|     debugger: bool,\n  949|     with_threads: bool,\n  950|     cert: ssl.SSLContext | tuple[str, str | None] | t.Literal[\"adhoc\"] | None,\n  951|     extra_files: list[str] | None,\n  952|     exclude_patterns: list[str] | None,\n  953| ) -> None:\n  954|     \"\"\"Run a local development server.\n  955| \n  956|     This server is for development purposes only. It does not provide\n  957|     the stability, security, or performance of production WSGI servers.\n  958| \n  959|     The reloader and debugger are enabled by default with the '--debug'\n  960|     option.\n  961|     \"\"\"\n  962|     try:\n  963|         app: WSGIApplication = info.load_app()  # pyright: ignore\n  964|     except Exception as e:\n  965|         if is_running_from_reloader():\n  966|             # When reloading, print out the error immediately, but raise\n  967|             # it later so the debugger or server can handle it.\n  968|             traceback.print_exc()\n  969|             err = e\n  970| \n  971|             def app(\n  972|                 environ: WSGIEnvironment, start_response: StartResponse\n  973|             ) -> cabc.Iterable[bytes]:\n[lines 989-1034]\n  989|     show_server_banner(debug, info.app_import_path)\n  990| \n  991|     run_simple(\n  992|         host,\n  993|         port,\n  994|         app,\n  995|         use_reloader=reload,\n  996|         use_debugger=debugger,\n  997|         threaded=with_threads,\n  998|         ssl_context=cert,\n  999|         extra_files=extra_files,\n 1000|         exclude_patterns=exclude_patterns,\n 1001|     )\n 1002| \n 1003| \n 1004| run_command.params.insert(0, _debug_option)\n 1005| \n 1006| \n 1007| @click.command(\"shell\", short_help=\"Run a shell in the app context.\")\n 1008| @with_appcontext\n 1009| def shell_command() -> None:\n 1010|     \"\"\"Run an interactive Python shell in the context of a given\n 1011|     Flask application.  The application will populate the default\n 1012|     namespace of this shell according to its configuration.\n 1013| \n 1014|     This is useful for executing small snippets of management code\n 1015|     without having to manually configure the application.\n 1016|     \"\"\"\n 1017|     import code\n 1018| \n 1019|     banner = (\n 1020|         f\"Python {sys.version} on {sys.platform}\\n\"\n 1021|         f\"App: {current_app.import_name}\\n\"\n 1022|         f\"Instance: {current_app.instance_path}\"\n 1023|     )\n 1024|     ctx: dict[str, t.Any] = {}\n 1025| \n 1026|     # Support the regular Python interpreter startup script if someone\n 1027|     # is using it.\n 1028|     startup = os.environ.get(\"PYTHONSTARTUP\")\n 1029|     if startup and os.path.isfile(startup):\n 1030|         with open(startup) as f:\n 1031|             eval(compile(f.read(), startup, \"exec\"), ctx)\n 1032| \n 1033|     ctx.update(current_app.make_shell_context())\n 1034| \n[lines 1115-1136]\n 1115|         click.echo(template.format(*row))\n 1116| \n 1117| \n 1118| cli = FlaskGroup(\n 1119|     name=\"flask\",\n 1120|     help=\"\"\"\\\n 1121| A general utility script for Flask applications.\n 1122| \n 1123| An application to load must be given with the '--app' option,\n 1124| 'FLASK_APP' environment variable, or with a 'wsgi.py' or 'app.py' file\n 1125| in the current directory.\n 1126| \"\"\",\n 1127| )\n 1128| \n 1129| \n 1130| def main() -> None:\n 1131|     cli.main()\n 1132| \n 1133| \n 1134| if __name__ == \"__main__\":\n 1135|     main()\n 1136| \n\n### tests/test_cli.py  (ranges: L13-58, L279-355, L572-657, L686-703; why: Tests: mentions \"run_command\", \"pytest\", \"command\", \"cli\", \"run\"; naming convention: test_cli.py ↔ cli.py (related to src/flask/cli.py))\n[outline of 703 lines]\n   37| def runner():\n   41| def test_cli_name(test_apps):\n   48| def test_find_best_app(test_apps):\n   49| class Module:\n   54| class Module:\n   59| class Module:\n   64| class Module:\n   66| def create_app():\n   73| class Module:\n   75| def create_app(**kwargs):\n   82| class Module:\n   84| def make_app():\n   91| class Module:\n   95| def create_app():\n  100| class Module:\n  104| def create_app():\n  109| class Module:\n  114| class Module:\n  120| class Module:\n  122| def create_app(foo, bar):\n  127| class Module:\n  129| def create_app():\n  161| def test_prepare_import(request, value, path, result):\n  171| def reset_path():\n  195| def test_locate_app(test_apps, iname, aname, result):\n  217| def test_locate_app_raises(test_apps, iname, aname):\n  222| def test_locate_app_suppress_raise(test_apps):\n  231| def test_get_version(test_apps, capsys):\n  232| class MockCtx:\n  236| def exit(self):\n  247| def test_scriptinfo(test_apps, monkeypatch):\n  265| def create_app():\n  289| def test_app_cli_has_app_context(app, runner):\n  290| def _param_cb(ctx, param, value):\n  296| def check(value):\n  307| def test_with_appcontext(runner):\n  310| def testcmd():\n  320| def test_appgroup_app_context(runner):\n  322| def cli():\n  326| def test():\n  330| def subgroup():\n  334| def test2():\n  348| def test_flaskgroup_app_context(runner):\n  349| def create_app():\n  353| def cli(**params):\n  357| def test():\n  366| def test_flaskgroup_debug(runner, set_debug_flag):\n  367| def create_app():\n  373| def cli(**params):\n  377| def test():\n  385| def test_flaskgroup_nested(app, runner):\n  391| def show():\n  398| def test_no_command_echo_loading_error():\n  413| def test_help_echo_loading_error():\n  428| def test_help_echo_exception():\n  429| def create_app():\n  446| class TestRoutes:\n  448| def app(self):\n  459| def invoke(self, app, runner):\n  463| def expect_order(self, order, output):\n  469| def test_simple(self, invoke):\n  474| def test_sort(self, app, invoke):\n  489| def test_all_methods(self, invoke):\n  495| def test_no_routes(self, runner):\n  502| def test_subdomain(self, runner):\n  511| def test_host(self, runner):\n  521| def dotenv_not_available():\n  536| def test_load_dotenv(monkeypatch):\n  560| def test_dotenv_path(monkeypatch):\n  569| def test_dotenv_optional(monkeypatch):\n  577| def test_disable_dotenv_from_env(monkeypatch, runner):\n  584| def test_run_cert_path():\n  602| def test_run_cert_adhoc(monkeypatch):\n  619| def test_run_cert_import(monkeypatch):\n  641| def test_run_cert_no_ssl(monkeypatch):\n  648| def test_cli_blueprints(app):\n  656| def custom_command():\n  660| def nested_command():\n  664| def merged_command():\n  668| def late_command():\n  691| def test_cli_empty(app):\n  700| def test_run_exclude_patterns():\n[lines 13-58]\n   13| import pytest\n   14| from _pytest.monkeypatch import notset\n   15| from click.testing import CliRunner\n   16| \n   17| from flask import Blueprint\n   18| from flask import current_app\n   19| from flask import Flask\n   20| from flask.cli import AppGroup\n   21| from flask.cli import find_best_app\n   22| from flask.cli import FlaskGroup\n   23| from flask.cli import get_version\n   24| from flask.cli import load_dotenv\n   25| from flask.cli import locate_app\n   26| from flask.cli import NoAppException\n   27| from flask.cli import prepare_import\n   28| from flask.cli import run_command\n   29| from flask.cli import ScriptInfo\n   30| from flask.cli import with_appcontext\n   31| \n   32| cwd = Path.cwd()\n   33| test_path = (Path(__file__) / \"..\" / \"test_apps\").resolve()\n   34| \n   35| \n   36| @pytest.fixture\n   37| def runner():\n   38|     return CliRunner()\n   39| \n   40| \n   41| def test_cli_name(test_apps):\n   42|     \"\"\"Make sure the CLI object's name is the app's name and not the app itself\"\"\"\n   43|     from cliapp.app import testapp\n   44| \n   45|     assert testapp.cli.name == testapp.name\n   46| \n   47| \n   48| def test_find_best_app(test_apps):\n   49|     class Module:\n   50|         app = Flask(\"appname\")\n   51| \n   52|     assert find_best_app(Module) == Module.app\n   53| \n   54|     class Module:\n   55|         application = Flask(\"appname\")\n   56| \n   57|     assert find_best_app(Module) == Module.application\n   58| \n[lines 279-355]\n  279|     app = obj.load_app()\n  280|     assert app.name == \"hello\"\n  281| \n  282|     # import app from app.py in current directory\n  283|     monkeypatch.chdir(test_path / \"cliapp\")\n  284|     obj = ScriptInfo()\n  285|     app = obj.load_app()\n  286|     assert app.name == \"testapp\"\n  287| \n  288| \n  289| def test_app_cli_has_app_context(app, runner):\n  290|     def _param_cb(ctx, param, value):\n  291|         # current_app should be available in parameter callbacks\n  292|         return bool(current_app)\n  293| \n  294|     @app.cli.command()\n  295|     @click.argument(\"value\", callback=_param_cb)\n  296|     def check(value):\n  297|         app = click.get_current_context().obj.load_app()\n  298|         # the loaded app should be the same as current_app\n  299|         same_app = current_app._get_current_object() is app\n  300|         return same_app, value\n  301| \n  302|     cli = FlaskGroup(create_app=lambda: app)\n  303|     result = runner.invoke(cli, [\"check\", \"x\"], standalone_mode=False)\n  304|     assert result.return_value == (True, True)\n  305| \n  306| \n  307| def test_with_appcontext(runner):\n  308|     @click.command()\n  309|     @with_appcontext\n  310|     def testcmd():\n  311|         click.echo(current_app.name)\n  312| \n  313|     obj = ScriptInfo(create_app=lambda: Flask(\"testapp\"))\n  314| \n  315|     result = runner.invoke(testcmd, obj=obj)\n  316|     assert result.exit_code == 0\n  317|     assert result.output == \"testapp\\n\"\n  318| \n  319| \n  320| def test_appgroup_app_context(runner):\n  321|     @click.group(cls=AppGroup)\n  322|     def cli():\n  323|         pass\n  324| \n  325|     @cli.command()\n  326|     def test():\n  327|         click.echo(current_app.name)\n  328| \n  329|     @cli.group()\n  330|     def subgroup():\n  331|         pass\n  332| \n  333|     @subgroup.command()\n  334|     def test2():\n  335|         click.echo(current_app.name)\n  336| \n  337|     obj = ScriptInfo(create_app=lambda: Flask(\"testappgroup\"))\n  338| \n  339|     result = runner.invoke(cli, [\"test\"], obj=obj)\n  340|     assert result.exit_code == 0\n  341|     assert result.output == \"testappgroup\\n\"\n  342| \n  343|     result = runner.invoke(cli, [\"subgroup\", \"test2\"], obj=obj)\n  344|     assert result.exit_code == 0\n  345|     assert result.output == \"testappgroup\\n\"\n  346| \n  347| \n  348| def test_flaskgroup_app_context(runner):\n  349|     def create_app():\n  350|         return Flask(\"flaskgroup\")\n  351| \n  352|     @click.group(cls=FlaskGroup, create_app=create_app)\n  353|     def cli(**params):\n  354|         pass\n  355| \n[lines 572-657]\n  572|     load_dotenv()\n  573|     assert \"FOO\" not in os.environ\n  574| \n  575| \n  576| @need_dotenv\n  577| def test_disable_dotenv_from_env(monkeypatch, runner):\n  578|     monkeypatch.chdir(test_path)\n  579|     monkeypatch.setitem(os.environ, \"FLASK_SKIP_DOTENV\", \"1\")\n  580|     runner.invoke(FlaskGroup())\n  581|     assert \"FOO\" not in os.environ\n  582| \n  583| \n  584| def test_run_cert_path():\n  585|     # no key\n  586|     with pytest.raises(click.BadParameter):\n  587|         run_command.make_context(\"run\", [\"--cert\", __file__])\n  588| \n  589|     # no cert\n  590|     with pytest.raises(click.BadParameter):\n  591|         run_command.make_context(\"run\", [\"--key\", __file__])\n  592| \n  593|     # cert specified first\n  594|     ctx = run_command.make_context(\"run\", [\"--cert\", __file__, \"--key\", __file__])\n  595|     assert ctx.params[\"cert\"] == (__file__, __file__)\n  596| \n  597|     # key specified first\n  598|     ctx = run_command.make_context(\"run\", [\"--key\", __file__, \"--cert\", __file__])\n  599|     assert ctx.params[\"cert\"] == (__file__, __file__)\n  600| \n  601| \n  602| def test_run_cert_adhoc(monkeypatch):\n  603|     monkeypatch.setitem(sys.modules, \"cryptography\", None)\n  604| \n  605|     # cryptography not installed\n  606|     with pytest.raises(click.BadParameter):\n  607|         run_command.make_context(\"run\", [\"--cert\", \"adhoc\"])\n  608| \n  609|     # cryptography installed\n  610|     monkeypatch.setitem(sys.modules, \"cryptography\", types.ModuleType(\"cryptography\"))\n  611|     ctx = run_command.make_context(\"run\", [\"--cert\", \"adhoc\"])\n  612|     assert ctx.params[\"cert\"] == \"adhoc\"\n  613| \n  614|     # no key with adhoc\n  615|     with pytest.raises(click.BadParameter):\n  616|         run_command.make_context(\"run\", [\"--cert\", \"adhoc\", \"--key\", __file__])\n  617| \n  618| \n  619| def test_run_cert_import(monkeypatch):\n  620|     monkeypatch.setitem(sys.modules, \"not_here\", None)\n  621| \n  622|     # ImportError\n  623|     with pytest.raises(click.BadParameter):\n  624|         run_command.make_context(\"run\", [\"--cert\", \"not_here\"])\n  625| \n  626|     with pytest.raises(click.BadParameter):\n  627|         run_command.make_context(\"run\", [\"--cert\", \"flask\"])\n  628| \n  629|     # SSLContext\n  630|     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)\n  631| \n  632|     monkeypatch.setitem(sys.modules, \"ssl_context\", ssl_context)\n  633|     ctx = run_command.make_context(\"run\", [\"--cert\", \"ssl_context\"])\n  634|     assert ctx.params[\"cert\"] is ssl_context\n  635| \n  636|     # no --key with SSLContext\n  637|     with pytest.raises(click.BadParameter):\n  638|         run_command.make_context(\"run\", [\"--cert\", \"ssl_context\", \"--key\", __file__])\n  639| \n  640| \n  641| def test_run_cert_no_ssl(monkeypatch):\n  642|     monkeypatch.setitem(sys.modules, \"ssl\", None)\n  643| \n  644|     with pytest.raises(click.BadParameter):\n  645|         run_command.make_context(\"run\", [\"--cert\", \"not_here\"])\n  646| \n  647| \n  648| def test_cli_blueprints(app):\n  649|     \"\"\"Test blueprint commands register correctly to the application\"\"\"\n  650|     custom = Blueprint(\"custom\", __name__, cli_group=\"customized\")\n  651|     nested = Blueprint(\"nested\", __name__)\n  652|     merged = Blueprint(\"merged\", __name__, cli_group=None)\n  653|     late = Blueprint(\"late\", __name__)\n  654| \n  655|     @custom.cli.command(\"custom\")\n  656|     def custom_command():\n  657|         click.echo(\"custom_result\")\n[lines 686-703]\n  686| \n  687|     result = app_runner.invoke(args=[\"late_registration\", \"late\"])\n  688|     assert \"late_result\" in result.output\n  689| \n  690| \n  691| def test_cli_empty(app):\n  692|     \"\"\"If a Blueprint's CLI group is empty, do not register it.\"\"\"\n  693|     bp = Blueprint(\"blue\", __name__, cli_group=\"blue\")\n  694|     app.register_blueprint(bp)\n  695| \n  696|     result = app.test_cli_runner().invoke(args=[\"blue\", \"--help\"])\n  697|     assert result.exit_code == 2, f\"Unexpected success:\\n\\n{result.output}\"\n  698| \n  699| \n  700| def test_run_exclude_patterns():\n  701|     ctx = run_command.make_context(\"run\", [\"--exclude-patterns\", __file__])\n  702|     assert ctx.params[\"exclude_patterns\"] == [__file__]\n  703| \n\n### docs/cli.rst  (ranges: L1-36, L56-136, L317-362, L366-411, L510-555; why: Docs: mentions \"command\", \"edit\", \"src\", \"cli\", \"run_command\"; doc page cli.rst matches module cli (related to src/flask/cli.py))\n[outline of 557 lines]\n\n[lines 1-36]\n    1| .. currentmodule:: flask\n    2| \n    3| Command Line Interface\n    4| ======================\n    5| \n    6| Installing Flask installs the ``flask`` script, a `Click`_ command line\n    7| interface, in your virtualenv. Executed from the terminal, this script gives\n    8| access to built-in, extension, and application-defined commands. The ``--help``\n    9| option will give more information about any commands and options.\n   10| \n   11| .. _Click: https://click.palletsprojects.com/\n   12| \n   13| \n   14| Application Discovery\n   15| ---------------------\n   16| \n   17| The ``flask`` command is installed by Flask, not your application; it must be\n   18| told where to find your application in order to use it. The ``--app``\n   19| option is used to specify how to load the application.\n   20| \n   21| While ``--app`` supports a variety of options for specifying your\n   22| application, most use cases should be simple. Here are the typical values:\n   23| \n   24| (nothing)\n   25|     The name \"app\" or \"wsgi\" is imported (as a \".py\" file, or package),\n   26|     automatically detecting an app (``app`` or ``application``) or\n   27|     factory (``create_app`` or ``make_app``).\n   28| \n   29| ``--app hello``\n   30|     The given name is imported, automatically detecting an app (``app``\n   31|     or ``application``) or factory (``create_app`` or ``make_app``).\n   32| \n   33| ----\n   34| \n   35| ``--app`` has three parts: an optional path that sets the current working\n   36| directory, a Python file or dotted import path, and an optional variable\n[lines 56-136]\n   56| instance or factory.\n   57| \n   58| Within the given import, the command looks for an application instance named\n   59| ``app`` or ``application``, then any application instance. If no instance is\n   60| found, the command looks for a factory function named ``create_app`` or\n   61| ``make_app`` that returns an instance.\n   62| \n   63| If parentheses follow the factory name, their contents are parsed as\n   64| Python literals and passed as arguments and keyword arguments to the\n   65| function. This means that strings must still be in quotes.\n   66| \n   67| \n   68| Run the Development Server\n   69| --------------------------\n   70| \n   71| The :func:`run <cli.run_command>` command will start the development server. It\n   72| replaces the :meth:`Flask.run` method in most cases. ::\n   73| \n   74|     $ flask --app hello run\n   75|      * Serving Flask app \"hello\"\n   76|      * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)\n   77| \n   78| .. warning:: Do not use this command to run your application in production.\n   79|     Only use the development server during development. The development server\n   80|     is provided for convenience, but is not designed to be particularly secure,\n   81|     stable, or efficient. See :doc:`/deploying/index` for how to run in production.\n   82| \n   83| If another program is already using port 5000, you'll see\n   84| ``OSError: [Errno 98]`` or ``OSError: [WinError 10013]`` when the\n   85| server tries to start. See :ref:`address-already-in-use` for how to\n   86| handle that.\n   87| \n   88| \n   89| Debug Mode\n   90| ~~~~~~~~~~\n   91| \n   92| In debug mode, the ``flask run`` command will enable the interactive debugger and the\n   93| reloader by default, and make errors easier to see and debug. To enable debug mode, use\n   94| the ``--debug`` option.\n   95| \n   96| .. code-block:: console\n   97| \n   98|      $ flask --app hello run --debug\n   99|       * Serving Flask app \"hello\"\n  100|       * Debug mode: on\n  101|       * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)\n  102|       * Restarting with inotify reloader\n  103|       * Debugger is active!\n  104|       * Debugger PIN: 223-456-919\n  105| \n  106| The ``--debug`` option can also be passed to the top level ``flask`` command to enable\n  107| debug mode for any command. The following two ``run`` calls are equivalent.\n  108| \n  109| .. code-block:: console\n  110| \n  111|     $ flask --app hello --debug run\n  112|     $ flask --app hello run --debug\n  113| \n  114| \n  115| Watch and Ignore Files with the Reloader\n  116| ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n  117| \n  118| When using debug mode, the reloader will trigger whenever your Python code or imported\n  119| modules change. The reloader can watch additional files with the ``--extra-files``\n  120| option. Multiple paths are separated with ``:``, or ``;`` on Windows.\n  121| \n  122| .. code-block:: text\n  123| \n  124|     $ flask run --extra-files file1:dirA/file2:dirB/\n  125|      * Running on http://127.0.0.1:8000/\n  126|      * Detected change in '/path/to/file1', reloading\n  127| \n  128| The reloader can also ignore files using :mod:`fnmatch` patterns with the\n  129| ``--exclude-patterns`` option. Multiple patterns are separated with ``:``, or ``;`` on\n  130| Windows.\n  131| \n  132| \n  133| Open a Shell\n  134| ------------\n  135| \n  136| To explore the data in your application, you can start an interactive Python\n[lines 317-362]\n  317| \n  318| Custom Commands\n  319| ---------------\n  320| \n  321| The ``flask`` command is implemented using `Click`_. See that project's\n  322| documentation for full information about writing commands.\n  323| \n  324| This example adds the command ``create-user`` that takes the argument\n  325| ``name``. ::\n  326| \n  327|     import click\n  328|     from flask import Flask\n  329| \n  330|     app = Flask(__name__)\n  331| \n  332|     @app.cli.command(\"create-user\")\n  333|     @click.argument(\"name\")\n  334|     def create_user(name):\n  335|         ...\n  336| \n  337| ::\n  338| \n  339|     $ flask create-user admin\n  340| \n  341| This example adds the same command, but as ``user create``, a command in a\n  342| group. This is useful if you want to organize multiple related commands. ::\n  343| \n  344|     import click\n  345|     from flask import Flask\n  346|     from flask.cli import AppGroup\n  347| \n  348|     app = Flask(__name__)\n  349|     user_cli = AppGroup('user')\n  350| \n  351|     @user_cli.command('create')\n  352|     @click.argument('name')\n  353|     def create_user(name):\n  354|         ...\n  355| \n  356|     app.cli.add_command(user_cli)\n  357| \n  358| ::\n  359| \n  360|     $ flask user create demo\n  361| \n  362| See :ref:`testing-cli` for an overview of how to test your custom\n[lines 366-411]\n  366| Registering Commands with Blueprints\n  367| ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n  368| \n  369| If your application uses blueprints, you can optionally register CLI\n  370| commands directly onto them. When your blueprint is registered onto your\n  371| application, the associated commands will be available to the ``flask``\n  372| command. By default, those commands will be nested in a group matching\n  373| the name of the blueprint.\n  374| \n  375| .. code-block:: python\n  376| \n  377|     from flask import Blueprint\n  378| \n  379|     bp = Blueprint('students', __name__)\n  380| \n  381|     @bp.cli.command('create')\n  382|     @click.argument('name')\n  383|     def create(name):\n  384|         ...\n  385| \n  386|     app.register_blueprint(bp)\n  387| \n  388| .. code-block:: text\n  389| \n  390|     $ flask students create alice\n  391| \n  392| You can alter the group name by specifying the ``cli_group`` parameter\n  393| when creating the :class:`Blueprint` object, or later with\n  394| :meth:`app.register_blueprint(bp, cli_group='...') <Flask.register_blueprint>`.\n  395| The following are equivalent:\n  396| \n  397| .. code-block:: python\n  398| \n  399|     bp = Blueprint('students', __name__, cli_group='other')\n  400|     # or\n  401|     app.register_blueprint(bp, cli_group='other')\n  402| \n  403| .. code-block:: text\n  404| \n  405|     $ flask other create alice\n  406| \n  407| Specifying ``cli_group=None`` will remove the nesting and merge the\n  408| commands directly to the application's level:\n  409| \n  410| .. code-block:: python\n  411| \n[lines 510-555]\n  510| \n  511|     When using a custom script, if you introduce an error in your\n  512|     module-level code, the reloader will fail because it can no longer\n  513|     load the entry point.\n  514| \n  515|     The ``flask`` command, being separate from your code, does not have\n  516|     this issue and is recommended in most cases.\n  517| \n  518| .. _console script: https://packaging.python.org/tutorials/packaging-projects/#console-scripts\n  519| \n  520| \n  521| PyCharm Integration\n  522| -------------------\n  523| \n  524| PyCharm Professional provides a special Flask run configuration to run the development\n  525| server. For the Community Edition, and for other commands besides ``run``, you need to\n  526| create a custom run configuration. These instructions should be similar for any other\n  527| IDE you use.\n  528| \n  529| In PyCharm, with your project open, click on *Run* from the menu bar and go to *Edit\n  530| Configurations*. You'll see a screen similar to this:\n  531| \n  532| .. image:: _static/pycharm-run-config.png\n  533|     :align: center\n  534|     :class: screenshot\n  535|     :alt: Screenshot of PyCharm run configuration.\n  536| \n  537| Once you create a configuration for the ``flask run``, you can copy and change it to\n  538| call any other command.\n  539| \n  540| Click the *+ (Add New Configuration)* button and select *Python*. Give the configuration\n  541| a name such as \"flask run\".\n  542| \n  543| Click the *Script path* dropdown and change it to *Module name*, then input ``flask``.\n  544| \n  545| The *Parameters* field is set to the CLI command to execute along with any arguments.\n  546| This example uses ``--app hello run --debug``, which will run the development server in\n  547| debug mode. ``--app hello`` should be the import or file with your Flask app.\n  548| \n  549| If you installed your project as a package in your virtualenv, you may uncheck the\n  550| *PYTHONPATH* options. This will more accurately match how you deploy later.\n  551| \n  552| Click *OK* to save and close the configuration. Select the configuration in the main\n  553| PyCharm window and click the play button next to it to run the server.\n  554| \n  555| Now that you have a configuration for ``flask run``, you can copy that configuration and\n\n### src/flask/__main__.py  (full; why: Code: file name matches \"__main__.py\")\n    1| from .cli import main\n    2| \n    3| main()\n    4| \n\n### pyproject.toml  (full; why: Config: mentions \"src\", \"pytest\", \"top\", \"command\", \"main\")\n    1| [project]\n    2| name = \"Flask\"\n    3| version = \"3.1.3\"\n    4| description = \"A simple framework for building complex web applications.\"\n    5| readme = \"README.md\"\n    6| license = \"BSD-3-Clause\"\n    7| license-files = [\"LICENSE.txt\"]\n    8| maintainers = [{name = \"Pallets\", email = \"contact@palletsprojects.com\"}]\n    9| classifiers = [\n   10|     \"Development Status :: 5 - Production/Stable\",\n   11|     \"Environment :: Web Environment\",\n   12|     \"Framework :: Flask\",\n   13|     \"Intended Audience :: Developers\",\n   14|     \"Operating System :: OS Independent\",\n   15|     \"Programming Language :: Python\",\n   16|     \"Topic :: Internet :: WWW/HTTP :: Dynamic Content\",\n   17|     \"Topic :: Internet :: WWW/HTTP :: WSGI\",\n   18|     \"Topic :: Internet :: WWW/HTTP :: WSGI :: Application\",\n   19|     \"Topic :: Software Development :: Libraries :: Application Frameworks\",\n   20|     \"Typing :: Typed\",\n   21| ]\n   22| requires-python = \">=3.9\"\n   23| dependencies = [\n   24|     \"blinker>=1.9.0\",\n   25|     \"click>=8.1.3\",\n   26|     \"importlib-metadata>=3.6.0; python_version < '3.10'\",\n   27|     \"itsdangerous>=2.2.0\",\n   28|     \"jinja2>=3.1.2\",\n   29|     \"markupsafe>=2.1.1\",\n   30|     \"werkzeug>=3.1.0\",\n   31| ]\n   32| \n   33| [project.optional-dependencies]\n   34| async = [\"asgiref>=3.2\"]\n   35| dotenv = [\"python-dotenv\"]\n   36| \n   37| [dependency-groups]\n   38| dev = [\n   39|     \"ruff\",\n   40|     \"tox\",\n   41|     \"tox-uv\",\n   42| ]\n   43| docs = [\n   44|     \"pallets-sphinx-themes\",\n   45|     \"sphinx<9\",\n   46|     \"sphinx-tabs\",\n   47|     \"sphinxcontrib-log-cabinet\",\n   48| ]\n   49| docs-auto = [\n   50|     \"sphinx-autobuild\",\n   51| ]\n   52| gha-update = [\n   53|     \"gha-update ; python_full_version >= '3.12'\",\n   54| ]\n   55| pre-commit = [\n   56|     \"pre-commit\",\n   57|     \"pre-commit-uv\",\n   58| ]\n   59| tests = [\n   60|     \"asgiref\",\n   61|     \"greenlet\",\n   62|     \"pytest\",\n   63|     \"python-dotenv\",\n   64| ]\n   65| typing = [\n   66|     \"asgiref\",\n   67|     \"cryptography\",\n   68|     \"mypy\",\n   69|     \"pyright\",\n   70|     \"pytest\",\n   71|     \"python-dotenv\",\n   72|     \"types-contextvars\",\n   73|     \"types-dataclasses\",\n   74| ]\n   75| \n   76| [project.urls]\n   77| Donate = \"https://palletsprojects.com/donate\"\n   78| Documentation = \"https://flask.palletsprojects.com/\"\n   79| Changes = \"https://flask.palletsprojects.com/page/changes/\"\n   80| Source = \"https://github.com/pallets/flask/\"\n   81| Chat = \"https://discord.gg/pallets\"\n   82| \n   83| [project.scripts]\n   84| flask = \"flask.cli:main\"\n   85| \n   86| [build-system]\n   87| requires = [\"flit_core>=3.11,<4\"]\n   88| build-backend = \"flit_core.buildapi\"\n   89| \n   90| [tool.flit.module]\n   91| name = \"flask\"\n   92| \n   93| [tool.flit.sdist]\n   94| include = [\n   95|     \"docs/\",\n   96|     \"examples/\",\n   97|     \"tests/\",\n   98|     \"CHANGES.rst\",\n   99|     \"uv.lock\"\n  100| ]\n  101| exclude = [\n  102|     \"docs/_build/\",\n  103| ]\n  104| \n  105| [tool.uv]\n  106| default-groups = [\"dev\", \"pre-commit\", \"tests\", \"typing\"]\n  107| \n  108| [tool.pytest.ini_options]\n  109| testpaths = [\"tests\"]\n  110| filterwarnings = [\n  111|     \"error\",\n  112| ]\n  113| \n  114| [tool.coverage.run]\n  115| branch = true\n  116| source = [\"flask\", \"tests\"]\n  117| \n  118| [tool.coverage.paths]\n  119| source = [\"src\", \"*/site-packages\"]\n  120| \n  121| [tool.coverage.report]\n  122| exclude_also = [\n  123|     \"if t.TYPE_CHECKING\",\n  124|     \"raise NotImplementedError\",\n  125|     \": \\\\.{3}\",\n  126| ]\n  127| \n  128| [tool.mypy]\n  129| python_version = \"3.9\"\n  130| files = [\"src\", \"tests/type_check\"]\n  131| show_error_codes = true\n  132| pretty = true\n  133| strict = true\n  134| \n  135| [[tool.mypy.overrides]]\n  136| module = [\n  137|     \"asgiref.*\",\n  138|     \"dotenv.*\",\n  139|     \"cryptography.*\",\n  140|     \"importlib_metadata\",\n  141| ]\n  142| ignore_missing_imports = true\n  143| \n  144| [tool.pyright]\n  145| pythonVersion = \"3.9\"\n  146| include = [\"src\", \"tests/type_check\"]\n  147| typeCheckingMode = \"basic\"\n  148| \n  149| [tool.ruff]\n  150| src = [\"src\"]\n  151| fix = true\n  152| show-fixes = true\n  153| output-format = \"full\"\n  154| \n  155| [tool.ruff.lint]\n  156| select = [\n  157|     \"B\",  # flake8-bugbear\n  158|     \"E\",  # pycodestyle error\n  159|     \"F\",  # pyflakes\n  160|     \"I\",  # isort\n  161|     \"UP\",  # pyupgrade\n  162|     \"W\",  # pycodestyle warning\n  163| ]\n  164| \n  165| [tool.ruff.lint.isort]\n  166| force-single-line = true\n  167| order-by-type = false\n  168| \n  169| [tool.codespell]\n  170| ignore-words-list = \"te\"\n  171| \n  172| [tool.tox]\n  173| env_list = [\n  174|     \"py3.14\", \"py3.14t\",\n  175|     \"py3.13\", \"py3.12\", \"py3.11\", \"py3.10\", \"py3.9\",\n  176|     \"pypy3.11\",\n  177|     \"tests-min\", \"tests-dev\",\n  178|     \"style\",\n  179|     \"typing\",\n  180|     \"docs\",\n  181| ]\n  182| \n  183| [tool.tox.env_run_base]\n  184| description = \"pytest on latest dependency versions\"\n  185| runner = \"uv-venv-lock-runner\"\n  186| package = \"wheel\"\n  187| wheel_build_env = \".pkg\"\n  188| constrain_package_deps = true\n  189| use_frozen_constraints = true\n  190| dependency_groups = [\"tests\"]\n  191| env_tmp_dir = \"{toxworkdir}/tmp/{envname}\"\n  192| commands = [[\n  193|     \"pytest\", \"-v\", \"--tb=short\", \"--basetemp={env_tmp_dir}\",\n  194|     {replace = \"posargs\", default = [], extend = true},\n  195| ]]\n  196| \n  197| [tool.tox.env.tests-min]\n  198| description = \"pytest on minimum dependency versions\"\n  199| base_python = [\"3.14\"]\n  200| commands = [\n  201|     [\n  202|         \"uv\", \"pip\", \"install\",\n  203|         \"blinker==1.9.0\",\n  204|         \"click==8.1.3\",\n  205|         \"itsdangerous==2.2.0\",\n  206|         \"jinja2==3.1.2\",\n  207|         \"markupsafe==2.1.1\",\n  208|         \"werkzeug==3.1.0\",\n  209|     ],\n  210|     [\n  211|         \"pytest\", \"-v\", \"--tb=short\", \"--basetemp={env_tmp_dir}\",\n  212|         {replace = \"posargs\", default = [], extend = true},\n  213|     ],\n  214| ]\n  215| \n  216| [tool.tox.env.tests-dev]\n  217| description = \"pytest on development dependency versions (git main branch)\"\n  218| base_python = [\"3.10\"]\n  219| commands = [\n  220|     [\n  221|         \"uv\", \"pip\", \"install\",\n  222|         \"https://github.com/pallets-eco/blinker/archive/refs/heads/main.tar.gz\",\n  223|         \"https://github.com/pallets/click/archive/refs/heads/main.tar.gz\",\n  224|         \"https://github.com/pallets/itsdangerous/archive/refs/heads/main.tar.gz\",\n  225|         \"https://github.com/pallets/jinja/archive/refs/heads/main.tar.gz\",\n  226|         \"https://github.com/pallets/markupsafe/archive/refs/heads/main.tar.gz\",\n  227|         \"https://github.com/pallets/werkzeug/archive/refs/heads/main.tar.gz\",\n  228|     ],\n  229|     [\n  230|         \"pytest\", \"-v\", \"--tb=short\", \"--basetemp={env_tmp_dir}\",\n  231|         {replace = \"posargs\", default = [], extend = true},\n  232|     ],\n  233| ]\n  234| \n  235| [tool.tox.env.style]\n  236| description = \"run all pre-commit hooks on all files\"\n  237| dependency_groups = [\"pre-commit\"]\n  238| skip_install = true\n  239| commands = [[\"pre-commit\", \"run\", \"--all-files\"]]\n  240| \n  241| [tool.tox.env.typing]\n  242| description = \"run static type checkers\"\n  243| dependency_groups = [\"typing\"]\n  244| commands = [\n  245|     [\"mypy\"],\n  246|     [\"pyright\"],\n  247| ]\n  248| \n  249| [tool.tox.env.docs]\n  250| description = \"build docs\"\n  251| dependency_groups = [\"docs\"]\n  252| commands = [[\"sphinx-build\", \"-E\", \"-W\", \"-b\", \"dirhtml\", \"docs\", \"docs/_build/dirhtml\"]]\n  253| \n  254| [tool.tox.env.docs-auto]\n  255| description = \"continuously rebuild docs and start a local server\"\n  256| dependency_groups = [\"docs\", \"docs-auto\"]\n  257| commands = [[\"sphinx-autobuild\", \"-W\", \"-b\", \"dirhtml\", \"--watch\", \"src\", \"docs\", \"docs/_build/dirhtml\"]]\n  258| \n  259| [tool.tox.env.update-actions]\n  260| description = \"update GitHub Actions pins\"\n  261| labels = [\"update\"]\n  262| dependency_groups = [\"gha-update\"]\n  263| skip_install = true\n  264| commands = [[\"gha-update\"]]\n  265| \n  266| [tool.tox.env.update-pre_commit]\n  267| description = \"update pre-commit pins\"\n  268| labels = [\"update\"]\n  269| dependency_groups = [\"pre-commit\"]\n  270| skip_install = true\n  271| commands = [[\"pre-commit\", \"autoupdate\", \"--freeze\", \"-j4\"]]\n  272| \n  273| [tool.tox.env.update-requirements]\n  274| description = \"update uv lock\"\n  275| labels = [\"update\"]\n  276| dependency_groups = []\n  277| no_default_groups = true\n  278| skip_install = true\n  279| commands = [[\"uv\", \"lock\", {replace = \"posargs\", default = [\"-U\"], extend = true}]]\n  280| \n\n### src/flask/app.py  (ranges: L66-111, L555-645, L654-699, L712-757, L1378-1423; why: Code: mentions \"main\", \"cli\", \"command\", \"run\", \"top\")\n[outline of 1537 lines]\n   74| def _make_timedelta(value: timedelta | int | None) -> timedelta | None:\n   81| class Flask(App):\n  226| def __init__(\n  281| def get_send_file_max_age(self, filename: str | None) -> int | None:\n  308| def send_static_file(self, filename: str) -> Response:\n  330| def open_resource(\n  363| def open_instance_resource(\n  385| def create_jinja_environment(self) -> Environment:\n  425| def create_url_adapter(self, request: Request | None) -> MapAdapter | None:\n  478| def raise_routing_exception(self, request: Request) -> t.NoReturn:\n  506| def update_template_context(self, context: dict[str, t.Any]) -> None:\n  534| def make_shell_context(self) -> dict[str, t.Any]:\n  546| def run(\n  669| def test_client(self, use_cookies: bool = True, **kwargs: t.Any) -> FlaskClient:\n  698| class CustomClient(FlaskClient):\n  699| def __init__(self, *args, **kwargs):\n  727| def test_cli_runner(self, **kwargs: t.Any) -> FlaskCliRunner:\n  744| def handle_http_exception(\n  779| def handle_user_exception(\n  811| def handle_exception(self, e: Exception) -> Response:\n  864| def log_exception(\n  879| def dispatch_request(self) -> ft.ResponseReturnValue:\n  904| def full_dispatch_request(self) -> Response:\n  922| def finalize_request(\n  953| def make_default_options_response(self) -> Response:\n  966| def ensure_sync(self, func: t.Callable[..., t.Any]) -> t.Callable[..., t.Any]:\n  980| def async_to_sync(\n 1003| def url_for(\n 1129| def make_response(self, rv: ft.ResponseReturnValue) -> Response:\n 1271| def preprocess_request(self) -> ft.ResponseReturnValue | None:\n 1298| def process_response(self, response: Response) -> Response:\n 1326| def do_teardown_request(\n 1360| def do_teardown_appcontext(\n 1386| def app_context(self) -> AppContext:\n 1407| def request_context(self, environ: WSGIEnvironment) -> RequestContext:\n 1423| def test_request_context(self, *args: t.Any, **kwargs: t.Any) -> RequestContext:\n 1479| def wsgi_app(\n 1529| def __call__(\n[lines 66-111]\n   66|     \"T_shell_context_processor\", bound=ft.ShellContextProcessorCallable\n   67| )\n   68| T_teardown = t.TypeVar(\"T_teardown\", bound=ft.TeardownCallable)\n   69| T_template_filter = t.TypeVar(\"T_template_filter\", bound=ft.TemplateFilterCallable)\n   70| T_template_global = t.TypeVar(\"T_template_global\", bound=ft.TemplateGlobalCallable)\n   71| T_template_test = t.TypeVar(\"T_template_test\", bound=ft.TemplateTestCallable)\n   72| \n   73| \n   74| def _make_timedelta(value: timedelta | int | None) -> timedelta | None:\n   75|     if value is None or isinstance(value, timedelta):\n   76|         return value\n   77| \n   78|     return timedelta(seconds=value)\n   79| \n   80| \n   81| class Flask(App):\n   82|     \"\"\"The flask object implements a WSGI application and acts as the central\n   83|     object.  It is passed the name of the module or package of the\n   84|     application.  Once it is created it will act as a central registry for\n   85|     the view functions, the URL rules, template configuration and much more.\n   86| \n   87|     The name of the package is used to resolve resources from inside the\n   88|     package or the folder the module is contained in depending on if the\n   89|     package parameter resolves to an actual python package (a folder with\n   90|     an :file:`__init__.py` file inside) or a standard module (just a ``.py`` file).\n   91| \n   92|     For more information about resource loading, see :func:`open_resource`.\n   93| \n   94|     Usually you create a :class:`Flask` instance in your main module or\n   95|     in the :file:`__init__.py` file of your package like this::\n   96| \n   97|         from flask import Flask\n   98|         app = Flask(__name__)\n   99| \n  100|     .. admonition:: About the First Parameter\n  101| \n  102|         The idea of the first parameter is to give Flask an idea of what\n  103|         belongs to your application.  This name is used to find resources\n  104|         on the filesystem, can be used by extensions to improve debugging\n  105|         information and a lot more.\n  106| \n  107|         So it's important what you provide there.  If you are using a single\n  108|         module, `__name__` is always the correct value.  If you however are\n  109|         using a package, it's usually recommended to hardcode the name of\n  110|         your package there.\n  111| \n[lines 555-645]\n  555| \n  556|         Do not use ``run()`` in a production setting. It is not intended to\n  557|         meet security and performance requirements for a production server.\n  558|         Instead, see :doc:`/deploying/index` for WSGI server recommendations.\n  559| \n  560|         If the :attr:`debug` flag is set the server will automatically reload\n  561|         for code changes and show a debugger in case an exception happened.\n  562| \n  563|         If you want to run the application in debug mode, but disable the\n  564|         code execution on the interactive debugger, you can pass\n  565|         ``use_evalex=False`` as parameter.  This will keep the debugger's\n  566|         traceback screen active, but disable code execution.\n  567| \n  568|         It is not recommended to use this function for development with\n  569|         automatic reloading as this is badly supported.  Instead you should\n  570|         be using the :command:`flask` command line script's ``run`` support.\n  571| \n  572|         .. admonition:: Keep in Mind\n  573| \n  574|            Flask will suppress any server error with a generic error page\n  575|            unless it is in debug mode.  As such to enable just the\n  576|            interactive debugger without the code reloading, you have to\n  577|            invoke :meth:`run` with ``debug=True`` and ``use_reloader=False``.\n  578|            Setting ``use_debugger`` to ``True`` without being in debug mode\n  579|            won't catch any exceptions because there won't be any to\n  580|            catch.\n  581| \n  582|         :param host: the hostname to listen on. Set this to ``'0.0.0.0'`` to\n  583|             have the server available externally as well. Defaults to\n  584|             ``'127.0.0.1'`` or the host in the ``SERVER_NAME`` config variable\n  585|             if present.\n  586|         :param port: the port of the webserver. Defaults to ``5000`` or the\n  587|             port defined in the ``SERVER_NAME`` config variable if present.\n  588|         :param debug: if given, enable or disable debug mode. See\n  589|             :attr:`debug`.\n  590|         :param load_dotenv: Load the nearest :file:`.env` and :file:`.flaskenv`\n  591|             files to set environment variables. Will also change the working\n  592|             directory to the directory containing the first file found.\n  593|         :param options: the options to be forwarded to the underlying Werkzeug\n  594|             server. See :func:`werkzeug.serving.run_simple` for more\n  595|             information.\n  596| \n  597|         .. versionchanged:: 1.0\n  598|             If installed, python-dotenv will be used to load environment\n  599|             variables from :file:`.env` and :file:`.flaskenv` files.\n  600| \n  601|             The :envvar:`FLASK_DEBUG` environment variable will override :attr:`debug`.\n  602| \n  603|             Threaded mode is enabled by default.\n  604| \n  605|         .. versionchanged:: 0.10\n  606|             The default port is now picked from the ``SERVER_NAME``\n  607|             variable.\n  608|         \"\"\"\n  609|         # Ignore this call so that it doesn't start another server if\n  610|         # the 'flask run' command is used.\n  611|         if os.environ.get(\"FLASK_RUN_FROM_CLI\") == \"true\":\n  612|             if not is_running_from_reloader():\n  613|                 click.secho(\n  614|                     \" * Ignoring a call to 'app.run()' that would block\"\n  615|                     \" the current 'flask' CLI command.\\n\"\n  616|                     \"   Only call 'app.run()' in an 'if __name__ ==\"\n  617|                     ' \"__main__\"\\' guard.',\n  618|                     fg=\"red\",\n  619|                 )\n  620| \n  621|             return\n  622| \n  623|         if get_load_dotenv(load_dotenv):\n  624|             cli.load_dotenv()\n  625| \n  626|             # if set, env var overrides existing value\n  627|             if \"FLASK_DEBUG\" in os.environ:\n  628|                 self.debug = get_debug_flag()\n  629| \n  630|         # debug passed to method overrides all other sources\n  631|         if debug is not None:\n  632|             self.debug = bool(debug)\n  633| \n  634|         server_name = self.config.get(\"SERVER_NAME\")\n  635|         sn_host = sn_port = None\n  636| \n  637|         if server_name:\n  638|             sn_host, _, sn_port = server_name.partition(\":\")\n  639| \n  640|         if not host:\n  641|             if sn_host:\n  642|                 host = sn_host\n  643|             else:\n  644|                 host = \"127.0.0.1\"\n  645| \n[lines 654-699]\n  654|         options.setdefault(\"use_debugger\", self.debug)\n  655|         options.setdefault(\"threaded\", True)\n  656| \n  657|         cli.show_server_banner(self.debug, self.name)\n  658| \n  659|         from werkzeug.serving import run_simple\n  660| \n  661|         try:\n  662|             run_simple(t.cast(str, host), port, self, **options)\n  663|         finally:\n  664|             # reset the first request information if the development server\n  665|             # reset normally.  This makes it possible to restart the server\n  666|             # without reloader and that stuff from an interactive shell.\n  667|             self._got_first_request = False\n  668| \n  669|     def test_client(self, use_cookies: bool = True, **kwargs: t.Any) -> FlaskClient:\n  670|         \"\"\"Creates a test client for this application.  For information\n  671|         about unit testing head over to :doc:`/testing`.\n  672| \n  673|         Note that if you are testing for assertions or exceptions in your\n  674|         application code, you must set ``app.testing = True`` in order for the\n  675|         exceptions to propagate to the test client.  Otherwise, the exception\n  676|         will be handled by the application (not visible to the test client) and\n  677|         the only indication of an AssertionError or other exception will be a\n  678|         500 status code response to the test client.  See the :attr:`testing`\n  679|         attribute.  For example::\n  680| \n  681|             app.testing = True\n  682|             client = app.test_client()\n  683| \n  684|         The test client can be used in a ``with`` block to defer the closing down\n  685|         of the context until the end of the ``with`` block.  This is useful if\n  686|         you want to access the context locals for testing::\n  687| \n  688|             with app.test_client() as c:\n  689|                 rv = c.get('/?vodka=42')\n  690|                 assert request.args['vodka'] == '42'\n  691| \n  692|         Additionally, you may pass optional keyword arguments that will then\n  693|         be passed to the application's :attr:`test_client_class` constructor.\n  694|         For example::\n  695| \n  696|             from flask.testing import FlaskClient\n  697| \n  698|             class CustomClient(FlaskClient):\n  699|                 def __init__(self, *args, **kwargs):\n[lines 712-757]\n  712|            The `use_cookies` parameter was added as well as the ability\n  713|            to override the client to be used by setting the\n  714|            :attr:`test_client_class` attribute.\n  715| \n  716|         .. versionchanged:: 0.11\n  717|            Added `**kwargs` to support passing additional keyword arguments to\n  718|            the constructor of :attr:`test_client_class`.\n  719|         \"\"\"\n  720|         cls = self.test_client_class\n  721|         if cls is None:\n  722|             from .testing import FlaskClient as cls\n  723|         return cls(  # type: ignore\n  724|             self, self.response_class, use_cookies=use_cookies, **kwargs\n  725|         )\n  726| \n  727|     def test_cli_runner(self, **kwargs: t.Any) -> FlaskCliRunner:\n  728|         \"\"\"Create a CLI runner for testing CLI commands.\n  729|         See :ref:`testing-cli`.\n  730| \n  731|         Returns an instance of :attr:`test_cli_runner_class`, by default\n  732|         :class:`~flask.testing.FlaskCliRunner`. The Flask app object is\n  733|         passed as the first argument.\n  734| \n  735|         .. versionadded:: 1.0\n  736|         \"\"\"\n  737|         cls = self.test_cli_runner_class\n  738| \n  739|         if cls is None:\n  740|             from .testing import FlaskCliRunner as cls\n  741| \n  742|         return cls(self, **kwargs)  # type: ignore\n  743| \n  744|     def handle_http_exception(\n  745|         self, e: HTTPException\n  746|     ) -> HTTPException | ft.ResponseReturnValue:\n  747|         \"\"\"Handles an HTTP exception.  By default this will invoke the\n  748|         registered error handlers and fall back to returning the\n  749|         exception as response.\n  750| \n  751|         .. versionchanged:: 1.0.3\n  752|             ``RoutingException``, used internally for actions such as\n  753|              slash redirects during routing, is not passed to error\n  754|              handlers.\n  755| \n  756|         .. versionchanged:: 1.0\n  757|             Exceptions are looked up by code *and* by MRO, so\n[lines 1378-1423]\n 1378|         if exc is _sentinel:\n 1379|             exc = sys.exc_info()[1]\n 1380| \n 1381|         for func in reversed(self.teardown_appcontext_funcs):\n 1382|             self.ensure_sync(func)(exc)\n 1383| \n 1384|         appcontext_tearing_down.send(self, _async_wrapper=self.ensure_sync, exc=exc)\n 1385| \n 1386|     def app_context(self) -> AppContext:\n 1387|         \"\"\"Create an :class:`~flask.ctx.AppContext`. Use as a ``with``\n 1388|         block to push the context, which will make :data:`current_app`\n 1389|         point at this application.\n 1390| \n 1391|         An application context is automatically pushed by\n 1392|         :meth:`RequestContext.push() <flask.ctx.RequestContext.push>`\n 1393|         when handling a request, and when running a CLI command. Use\n 1394|         this to manually create a context outside of these situations.\n 1395| \n 1396|         ::\n 1397| \n 1398|             with app.app_context():\n 1399|                 init_db()\n 1400| \n 1401|         See :doc:`/appcontext`.\n 1402| \n 1403|         .. versionadded:: 0.9\n 1404|         \"\"\"\n 1405|         return AppContext(self)\n 1406| \n 1407|     def request_context(self, environ: WSGIEnvironment) -> RequestContext:\n 1408|         \"\"\"Create a :class:`~flask.ctx.RequestContext` representing a\n 1409|         WSGI environment. Use a ``with`` block to push the context,\n 1410|         which will make :data:`request` point at this request.\n 1411| \n 1412|         See :doc:`/reqcontext`.\n 1413| \n 1414|         Typically you should not call this from your own code. A request\n 1415|         context is automatically pushed by the :meth:`wsgi_app` when\n 1416|         handling a request. Use :meth:`test_request_context` to create\n 1417|         an environment and context instead of this method.\n 1418| \n 1419|         :param environ: a WSGI environment\n 1420|         \"\"\"\n 1421|         return RequestContext(self, environ)\n 1422| \n 1423|     def test_request_context(self, *args: t.Any, **kwargs: t.Any) -> RequestContext:",
+      "type": "tool.response",
+      "id": "01m7ndm87f49m8y58g2q8zd1a1",
+      "createdAt": "2026-11-17T18:52:06.255Z",
+      "threadId": "main"
+    },
+    {
+      "type": "model.message",
+      "threadId": "main",
+      "createdAt": "2026-11-17T18:52:06.258Z",
+      "id": "01m7ndm87j1rwekx8vs5a2h8n6",
+      "model": {
+        "name": "google-gemini/gemini-3-5-flash",
+        "params": {
+          "maxTokens": 8192,
+          "temperature": 0.1
+        }
+      }
+    },
+    {
+      "toolCalls": [
+        {
+          "toolInfo": {
+            "type": "mcp",
+            "name": "read_file",
+            "serverId": "axiom-forge",
+            "serverName": "axiom-forge"
+          },
+          "index": 0,
+          "id": "call_7711500412039021279",
+          "type": "function",
+          "function": {
+            "name": "read_file",
+            "arguments": ""
+          }
+        }
+      ],
+      "type": "model.message.delta",
+      "id": "01m7ndm87j1rwekx8vs5a2h8n6",
+      "threadId": "main",
+      "createdAt": "2026-11-17T18:52:08.195Z"
+    },
+    {
+      "toolCalls": [
+        {
+          "index": 0,
+          "function": {
+            "arguments": "{\"path\":\"src/flask/__main__.py\"}"
+          }
+        }
+      ],
+      "type": "model.message.delta",
+      "id": "01m7ndm87j1rwekx8vs5a2h8n6",
+      "threadId": "main"
+    },
+    {
+      "type": "model.message.delta",
+      "id": "01m7ndm87j1rwekx8vs5a2h8n6",
+      "threadId": "main",
+      "finishReason": "tool_calls",
+      "usage": {
+        "inputTokens": 24905,
+        "outputTokens": 92,
+        "cacheReadTokens": 0,
+        "inputTokensBreakdown": {
+          "harness": 1234,
+          "skills": 0,
+          "instructions": 566,
+          "toolDefinitions": 708,
+          "messages": 22397
+        }
+      }
+    },
+    {
+      "toolCallId": "call_7711500412039021279",
+      "content": "src/flask/__main__.py\n    1| from .cli import main\n    2| \n    3| main()\n    4| ",
+      "type": "tool.response",
+      "id": "01m7ndma4fjt19sww4z7wmr4tv",
+      "createdAt": "2026-11-17T18:52:08.207Z",
+      "threadId": "main"
+    },
+    {
+      "type": "model.message",
+      "threadId": "main",
+      "createdAt": "2026-11-17T18:52:08.210Z",
+      "id": "01m7ndma4j3j5cv5tfvcch72v5",
+      "model": {
+        "name": "google-gemini/gemini-3-5-flash",
+        "params": {
+          "maxTokens": 8192,
+          "temperature": 0.1
+        }
+      }
+    },
+    {
+      "toolCalls": [
+        {
+          "toolInfo": {
+            "type": "mcp",
+            "name": "propose_edit",
+            "serverId": "axiom-forge",
+            "serverName": "axiom-forge"
+          },
+          "index": 0,
+          "id": "call_14717310845320298004",
+          "type": "function",
+          "function": {
+            "name": "propose_edit",
+            "arguments": ""
+          }
+        }
+      ],
+      "type": "model.message.delta",
+      "id": "01m7ndma4j3j5cv5tfvcch72v5",
+      "threadId": "main",
+      "createdAt": "2026-11-17T18:52:10.564Z"
+    },
+    {
+      "toolCalls": [
+        {
+          "index": 0,
+          "function": {
+            "arguments": "{\"path\":\"src/flask/__main__.py\",\"rationale\":\"Add '# axiom proof' comment at the top of src/flask/__main__.py as requested.\",\"edits\":[{\"old_text\":\"from .cli import main\",\"new_text\":\"# axiom proof\\nfrom .cli import main\"}]}"
+          }
+        }
+      ],
+      "type": "model.message.delta",
+      "id": "01m7ndma4j3j5cv5tfvcch72v5",
+      "threadId": "main"
+    },
+    {
+      "type": "model.message.delta",
+      "id": "01m7ndma4j3j5cv5tfvcch72v5",
+      "threadId": "main",
+      "finishReason": "tool_calls",
+      "usage": {
+        "inputTokens": 25050,
+        "outputTokens": 304,
+        "cacheReadTokens": 22853,
+        "inputTokensBreakdown": {
+          "harness": 1234,
+          "skills": 0,
+          "instructions": 566,
+          "toolDefinitions": 708,
+          "messages": 22542
+        }
+      }
+    },
+    {
+      "type": "tool.approval_required",
+      "id": "01m7ndmcejw6yraza2v4cegkxp",
+      "createdAt": "2026-11-17T18:52:10.578Z",
+      "threadId": "main",
+      "toolCalls": [
+        {
+          "id": "call_14717310845320298004",
+          "sourceEventId": "01m7ndma4j3j5cv5tfvcch72v5"
+        }
+      ]
+    },
+    {
+      "type": "turn.update",
+      "id": "01m7ndmcejw6yraza2v4cegkxq",
+      "state": {
+        "status": "paused",
+        "metrics": {
+          "totalInputTokens": 52489,
+          "totalOutputTokens": 696,
+          "totalTokens": 53185,
+          "totalCacheReadTokens": 22853,
+          "totalReasoningTokens": 534
+        }
+      },
+      "createdAt": "2026-11-17T18:52:10.578Z",
+      "threadId": null
+    },
+    {
+      "type": "user.tool_approval",
+      "threadId": "main",
+      "toolCallId": "call_14717310845320298004",
+      "approval": {
+        "status": "allow"
+      },
+      "id": "01m7ndmcez51d3jcyncj7jzxt0",
+      "createdAt": "2026-11-17T18:52:10.591Z"
+    },
+    {
+      "type": "turn.update",
+      "id": "01m7ndmcf192qstg5t4asm9n2c",
+      "state": {
+        "status": "running"
+      },
+      "createdAt": "2026-11-17T18:52:10.593Z",
+      "threadId": null
+    },
+    {
+      "toolCallId": "call_14717310845320298004",
+      "content": "Applied 1 of 1 hunk(s) to src/flask/__main__.py.",
+      "type": "tool.response",
+      "id": "01m7ndmcf5pja3mth0avry1znw",
+      "createdAt": "2026-11-17T18:52:10.597Z",
+      "threadId": "main"
+    },
+    {
+      "type": "model.message",
+      "threadId": "main",
+      "createdAt": "2026-11-17T18:52:10.598Z",
+      "id": "01m7ndmcf64v3trb2ek9jza8wb",
+      "model": {
+        "name": "google-gemini/gemini-3-5-flash",
+        "params": {
+          "maxTokens": 8192,
+          "temperature": 0.1
+        }
+      }
+    },
+    {
+      "toolCalls": [
+        {
+          "toolInfo": {
+            "type": "mcp",
+            "name": "run_command",
+            "serverId": "axiom-forge",
+            "serverName": "axiom-forge"
+          },
+          "index": 0,
+          "id": "call_14835014826289111831",
+          "type": "function",
+          "function": {
+            "name": "run_command",
+            "arguments": ""
+          }
+        }
+      ],
+      "type": "model.message.delta",
+      "id": "01m7ndmcf64v3trb2ek9jza8wb",
+      "threadId": "main",
+      "createdAt": "2026-11-17T18:52:12.780Z"
+    },
+    {
+      "toolCalls": [
+        {
+          "index": 0,
+          "function": {
+            "arguments": "{\"command\":\"pytest tests/test_cli.py -q\"}"
+          }
+        }
+      ],
+      "type": "model.message.delta",
+      "id": "01m7ndmcf64v3trb2ek9jza8wb",
+      "threadId": "main"
+    },
+    {
+      "type": "model.message.delta",
+      "id": "01m7ndmcf64v3trb2ek9jza8wb",
+      "threadId": "main",
+      "finishReason": "tool_calls",
+      "usage": {
+        "inputTokens": 25396,
+        "outputTokens": 112,
+        "cacheReadTokens": 23000,
+        "inputTokensBreakdown": {
+          "harness": 1234,
+          "skills": 0,
+          "instructions": 566,
+          "toolDefinitions": 708,
+          "messages": 22888
+        }
+      }
+    },
+    {
+      "type": "tool.approval_required",
+      "id": "01m7ndmeksf8jcd77j7qhngkx4",
+      "createdAt": "2026-11-17T18:52:12.793Z",
+      "threadId": "main",
+      "toolCalls": [
+        {
+          "id": "call_14835014826289111831",
+          "sourceEventId": "01m7ndmcf64v3trb2ek9jza8wb"
+        }
+      ]
+    },
+    {
+      "type": "turn.update",
+      "id": "01m7ndmektan02ahdy4nw9d9hc",
+      "state": {
+        "status": "paused",
+        "metrics": {
+          "totalInputTokens": 77885,
+          "totalOutputTokens": 808,
+          "totalTokens": 78693,
+          "totalCacheReadTokens": 45853,
+          "totalReasoningTokens": 621
+        }
+      },
+      "createdAt": "2026-11-17T18:52:12.794Z",
+      "threadId": null
+    },
+    {
+      "type": "user.tool_approval",
+      "threadId": "main",
+      "toolCallId": "call_14835014826289111831",
+      "approval": {
+        "status": "allow"
+      },
+      "id": "01m7ndmem0tv99jv46nezsswqm",
+      "createdAt": "2026-11-17T18:52:12.800Z"
+    },
+    {
+      "type": "turn.update",
+      "id": "01m7ndmem35wsddn6wcp016vxv",
+      "state": {
+        "status": "running"
+      },
+      "createdAt": "2026-11-17T18:52:12.803Z",
+      "threadId": null
+    },
+    {
+      "toolCallId": "call_14835014826289111831",
+      "content": "$ pytest tests/test_cli.py -q\nexit code: 0 (PASSED, 743 ms)\n..........................................................               [100%]\n58 passed in 0.07s\n",
+      "type": "tool.response",
+      "id": "01m7ndmfbe68qsmp83s2argp1n",
+      "createdAt": "2026-11-17T18:52:13.550Z",
+      "threadId": "main"
+    },
+    {
+      "type": "model.message",
+      "threadId": "main",
+      "createdAt": "2026-11-17T18:52:13.551Z",
+      "id": "01m7ndmfbfy7bqt40xay86zazy",
+      "model": {
+        "name": "google-gemini/gemini-3-5-flash",
+        "params": {
+          "maxTokens": 8192,
+          "temperature": 0.1
+        }
+      }
+    },
+    {
+      "content": "I have completed the requested changes and verification.\n\n### Summary of Changes\n- **`src/flask",
+      "type": "model.message.delta",
+      "id": "01m7ndmfbfy7bqt40xay86zazy",
+      "threadId": "main",
+      "createdAt": "2026-11-17T18:52:15.735Z"
+    },
+    {
+      "content": "/__main__.py`**: Added the comment `# axiom proof` at the top of the file.\n\n### Verification\n- Exec",
+      "type": "model.message.delta",
+      "id": "01m7ndmfbfy7bqt40xay86zazy",
+      "threadId": "main"
+    },
+    {
+      "content": "uted `pytest tests/test_cli.py -q`\n- **Result**: Exit code `0` (58 passed",
+      "type": "model.message.delta",
+      "id": "01m7ndmfbfy7bqt40xay86zazy",
+      "threadId": "main"
+    },
+    {
+      "content": " in 0.07s).\n\n### Anything Left Undone\nNone.",
+      "type": "model.message.delta",
+      "id": "01m7ndmfbfy7bqt40xay86zazy",
+      "threadId": "main"
+    },
+    {
+      "type": "model.message.delta",
+      "id": "01m7ndmfbfy7bqt40xay86zazy",
+      "threadId": "main",
+      "finishReason": "stop",
+      "usage": {
+        "inputTokens": 25579,
+        "outputTokens": 220,
+        "cacheReadTokens": 23346,
+        "inputTokensBreakdown": {
+          "harness": 1234,
+          "skills": 0,
+          "instructions": 566,
+          "toolDefinitions": 708,
+          "messages": 23071
+        }
+      }
+    },
+    {
+      "type": "turn.done",
+      "id": "01m7ndmhptxc1w0jyjf6v3g18v",
+      "createdAt": "2026-11-17T18:52:15.962Z",
+      "state": {
+        "status": "done",
+        "output": {
+          "content": "I have completed the requested changes and verification.\n\n### Summary of Changes\n- **`src/flask/__main__.py`**: Added the comment `# axiom proof` at the top of the file.\n\n### Verification\n- Executed `pytest tests/test_cli.py -q`\n- **Result**: Exit code `0` (58 passed in 0.07s).\n\n### Anything Left Undone\nNone.",
+          "type": "model.message",
+          "id": "01m7ndmfbfy7bqt40xay86zazy",
+          "createdAt": "2026-11-17T18:52:15.958Z",
+          "threadId": "main",
+          "finishReason": "stop",
+          "usage": {
+            "inputTokens": 25579,
+            "outputTokens": 220,
+            "cacheReadTokens": 23346,
+            "inputTokensBreakdown": {
+              "harness": 1234,
+              "skills": 0,
+              "instructions": 566,
+              "toolDefinitions": 708,
+              "messages": 23071
+            }
+          },
+          "model": {
+            "name": "google-gemini/gemini-3-5-flash",
+            "params": {
+              "maxTokens": 8192,
+              "temperature": 0.1
+            }
+          }
+        },
+        "requiredActions": [],
+        "completedAt": "2026-11-17T18:52:15.962Z",
+        "metrics": {
+          "totalInputTokens": 103464,
+          "totalOutputTokens": 1028,
+          "totalTokens": 104492,
+          "totalCacheReadTokens": 69199,
+          "totalReasoningTokens": 750
+        }
+      },
+      "threadId": null
+    }
+  ]
+}

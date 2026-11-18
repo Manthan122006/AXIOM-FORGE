@@ -6,6 +6,6 @@ out/
 .env.*
 !.env.example
 config/models.local.json
-fixtures/
+/fixtures/
 .DS_Store
 coverage/

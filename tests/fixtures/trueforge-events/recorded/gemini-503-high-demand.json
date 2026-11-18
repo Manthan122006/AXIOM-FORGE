@@ -1,0 +1,68 @@
+{
+  "recordedAt": "2026-11-17T18:49:47.245Z",
+  "trueforge": "http://localhost:8790",
+  "model": "google-gemini/gemini-flash-latest",
+  "sessionId": "01m7ndfc8qhshyt3tgha4takgy",
+  "prompt": "Call assemble_context for: \"explain get_debug_flag\". Then reply with one sentence.",
+  "events": [
+    {
+      "type": "turn.created",
+      "id": "01m7ndfc8w0ykpvc5a5dnensq1",
+      "turnId": "01m7ndfc8vme29hp1g3y9gzf22",
+      "previousTurnId": null,
+      "input": [
+        {
+          "type": "user.message",
+          "content": "Call assemble_context for: \"explain get_debug_flag\". Then reply with one sentence."
+        }
+      ],
+      "state": {
+        "status": "running"
+      },
+      "createdAt": "2026-11-17T18:49:26.555Z",
+      "threadId": null
+    },
+    {
+      "type": "mcp.initialize",
+      "id": "01m7ndfc90r5xw8haw98m2ectp",
+      "createdAt": "2026-11-17T18:49:26.560Z",
+      "threadId": "main",
+      "mcpServers": [
+        {
+          "name": "axiom-forge",
+          "id": "axiom-forge",
+          "transportType": "streamable-http"
+        }
+      ]
+    },
+    {
+      "type": "model.message",
+      "threadId": "main",
+      "createdAt": "2026-11-17T18:49:26.560Z",
+      "id": "01m7ndfc90r5xw8haw98m2ectq",
+      "model": {
+        "name": "google-gemini/gemini-flash-latest",
+        "params": {
+          "maxTokens": 8192,
+          "temperature": 0.1
+        }
+      }
+    },
+    {
+      "type": "turn.done",
+      "id": "01m7ndg0f7naa1a5dd1f16y9e7",
+      "createdAt": "2026-11-17T18:49:47.239Z",
+      "state": {
+        "status": "error",
+        "message": "[Model Error] Request failed (503): This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",
+        "completedAt": "2026-11-17T18:49:47.239Z",
+        "metrics": {
+          "totalInputTokens": 0,
+          "totalOutputTokens": 0,
+          "totalTokens": 0
+        }
+      },
+      "threadId": null
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "recordedAt": "2026-11-17T18:48:42.190Z",
+  "trueforge": "http://localhost:8790",
+  "model": "google-gemini/gemini-3-5-flash",
+  "sessionId": "01m7ndc2jzed75jtac667mrka9",
+  "prompt": "Call assemble_context for: \"explain get_debug_flag\". Then reply with one sentence.",
+  "events": [
+    {
+      "type": "turn.created",
+      "id": "01m7ndc2kacw9rej30jv7am2ay",
+      "turnId": "01m7ndc2k3b7jwpnht2648kefk",
+      "previousTurnId": null,
+      "input": [
+        {
+          "type": "user.message",
+          "content": "Call assemble_context for: \"explain get_debug_flag\". Then reply with one sentence."
+        }
+      ],
+      "state": {
+        "status": "running"
+      },
+      "createdAt": "2026-11-17T18:47:38.344Z",
+      "threadId": null
+    },
+    {
+      "type": "mcp.initialize",
+      "id": "01m7ndc2kgr6kcv8sy23gze303",
+      "createdAt": "2026-11-17T18:47:38.352Z",
+      "threadId": "main",
+      "mcpServers": [
+        {
+          "name": "axiom-forge",
+          "id": "axiom-forge",
+          "transportType": "streamable-http"
+        }
+      ]
+    },
+    {
+      "type": "model.message",
+      "threadId": "main",
+      "createdAt": "2026-11-17T18:47:38.353Z",
+      "id": "01m7ndc2kgr6kcv8sy23gze304",
+      "model": {
+        "name": "google-gemini/gemini-3-5-flash",
+        "params": {
+          "maxTokens": 8192,
+          "temperature": 0.1
+        }
+      }
+    },
+    {
+      "type": "turn.done",
+      "id": "01m7nde0y67ybpr0e949gv5c8a",
+      "createdAt": "2026-11-17T18:48:42.182Z",
+      "state": {
+        "status": "error",
+        "message": "[Model Error] Cannot connect to API: Headers Timeout Error",
+        "completedAt": "2026-11-17T18:48:42.182Z",
+        "metrics": {
+          "totalInputTokens": 0,
+          "totalOutputTokens": 0,
+          "totalTokens": 0
+        }
+      },
+      "threadId": null
+    }
+  ]
+}

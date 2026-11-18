@@ -1,0 +1,132 @@
+{
+  "recordedAt": "2026-11-17T18:54:51.288Z",
+  "trueforge": "http://localhost:8790",
+  "model": "google-gemini/gemini-3-5-flash-lite",
+  "sessionId": "01m7nds2drzn1bb430ky2x0p5c",
+  "prompt": "Use propose_edit to add a one-line comment '# axiom proof' at the top of src/flask/__main__.py",
+  "events": [
+    {
+      "type": "turn.created",
+      "id": "01m7nds2dwnc8mw9sdf6dcjygz",
+      "turnId": "01m7nds2dvd5pmc2z6040rtpbs",
+      "previousTurnId": null,
+      "input": [
+        {
+          "type": "user.message",
+          "content": "Use propose_edit to add a one-line comment '# axiom proof' at the top of src/flask/__main__.py"
+        }
+      ],
+      "state": {
+        "status": "running"
+      },
+      "createdAt": "2026-11-17T18:54:44.156Z",
+      "threadId": null
+    },
+    {
+      "type": "mcp.initialize",
+      "id": "01m7nds2e0zr6kwx5ncpfv3684",
+      "createdAt": "2026-11-17T18:54:44.160Z",
+      "threadId": "main",
+      "mcpServers": [
+        {
+          "name": "axiom-forge",
+          "id": "axiom-forge",
+          "transportType": "streamable-http"
+        }
+      ]
+    },
+    {
+      "type": "model.message",
+      "threadId": "main",
+      "createdAt": "2026-11-17T18:54:44.161Z",
+      "id": "01m7nds2e1wgts9ebkpwjxjjdp",
+      "model": {
+        "name": "google-gemini/gemini-3-5-flash-lite",
+        "params": {
+          "maxTokens": 8192,
+          "temperature": 0.1
+        }
+      }
+    },
+    {
+      "toolCalls": [
+        {
+          "toolInfo": {
+            "type": "mcp",
+            "name": "assemble_context",
+            "serverId": "axiom-forge",
+            "serverName": "axiom-forge"
+          },
+          "index": 0,
+          "id": "call_15111780257417535383",
+          "type": "function",
+          "function": {
+            "name": "assemble_context",
+            "arguments": ""
+          }
+        }
+      ],
+      "type": "model.message.delta",
+      "id": "01m7nds2e1wgts9ebkpwjxjjdp",
+      "threadId": "main",
+      "createdAt": "2026-11-17T18:54:51.264Z"
+    },
+    {
+      "toolCalls": [
+        {
+          "index": 0,
+          "function": {
+            "arguments": "{\"task\":\"Use propose_edit to add a one-line comment '# axiom proof' at the top of src/flask/__main__.py\"}"
+          }
+        }
+      ],
+      "type": "model.message.delta",
+      "id": "01m7nds2e1wgts9ebkpwjxjjdp",
+      "threadId": "main"
+    },
+    {
+      "type": "model.message.delta",
+      "id": "01m7nds2e1wgts9ebkpwjxjjdp",
+      "threadId": "main",
+      "finishReason": "tool_calls",
+      "usage": {
+        "inputTokens": 2516,
+        "outputTokens": 41,
+        "cacheReadTokens": 0,
+        "inputTokensBreakdown": {
+          "harness": 1234,
+          "skills": 0,
+          "instructions": 566,
+          "toolDefinitions": 708,
+          "messages": 8
+        }
+      }
+    },
+    {
+      "toolCallId": "call_15111780257417535383",
+      "content": "{\"error\":[{\"type\":\"text\",\"text\":\"{\\\"error\\\":\\\"MCP error -32001: client-cancelled\\\"}\"}]}",
+      "type": "tool.response",
+      "id": "01m7nds9cc1vnt0vb6jwvaxwdj",
+      "createdAt": "2026-11-17T18:54:51.276Z",
+      "threadId": "main"
+    },
+    {
+      "type": "turn.done",
+      "id": "01m7nds9ce0z92j7bs5tchr499",
+      "createdAt": "2026-11-17T18:54:51.278Z",
+      "state": {
+        "status": "cancelled",
+        "reason": "client-cancelled",
+        "completedAt": "2026-11-17T18:54:51.278Z",
+        "metrics": {
+          "totalInputTokens": 2516,
+          "totalOutputTokens": 41,
+          "totalTokens": 2557,
+          "totalCacheReadTokens": 0,
+          "totalReasoningTokens": 0
+        }
+      },
+      "threadId": null
+    }
+  ]
+}

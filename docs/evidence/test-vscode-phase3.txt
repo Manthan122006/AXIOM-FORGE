@@ -23,7 +23,7 @@ Creation of workbench contribution 'chat.usagesTool' took 31ms.
 Creation of workbench contribution 'workbench.contrib.interactiveDocument' took 28ms.
 Canceled Failed to load custom agents
 Started local extension host with pid 24656.
-Loading development extension at /Users/manthangajra/IIT BOMBAY/axiom-forge
+Loading development extension at <repo>
 
   AXIOM Forge in VS Code
       [timing] activate(): 670 ms
