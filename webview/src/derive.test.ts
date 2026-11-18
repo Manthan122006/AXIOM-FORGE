@@ -41,3 +41,23 @@ describe('derive (UI is a function of real state)', () => {
     expect(unverifiedChanges([applied], [pass])).toHaveLength(0);
   });
 });
+
+import { explainItem } from './derive';
+describe('explainItem (plain words from real engine signals)', () => {
+  it('turns the engine signals of cli.py into short phrases, strongest first, one per kind', () => {
+    expect(
+      explainItem([
+        { signal: 'keyword', weight: 60, detail: 'mentions "loaded", "commands", "command", "help", "cli"' },
+        { signal: 'path', weight: 25, detail: 'file name matches "cli"' },
+        { signal: 'documented_by', weight: 25, detail: 'doc page cli.rst matches module cli (docs/cli.rst matches the task)' },
+        { signal: 'tested_by', weight: 21.2, detail: 'naming convention: test_cli.py ↔ cli.py (tests/test_cli.py matches the task)' },
+      ]),
+    ).toEqual(['Mentions loaded, commands, command', 'Name matches cli', 'Documented in cli.rst']);
+  });
+  it('handles pairing, definitions and imports', () => {
+    expect(explainItem([{ signal: 'test_pair', weight: 30, detail: 'naming convention: test_cli.py ↔ cli.py (related to src/flask/cli.py)' }])).toEqual(['Tests cli.py']);
+    expect(explainItem([{ signal: 'identifier', weight: 45, detail: 'defines function `get_template_attribute` (L296)' }])).toEqual(['Defines get_template_attribute']);
+    expect(explainItem([{ signal: 'import', weight: 8, detail: 'imports `flask.cli` (related to src/flask/cli.py)' }])).toEqual(['Imports flask.cli']);
+    expect(explainItem([{ signal: 'unknown', weight: 9, detail: 'x' }])).toEqual([]);
+  });
+});

@@ -1,8 +1,9 @@
 import { memo, useMemo, useState, useSyncExternalStore } from 'react';
 import type { ContextItem, ContextReceipt, RelevanceCategory } from '../../../src/shared/contracts';
+import { explainItem } from '../derive';
 import { post, useAxiom } from '../store';
 import { useNav } from '../ui/nav';
-import { Empty, Figure, Meter, Section, ViewHead } from '../ui/primitives';
+import { Empty, Figure, Meter, Section, Skeleton, ViewHead } from '../ui/primitives';
 
 const CAT: Record<RelevanceCategory, string> = {
   explicit_mention: 'mentioned',
@@ -130,7 +131,11 @@ const FileRow = memo(function FileRow({ s, max, focus, onFocus }: { s: ContextIt
           </button>
           <span className="tag">{CAT[s.category]}</span>
         </div>
-        <p className="ctx-why">{s.reason}</p>
+        <ul className="ctx-why" title={s.reason}>
+          {explainItem(s.signals).map((w) => (
+            <li key={w}>{w}</li>
+          ))}
+        </ul>
         <details className="ctx-more">
           <summary>
             {s.inclusion.mode === 'full' ? 'Sent in full' : s.inclusion.mode === 'outline' ? 'Sent as an outline' : `Sent lines ${s.inclusion.ranges.map(([a, b]) => `${a}–${b}`).join(', ')}`}, about {k(s.estTokens)} tokens
@@ -148,8 +153,31 @@ const FileRow = memo(function FileRow({ s, max, focus, onFocus }: { s: ContextIt
   );
 });
 
+/** The task whose context is being assembled right now (a real running assemble_context call), if any. */
+function useAssembling(): string | null {
+  return useAxiom((s) => {
+    for (let i = s.timeline.length - 1; i >= 0; i--) {
+      const e = s.timeline[i]!;
+      if (e.kind === 'tool_call' && e.call.toolName === 'assemble_context') return e.call.phase === 'running' || e.call.phase === 'requested' ? String(e.call.args.task ?? '') : null;
+      if (e.kind === 'user_message') return null;
+    }
+    return null;
+  });
+}
+
+function Assembling({ task }: { task: string }) {
+  return (
+    <div className="banner t-idle" role="status">
+      <strong>Assembling context…</strong>
+      <span>Ranking the repository's files for: {task.length > 120 ? `${task.slice(0, 119)}…` : task}</span>
+      <Skeleton rows={4} />
+    </div>
+  );
+}
+
 export function ContextView() {
   const receipts = useAxiom((s) => s.receipts);
+  const assembling = useAssembling();
   const nav = useNav();
   const list = useMemo(() => Object.values(receipts).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [receipts]);
   const receipt = (nav.receiptId && receipts[nav.receiptId]) || list[0];
@@ -158,9 +186,13 @@ export function ContextView() {
     return (
       <div className="view">
         <ViewHead title="Context" lede="Before it changes anything, the agent asks AXIOM Forge for the files that matter. Each request produces a receipt: what was sent, why, and what was left out." />
-        <Empty title="No context assembled yet." action={<button className="btn primary" onClick={() => nav.go('workspace')}>Describe a task</button>}>
-          Start a task and the receipt appears here.
-        </Empty>
+        {assembling !== null ? (
+          <Assembling task={assembling} />
+        ) : (
+          <Empty title="No context assembled yet." action={<button className="btn primary" onClick={() => nav.go('workspace')}>Describe a task</button>}>
+            Start a task and the receipt appears here.
+          </Empty>
+        )}
       </div>
     );
   }
@@ -187,6 +219,7 @@ export function ContextView() {
           ) : undefined
         }
       />
+      {assembling !== null ? <Assembling task={assembling} /> : null}
       <div className="figures">
         <Figure value={receipt.selected.length} label={`of ${receipt.repo.files.toLocaleString()} files sent`} />
         <Figure value={k(receipt.budget.usedTokens)} label={`of ${k(receipt.budget.limitTokens)} token budget`} />

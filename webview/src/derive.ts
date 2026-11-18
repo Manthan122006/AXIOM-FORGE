@@ -169,3 +169,73 @@ export const pendingReviewCount = (s: AxiomState) => Object.values(s.proposals).
 export const isRunning = (s: AxiomState) => s.session.status === 'running' || s.session.status === 'paused';
 export const shieldAlert = (s: AxiomState) => s.recovery.kind !== 'healthy';
 export const proofAlert = (s: AxiomState) => Object.values(s.verification).some((v) => v.status === 'failed' || v.status === 'error' || v.status === 'timed_out');
+
+// ── Context: plain-language "why", built only from the engine's own signals ─────
+const fileOf = (p: string) => p.split('/').pop()!;
+/** Up to `max` short phrases, strongest signal first, one per kind. Raw engine text stays available. */
+export function explainItem(signals: Array<{ signal: string; weight: number; detail: string }>, max = 3): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const g of [...signals].sort((a, b) => b.weight - a.weight)) {
+    const kind = g.signal === 'identifier' ? 'symbol_def' : g.signal;
+    if (seen.has(kind)) continue;
+    let phrase: string | null = null;
+    const d = g.detail;
+    switch (g.signal) {
+      case 'mention':
+        phrase = 'You mentioned it';
+        break;
+      case 'selection':
+        phrase = 'Contains your selection';
+        break;
+      case 'keyword': {
+        const words = [...d.matchAll(/"([^"]+)"/g)].map((m) => m[1]!).slice(0, 3);
+        phrase = words.length ? `Mentions ${words.join(', ')}` : null;
+        break;
+      }
+      case 'path': {
+        const m = /matches "([^"]+)"/.exec(d);
+        phrase = m ? `${/folder/.test(d) ? 'Folder' : 'Name'} matches ${m[1]}` : null;
+        break;
+      }
+      case 'identifier':
+      case 'symbol_def': {
+        const m = /defines \w+ `([^`]+)`/.exec(d);
+        phrase = m ? `Defines ${m[1]}` : null;
+        break;
+      }
+      case 'test_pair': {
+        const m = /related to ([^)]+)\)/.exec(d);
+        phrase = m ? `Tests ${fileOf(m[1]!)}` : 'Related tests';
+        break;
+      }
+      case 'tested_by': {
+        const m = /\(([^ )]+) matches the task\)/.exec(d);
+        phrase = m ? `Tested in ${fileOf(m[1]!)}` : 'Has matching tests';
+        break;
+      }
+      case 'doc_pair': {
+        const m = /related to ([^)]+)\)/.exec(d);
+        phrase = m ? `Documents ${fileOf(m[1]!)}` : 'Related docs';
+        break;
+      }
+      case 'documented_by': {
+        const m = /\(([^ )]+) matches the task\)/.exec(d);
+        phrase = m ? `Documented in ${fileOf(m[1]!)}` : 'Has matching docs';
+        break;
+      }
+      case 'import': {
+        const m = /imports `([^`]+)`/.exec(d);
+        phrase = m ? `Imports ${m[1]}` : null;
+        break;
+      }
+      default:
+        phrase = null;
+    }
+    if (!phrase) continue;
+    seen.add(kind);
+    out.push(phrase);
+    if (out.length >= max) break;
+  }
+  return out;
+}

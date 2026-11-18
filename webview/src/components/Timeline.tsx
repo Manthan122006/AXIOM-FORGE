@@ -3,6 +3,7 @@ import type { AgentEvent, ToolCallState } from '../../../src/shared/contracts';
 import { durationMs, formatMs } from '../derive';
 import { post, useAxiom } from '../store';
 import { useNav } from '../ui/nav';
+import { Skeleton } from '../ui/primitives';
 import { Markdown } from './Markdown';
 
 const PHASE: Record<ToolCallState['phase'], { label: string; cls: string; node: string }> = {
@@ -64,6 +65,7 @@ const ToolStep = memo(function ToolStep({ call }: { call: ToolCallState }) {
         ) : null}
         {call.resultPreview ? <div className="tool-result">{call.resultPreview}</div> : null}
       </details>
+      {call.toolName === 'assemble_context' && (call.phase === 'running' || call.phase === 'requested') ? <Skeleton rows={3} /> : null}
     </li>
   );
 });

@@ -24,7 +24,7 @@ export const Header = memo(function Header() {
     <header className="status" aria-label="Connection status">
       <span className="brand">
         <Mark />
-        AXIOM Forge
+        <span className="brand-name">AXIOM Forge</span>
       </span>
       <span className="pill" title={connReason || undefined}>
         <span className={`dot ${tfDot}`} aria-hidden="true" />

@@ -198,6 +198,12 @@ kbd {
   width: 15px;
   height: 15px;
 }
+/* In the sidebar VS Code's own view title already names the product; keep only the mark. */
+@container app (max-width: 420px) {
+  .brand-name {
+    display: none;
+  }
+}
 .pill {
   display: inline-flex;
   align-items: center;
@@ -243,8 +249,10 @@ kbd {
   padding: 6px 0;
   background: var(--ax-bg);
 }
-.rail ul {
+.rail-list {
   position: relative;
+}
+.rail ul {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1211,6 +1219,7 @@ kbd {
 .map {
   display: block;
   width: 100%;
+  max-width: 600px; /* keep labels at their designed size on wide screens */
   height: auto;
   font-family: var(--ax-ui);
 }
@@ -1251,6 +1260,14 @@ kbd {
 .node-g circle.c-0 { fill: var(--ax-act); }
 .node-g circle.c-1 { fill: var(--ax-run); }
 .node-g circle.c-2 { fill: var(--ax-muted); }
+.node-g text,
+.map-col {
+  /* halo in the map's surface colour keeps labels legible where links pass behind them */
+  paint-order: stroke;
+  stroke: var(--ax-surface);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
 .node-g text {
   font-size: 10.5px;
   fill: var(--ax-fg);
@@ -1308,9 +1325,14 @@ kbd {
   font-size: var(--fs-s);
 }
 .ctx-why {
+  list-style: none;
+  margin: 3px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
   font-size: var(--fs-xs);
   color: var(--ax-muted);
-  margin-top: 2px;
 }
 .ctx-more summary {
   font-size: var(--fs-xs);

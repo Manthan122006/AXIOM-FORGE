@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, type KeyboardEvent } from 'react';
 import { isRunning, pendingReviewCount, proofAlert, shieldAlert } from '../derive';
 import { insideVsCode, post, useAxiom } from '../store';
 import { ExpandGlyph } from '../ui/icons';
@@ -32,7 +32,7 @@ const RailItem = memo(function RailItem({ id, label, hint, Glyph, active, onGo }
   const sig = useSignal(id);
   return (
     <li>
-      <button className={`rail-btn${active ? ' on' : ''}`} aria-current={active ? 'page' : undefined} title={`${label}: ${hint}`} onClick={() => onGo(id)}>
+      <button className={`rail-btn${active ? ' on' : ''}`} aria-current={active ? 'page' : undefined} tabIndex={active ? 0 : -1} data-view={id} title={`${label}: ${hint}`} onClick={() => onGo(id)}>
         <span className="rail-glyph">
           <Glyph />
           {sig.badge ? <span className={`rail-badge t-${sig.tone}`}>{sig.badge}</span> : sig.tone ? <span className={`rail-pip t-${sig.tone}`} /> : null}
@@ -49,14 +49,28 @@ export function Rail() {
   const nav = useNav();
   const idx = VIEWS.findIndex((v) => v.id === nav.view);
   const isPanel = typeof document !== 'undefined' && document.body.dataset.surface === 'panel';
+  // One tab stop for the whole rail; arrows/Home/End move between areas (roving tabindex).
+  const onKey = (e: KeyboardEvent<HTMLUListElement>) => {
+    const keys: Record<string, number> = { ArrowDown: 1, ArrowUp: -1, Home: -Infinity, End: Infinity };
+    if (!(e.key in keys)) return;
+    e.preventDefault();
+    const btns = [...e.currentTarget.querySelectorAll<HTMLButtonElement>('.rail-btn')];
+    const cur = btns.indexOf(document.activeElement as HTMLButtonElement);
+    const step = keys[e.key]!;
+    const next = step === -Infinity ? 0 : step === Infinity ? btns.length - 1 : (Math.max(cur, 0) + step + btns.length) % btns.length;
+    btns.forEach((b, i) => (b.tabIndex = i === next ? 0 : -1));
+    btns[next]?.focus();
+  };
   return (
     <nav className="rail" aria-label="AXIOM Forge">
-      <ul style={{ ['--ax-rail-i' as string]: idx }}>
+      <div className="rail-list" style={{ ['--ax-rail-i' as string]: idx }}>
         <span className="rail-ind" aria-hidden="true" />
-        {VIEWS.map((v) => (
-          <RailItem key={v.id} id={v.id} label={v.label} hint={v.hint} Glyph={v.glyph} active={v.id === nav.view} onGo={nav.go} />
-        ))}
-      </ul>
+        <ul onKeyDown={onKey}>
+          {VIEWS.map((v) => (
+            <RailItem key={v.id} id={v.id} label={v.label} hint={v.hint} Glyph={v.glyph} active={v.id === nav.view} onGo={nav.go} />
+          ))}
+        </ul>
+      </div>
       {insideVsCode && !isPanel ? (
         <button className="rail-btn rail-foot" title="Open AXIOM Forge as a full-size tab" onClick={() => post({ type: 'command', id: 'openWorkspace' })}>
           <span className="rail-glyph">

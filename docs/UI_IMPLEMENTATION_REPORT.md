@@ -40,13 +40,14 @@ See `ANIMATION_GUIDELINES.md`: view change, rail indicator, rail badge, Trace se
 - `npm run check`: **215 passed** (was 177): adds derivations, contrast for every token pair on bg/surface/surface-2 in both themes, primary button.
 - `npm run test:vscode`: **12/12 passed** + 2 opt-in live tests pending (real VS Code 1.125.1).
 
+## Polish round (18 Nov, after direction approval)
+Plain-language Context reasons from the engine's signals; map label halos and width cap; a real loading state while `assemble_context` runs (skeleton in Task and Context); keyboard navigation on the rail (roving tabindex); compact sidebar header; valid rail markup. Tests: **217** unit.
+
 ## Known limitations
 - **Visual check inside the real VS Code window was not done by me**: no headless browser on this Mac, and window capture needs permissions I didn't change. Browser preview uses the same bundle with simulated events. You need to look (Reload Window in the demo).
 - Two VS Code windows share one TrueForge MCP registration; the last to register wins.
-- The relation map draws straight-across links behind middle-column labels; hover/focus highlighting keeps it readable.
+- Links between non-adjacent map columns still pass behind middle-column labels (labels now have a halo, and hover/focus highlights a file's links).
 - No live-model run has exercised the new screens yet.
-- Context reasons still list matched words (engine output), not plain-language summaries.
-- `Skeleton` exists but is unused.
 
 ## Remaining visual improvements
-Plain-language receipt reasons; edge routing in the map; a keyboard shortcut per area; a compact Trace variant inside the editor status bar; screenshots inside VS Code at 300/420/600 px in both themes (Vivan).
+Edge routing in the map; a keyboard shortcut per area; a compact Trace variant inside the editor status bar; screenshots inside VS Code at 300/420/600 px in both themes (Vivan).

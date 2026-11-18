@@ -21,7 +21,7 @@
 | Model route | `switching`/`recovered`/backup slot in state | backup path draws (stroke-dashoffset), primary path turns dashed red |
 | Meters | budget/score values | `scaleX` transition |
 | Banners, review prompt | appear when state requires | fade + rise |
-| Skeleton shimmer | **defined but not used yet** (no screen currently waits on a long computation) | gradient sweep |
+| Skeleton shimmer | `assemble_context` is actually running (Task step, Context view) | gradient sweep |
 
 ## Performance
 Animations use `transform`/`opacity` only (compositor); SVG motion is on paths' dash offsets, not layout. Streaming updates touch one row (patch protocol + reconcile), so motion never triggers whole-list re-renders. Hidden views live in React `<Activity mode="hidden">`: their effects are paused and their updates run at low priority, after the visible view.

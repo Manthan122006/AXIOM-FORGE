@@ -30,12 +30,18 @@ Contrast for every token pair: automated (`theme.test.ts`).
 | 4 | score number floated below its meter; very long lede | aligned; lede clipped at 140 chars |
 | 5 | wide layout: Trace and review prompt not aligned with content | 32 px inset, capped width |
 | 5 | integration tests failed when a demo window held port 7811 (environment, but real) | tests use their own port |
+| 6 | sidebar header wrapped the model pill to a second row | brand text hidden under 420 px (VS Code's view title already names the product) |
+| 6 | Context reasons were raw keyword lists | plain phrases built from the engine's signals (`explainItem`, tested); raw text kept as tooltip |
+| 6 | "Assembling context…" shown together with "No context assembled yet" | empty state hidden while assembling |
+| 6 | rail indicator was a `<span>` inside `<ul>` (invalid markup) | moved to a wrapper |
+| 7 | relationship map scaled to 2× on wide screens | capped at 600 px |
+| – | suspected 1 s delay when switching areas | measured by DOM mutation: **2.6–12.8 ms**; the 1 s came from rAF throttling in the measuring tab |
 | – | false alarm: "grey heading" | computed colour correct; screenshot caught the 220 ms entrance |
 
 ## Not verified (honest)
 - Rendering inside the real VS Code webview (your theme, real fonts, real sidebar width): needs **Developer: Reload Window** in the demo window and a human look.
 - Live model runs through the new screens.
-- Keyboard-only walkthrough of every view (focus order and visible focus were spot-checked, not exhaustively).
+- Keyboard: the rail is one tab stop with arrow/Home/End/Enter (verified with real key presses); other views were spot-checked, not walked exhaustively.
 - High-contrast themes (token fallbacks exist, not inspected).
 
 Screenshots: `docs/screenshots/before/` and `docs/screenshots/after/`.
