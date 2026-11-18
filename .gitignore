@@ -9,3 +9,13 @@ config/models.local.json
 /fixtures/
 .DS_Store
 coverage/
+
+# demo video: large media stays local (sources are reproducible from footage/cuts.tsv + tools/)
+demo-video/footage/raw/
+demo-video/composition/assets/footage/
+demo-video/composition/assets/music/*.wav
+demo-video/composition/assets/music/*.mp3
+demo-video/composition/assets/music/bed-audio.json
+demo-video/composition/.hyperframes/
+demo-video/*.mp4
+demo-video/*.log

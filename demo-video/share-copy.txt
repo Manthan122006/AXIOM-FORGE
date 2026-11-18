@@ -1,0 +1,1 @@
+AXIOM Forge: an AI engineering agent for VS Code that shows which files it read and why, waits for you on every hunk, and proves the change with a real test run. Understand the code. Justify every change. Verify before delivery.

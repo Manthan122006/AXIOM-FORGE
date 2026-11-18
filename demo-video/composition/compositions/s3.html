@@ -1,0 +1,53 @@
+<template>
+  <style>
+
+#root { position:absolute; inset:0; overflow:hidden; font-family: Outfit, sans-serif; color:#e5e7ec; }
+.mono { font-family: 'IBM Plex Mono', monospace; }
+.screen { position:absolute; left:216px; top:172px; width:1488px; height:837px; border-radius:14px; overflow:hidden;
+  background:#13151a; box-shadow: 0 34px 90px rgba(0,0,0,0.6), 0 0 0 1px #383e4b; }
+.cam { position:absolute; left:0; top:0; width:1488px; height:837px; transform-origin:0 0; }
+.cam video { position:absolute; left:0; top:0; width:1488px; height:837px; object-fit:cover; }
+.callout { position:absolute; display:flex; align-items:center; gap:14px; padding:14px 22px 14px 18px; border-radius:10px;
+  background:rgba(25,28,34,0.94); box-shadow: 0 0 0 1px #383e4b, 0 16px 40px rgba(0,0,0,0.45);
+  font-size:34px; font-weight:500; line-height:1.15; white-space:nowrap; }
+.callout i { width:4px; align-self:stretch; border-radius:2px; background:#9c9dfb; }
+.callout b { font-weight:700; }
+.callout.ok i { background:#47c68b; } .callout.bad i { background:#f2706b; }
+.callout.wait i { background:#e8ad4a; } .callout.run i { background:#5cc8e6; }
+.callout small { display:block; font-size:28px; font-weight:400; color:#9ba3b1; margin-top:4px; }
+.badge { position:absolute; padding:8px 16px; border-radius:999px; font-size:28px; font-weight:500;
+  background:rgba(19,21,26,0.9); color:#9ba3b1; box-shadow:0 0 0 1px #383e4b; }
+
+
+  </style>
+  <div id="root" data-composition-id="s3" data-width="1920" data-height="1080">
+
+    <div class="screen" id="s3-screen"><div class="cam" id="s3-cam">
+<video id="s3-v1" class="clip" data-start="0.000" data-duration="10.600" data-media-start="2.000" data-track-index="1" src="assets/footage/c02.mp4" muted playsinline></video>
+<video id="s3-v2" class="clip" data-start="10.600" data-duration="5.400" data-media-start="0.000" data-track-index="1" src="assets/footage/c03.mp4" muted playsinline></video>
+<video id="s3-v3" class="clip" data-start="16.000" data-duration="14.000" data-media-start="0.000" data-track-index="1" src="assets/footage/c04.mp4" muted playsinline></video>
+    </div></div>
+<div id="s3-c1" class="clip callout " data-start="11.40" data-duration="5.40" data-track-index="3" style="left:1000px; top:700px; z-index:20"><i></i><div class="ct"><b>8 of 216</b> files sent<small>assembled in 1.3 s, before the model sees anything</small></div></div>
+<div id="s3-c2" class="clip callout " data-start="17.60" data-duration="4.40" data-track-index="3" style="left:1080px; top:250px; z-index:20"><i></i><div class="ct"><b>23.4k</b> of a 24k-token budget<small>the whole repo is 285.5k</small></div></div>
+<div id="s3-c3" class="clip callout run" data-start="19.60" data-duration="5.80" data-track-index="3" style="left:1180px; top:760px; z-index:20"><i></i><div class="ct"><b>14 real relationships</b><small>imports, test coverage, documentation</small></div></div>
+<div id="s3-c4" class="clip callout ok" data-start="25.40" data-duration="4.40" data-track-index="3" style="left:1080px; top:760px; z-index:20"><i></i><div class="ct">Every file says <b>why</b><small>“Tests cli.py”  “Name matches cli”</small></div></div>
+
+
+
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+tl.set("#s3-cam",{scale:1.0,x:0.0,y:0.0},0.0);
+tl.to("#s3-cam",{scale:1.55,x:-88.9,y:-334.3,duration:2.2,ease:"power2.inOut"},0.6);
+tl.set("#s3-cam",{scale:1.45,x:0.0,y:-76.0},10.6);
+tl.set("#s3-cam",{scale:1.0,x:0.0,y:0.0},16.0);
+tl.to("#s3-cam",{scale:1.35,x:0.0,y:-0.0,duration:2.0,ease:"power2.inOut"},16.6);
+tl.to("#s3-cam",{scale:1.3,x:0.0,y:-251.1,duration:1.6,ease:"power2.inOut"},26.6);
+tl.fromTo("#s3-c1 > *",{opacity:0,filter:"blur(6px)"},{opacity:1,filter:"blur(0px)",duration:0.22,ease:"power3.out",stagger:0.04},11.42);tl.fromTo("#s3-c1",{x:-14},{x:0,duration:0.45,ease:"expo.out"},11.42);tl.to("#s3-c1 > *",{opacity:0,filter:"blur(6px)",duration:0.18,ease:"power2.in"},16.58);
+tl.fromTo("#s3-c2 > *",{opacity:0,filter:"blur(6px)"},{opacity:1,filter:"blur(0px)",duration:0.22,ease:"power3.out",stagger:0.04},17.62);tl.fromTo("#s3-c2",{x:-14},{x:0,duration:0.45,ease:"expo.out"},17.62);tl.to("#s3-c2 > *",{opacity:0,filter:"blur(6px)",duration:0.18,ease:"power2.in"},21.78);
+tl.fromTo("#s3-c3 > *",{opacity:0,filter:"blur(6px)"},{opacity:1,filter:"blur(0px)",duration:0.22,ease:"power3.out",stagger:0.04},19.62);tl.fromTo("#s3-c3",{x:-14},{x:0,duration:0.45,ease:"expo.out"},19.62);tl.to("#s3-c3 > *",{opacity:0,filter:"blur(6px)",duration:0.18,ease:"power2.in"},25.18);
+tl.fromTo("#s3-c4 > *",{opacity:0,filter:"blur(6px)"},{opacity:1,filter:"blur(0px)",duration:0.22,ease:"power3.out",stagger:0.04},25.42);tl.fromTo("#s3-c4",{x:-14},{x:0,duration:0.45,ease:"expo.out"},25.42);tl.to("#s3-c4 > *",{opacity:0,filter:"blur(6px)",duration:0.18,ease:"power2.in"},29.58);
+
+    window.__timelines["s3"] = tl;
+  </script>
+</template>

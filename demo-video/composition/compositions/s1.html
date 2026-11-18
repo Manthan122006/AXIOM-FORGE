@@ -1,0 +1,73 @@
+<template>
+  <style>
+
+#root { position:absolute; inset:0; overflow:hidden; font-family: Outfit, sans-serif; color:#e5e7ec; }
+.mono { font-family: 'IBM Plex Mono', monospace; }
+.screen { position:absolute; left:216px; top:172px; width:1488px; height:837px; border-radius:14px; overflow:hidden;
+  background:#13151a; box-shadow: 0 34px 90px rgba(0,0,0,0.6), 0 0 0 1px #383e4b; }
+.cam { position:absolute; left:0; top:0; width:1488px; height:837px; transform-origin:0 0; }
+.cam video { position:absolute; left:0; top:0; width:1488px; height:837px; object-fit:cover; }
+.callout { position:absolute; display:flex; align-items:center; gap:14px; padding:14px 22px 14px 18px; border-radius:10px;
+  background:rgba(25,28,34,0.94); box-shadow: 0 0 0 1px #383e4b, 0 16px 40px rgba(0,0,0,0.45);
+  font-size:34px; font-weight:500; line-height:1.15; white-space:nowrap; }
+.callout i { width:4px; align-self:stretch; border-radius:2px; background:#9c9dfb; }
+.callout b { font-weight:700; }
+.callout.ok i { background:#47c68b; } .callout.bad i { background:#f2706b; }
+.callout.wait i { background:#e8ad4a; } .callout.run i { background:#5cc8e6; }
+.callout small { display:block; font-size:28px; font-weight:400; color:#9ba3b1; margin-top:4px; }
+.badge { position:absolute; padding:8px 16px; border-radius:999px; font-size:28px; font-weight:500;
+  background:rgba(19,21,26,0.9); color:#9ba3b1; box-shadow:0 0 0 1px #383e4b; }
+
+
+.field { position:absolute; inset:-60px 0 0 0; }
+.pcol { position:absolute; top:0; width:360px; font-family:'IBM Plex Mono',monospace; font-size:15px; line-height:24px;
+  color:#9ba3b1; white-space:nowrap; overflow:hidden; text-overflow:clip; }
+.veil { position:absolute; inset:0; background: radial-gradient(ellipse 60% 55% at 50% 50%, rgba(19,21,26,0.92) 0%, rgba(19,21,26,0.55) 55%, rgba(19,21,26,0) 100%); }
+.line { position:absolute; left:0; right:0; text-align:center; font-size:66px; font-weight:600; letter-spacing:-0.02em; }
+.line span { display:inline-block; margin:0 0.13em; }
+.fig { position:absolute; top:330px; text-align:left; }
+.fig .n { font-size:200px; font-weight:600; letter-spacing:-0.04em; line-height:1; font-variant-numeric: tabular-nums; }
+.fig .u { font-size:40px; color:#9ba3b1; margin-top:10px; }
+.nos { position:absolute; top:620px; left:0; right:0; display:flex; justify-content:center; gap:28px; }
+.no { padding:16px 26px; border-radius:10px; font-size:36px; font-weight:500; background:#191c22;
+  box-shadow:0 0 0 1px #383e4b; display:flex; align-items:center; gap:14px; }
+.no::before { content:''; width:12px; height:12px; border-radius:6px; background:#f2706b; }
+
+  </style>
+  <div id="root" data-composition-id="s1" data-width="1920" data-height="1080">
+
+    <div id="s1-field" class="field" data-layout-ignore style="opacity:0"><div class="pcol" style="left:60px">.devcontainer/devcontainer.json<br>.github/ISSUE_TEMPLATE/bug-report.md<br>.github/ISSUE_TEMPLATE/config.yml<br>.github/ISSUE_TEMPLATE/feature-request.md<br>.github/pull_request_template.md<br>.github/workflows/lock.yaml<br>.github/workflows/pre-commit.yaml<br>.github/workflows/publish.yaml<br>.github/workflows/tests.yaml<br>.pre-commit-config.yaml<br>.readthedocs.yaml<br>CHANGES.rst<br>LICENSE.txt<br>README.md<br>docs/api.rst<br>docs/appcontext.rst<br>docs/async-await.rst<br>docs/blueprints.rst<br>docs/changes.rst<br>docs/cli.rst<br>docs/conf.py<br>docs/config.rst<br>docs/contributing.rst<br>docs/debugging.rst<br>docs/deploying/apache-httpd.rst<br>docs/deploying/asgi.rst<br>docs/deploying/eventlet.rst<br>docs/deploying/gevent.rst<br>docs/deploying/gunicorn.rst<br>docs/deploying/index.rst<br>docs/deploying/mod_wsgi.rst<br>docs/deploying/nginx.rst<br>docs/deploying/proxy_fix.rst<br>docs/deploying/uwsgi.rst<br>docs/deploying/waitress.rst<br>docs/design.rst<br>docs/errorhandling.rst<br>docs/extensiondev.rst<br>docs/extensions.rst<br>docs/gevent.rst<br>docs/index.rst<br>docs/installation.rst<br>docs/license.rst</div><div class="pcol" style="left:432px">docs/lifecycle.rst<br>docs/logging.rst<br>docs/patterns/appdispatch.rst<br>docs/patterns/appfactories.rst<br>docs/patterns/caching.rst<br>docs/patterns/celery.rst<br>docs/patterns/deferredcallbacks.rst<br>docs/patterns/favicon.rst<br>docs/patterns/fileuploads.rst<br>docs/patterns/flashing.rst<br>docs/patterns/index.rst<br>docs/patterns/javascript.rst<br>docs/patterns/jquery.rst<br>docs/patterns/lazyloading.rst<br>docs/patterns/methodoverrides.rst<br>docs/patterns/mongoengine.rst<br>docs/patterns/packages.rst<br>docs/patterns/requestchecksum.rst<br>docs/patterns/singlepageapplications.rst<br>docs/patterns/sqlalchemy.rst<br>docs/patterns/sqlite3.rst<br>docs/patterns/streaming.rst<br>docs/patterns/subclassing.rst<br>docs/patterns/templateinheritance.rst<br>docs/patterns/urlprocessors.rst<br>docs/patterns/viewdecorators.rst<br>docs/patterns/wtforms.rst<br>docs/quickstart.rst<br>docs/reqcontext.rst<br>docs/server.rst<br>docs/shell.rst<br>docs/signals.rst<br>docs/templating.rst<br>docs/testing.rst<br>docs/tutorial/blog.rst<br>docs/tutorial/database.rst<br>docs/tutorial/deploy.rst<br>docs/tutorial/factory.rst<br>docs/tutorial/index.rst<br>docs/tutorial/install.rst<br>docs/tutorial/layout.rst<br>docs/tutorial/next.rst<br>docs/tutorial/static.rst</div><div class="pcol" style="left:804px">docs/tutorial/templates.rst<br>docs/tutorial/tests.rst<br>docs/tutorial/views.rst<br>docs/views.rst<br>docs/web-security.rst<br>examples/celery/README.md<br>examples/celery/make_celery.py<br>examples/celery/pyproject.toml<br>examples/celery/requirements.txt<br>examples/celery/src/task_app/__init__.py<br>examples/celery/src/task_app/tasks.py<br>examples/celery/src/task_app/templates/index.html<br>examples/celery/src/task_app/views.py<br>examples/javascript/LICENSE.txt<br>examples/javascript/README.rst<br>examples/javascript/js_example/__init__.py<br>examples/javascript/js_example/templates/base.html<br>examples/javascript/js_example/templates/fetch.html<br>examples/javascript/js_example/templates/jquery.html<br>examples/javascript/js_example/templates/xhr.html<br>examples/javascript/js_example/views.py<br>examples/javascript/pyproject.toml<br>examples/javascript/tests/conftest.py<br>examples/javascript/tests/test_js_example.py<br>examples/tutorial/LICENSE.txt<br>examples/tutorial/README.rst<br>examples/tutorial/flaskr/__init__.py<br>examples/tutorial/flaskr/auth.py<br>examples/tutorial/flaskr/blog.py<br>examples/tutorial/flaskr/db.py<br>examples/tutorial/flaskr/templates/auth/login.html<br>examples/tutorial/flaskr/templates/auth/register.html<br>examples/tutorial/flaskr/templates/base.html<br>examples/tutorial/flaskr/templates/blog/create.html<br>examples/tutorial/flaskr/templates/blog/index.html<br>examples/tutorial/flaskr/templates/blog/update.html<br>examples/tutorial/pyproject.toml<br>examples/tutorial/tests/conftest.py<br>examples/tutorial/tests/test_auth.py<br>examples/tutorial/tests/test_blog.py<br>examples/tutorial/tests/test_db.py<br>examples/tutorial/tests/test_factory.py<br>pyproject.toml</div><div class="pcol" style="left:1176px">src/flask/__init__.py<br>src/flask/__main__.py<br>src/flask/app.py<br>src/flask/blueprints.py<br>src/flask/cli.py<br>src/flask/config.py<br>src/flask/ctx.py<br>src/flask/debughelpers.py<br>src/flask/globals.py<br>src/flask/helpers.py<br>src/flask/json/__init__.py<br>src/flask/json/provider.py<br>src/flask/json/tag.py<br>src/flask/logging.py<br>src/flask/sansio/README.md<br>src/flask/sansio/app.py<br>src/flask/sansio/blueprints.py<br>src/flask/sansio/scaffold.py<br>src/flask/sessions.py<br>src/flask/signals.py<br>src/flask/templating.py<br>src/flask/testing.py<br>src/flask/typing.py<br>src/flask/views.py<br>src/flask/wrappers.py<br>tests/conftest.py<br>tests/static/config.json<br>tests/static/config.toml<br>tests/static/index.html<br>tests/templates/_macro.html<br>tests/templates/context_template.html<br>tests/templates/escaping_template.html<br>tests/templates/mail.txt<br>tests/templates/nested/nested.txt<br>tests/templates/non_escaping_template.txt<br>tests/templates/simple_template.html<br>tests/templates/template_filter.html<br>tests/templates/template_test.html<br>tests/test_appctx.py<br>tests/test_apps/blueprintapp/__init__.py<br>tests/test_apps/blueprintapp/apps/__init__.py<br>tests/test_apps/blueprintapp/apps/admin/__init__.py<br>tests/test_apps/blueprintapp/apps/admin/static/test.txt</div><div class="pcol" style="left:1548px">tests/test_apps/blueprintapp/apps/admin/templates/admin/index.html<br>tests/test_apps/blueprintapp/apps/frontend/__init__.py<br>tests/test_apps/blueprintapp/apps/frontend/templates/frontend/index.html<br>tests/test_apps/cliapp/__init__.py<br>tests/test_apps/cliapp/app.py<br>tests/test_apps/cliapp/factory.py<br>tests/test_apps/cliapp/importerrorapp.py<br>tests/test_apps/cliapp/inner1/__init__.py<br>tests/test_apps/cliapp/inner1/inner2/__init__.py<br>tests/test_apps/cliapp/inner1/inner2/flask.py<br>tests/test_apps/cliapp/message.txt<br>tests/test_apps/cliapp/multiapp.py<br>tests/test_apps/helloworld/hello.py<br>tests/test_apps/helloworld/wsgi.py<br>tests/test_apps/subdomaintestmodule/__init__.py<br>tests/test_apps/subdomaintestmodule/static/hello.txt<br>tests/test_async.py<br>tests/test_basic.py<br>tests/test_blueprints.py<br>tests/test_cli.py<br>tests/test_config.py<br>tests/test_converters.py<br>tests/test_helpers.py<br>tests/test_instance_config.py<br>tests/test_json.py<br>tests/test_json_tag.py<br>tests/test_logging.py<br>tests/test_regression.py<br>tests/test_reqctx.py<br>tests/test_request.py<br>tests/test_session_interface.py<br>tests/test_signals.py<br>tests/test_subclassing.py<br>tests/test_templating.py<br>tests/test_testing.py<br>tests/test_user_error_handler.py<br>tests/test_views.py<br>tests/type_check/typing_app_decorators.py<br>tests/type_check/typing_error_handler.py<br>tests/type_check/typing_route.py</div></div>
+    <div class="veil"></div>
+    <div id="s1-l1" class="clip line" data-start="1.3" data-duration="3.0" data-track-index="1" style="top:470px"><span>Every</span><span>codebase</span><span>starts</span><span>as</span><span>a</span><span>stranger.</span></div>
+    <div id="s1-f1" class="clip fig" data-start="4.5" data-duration="5.2" data-track-index="1" style="left:330px"><div class="n" id="s1-n1">216</div><div class="u">files</div></div>
+    <div id="s1-f2" class="clip fig" data-start="6.6" data-duration="3.1" data-track-index="2" style="left:940px"><div class="n" id="s1-n2">285.5k</div><div class="u">tokens</div></div>
+    <div id="s1-l2" class="clip line" data-start="10.0" data-duration="7.6" data-track-index="1" style="top:380px"><span>Ask</span><span>an</span><span>AI</span><span>to</span><span>change</span><span>it.</span></div>
+    <div id="s1-l3" class="clip line" data-start="11.85" data-duration="5.75" data-track-index="3" style="top:470px; color:#9ba3b1"><span>You</span><span>get</span><span>confident</span><span>code.</span></div>
+    <div id="s1-nos" class="clip nos" data-start="13.9" data-duration="3.7" data-track-index="2">
+      <div class="no" id="s1-no1">No reasons</div><div class="no" id="s1-no2">No review</div><div class="no" id="s1-no3">No proof it works</div>
+    </div>
+
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+
+    tl.to("#s1-field",{opacity:0.5,duration:2.4,ease:"power2.inOut"},0.2);
+    tl.fromTo("#s1-field",{y:40},{y:-260,duration:17.4,ease:"none"},0);
+    tl.fromTo("#s1-l1 span",{opacity:0,filter:"blur(6px)"},{opacity:1,filter:"blur(0px)",duration:0.14,stagger:0.067,ease:"power3.out"},1.35);
+    tl.to("#s1-l1 span",{opacity:0,filter:"blur(8px)",duration:0.2,stagger:0.03,ease:"power2.in"},4.0);
+    tl.fromTo("#s1-f1",{opacity:0,filter:"blur(8px)"},{opacity:1,filter:"blur(0px)",duration:0.2,ease:"power3.out"},4.55);
+    tl.fromTo("#s1-n1",{textContent:0},{textContent:216,duration:0.55,ease:"power2.out",snap:{textContent:1}},4.55);
+    tl.fromTo("#s1-f2",{opacity:0,filter:"blur(8px)"},{opacity:1,filter:"blur(0px)",duration:0.2,ease:"power3.out"},6.65);
+    tl.fromTo("#s1-n2",{opacity:1},{opacity:1,duration:1.3,ease:"power2.out",onUpdate:function(){var p=this.progress();var el=document.getElementById("s1-n2");if(el)el.textContent=(285.5*(1-Math.pow(1-p,3))).toFixed(1)+"k";}},6.7);
+    tl.to(["#s1-f1","#s1-f2"],{opacity:0,filter:"blur(8px)",duration:0.22,ease:"power2.in"},9.4);
+    tl.fromTo("#s1-l2 span",{opacity:0,filter:"blur(6px)"},{opacity:1,filter:"blur(0px)",duration:0.14,stagger:0.067,ease:"power3.out"},10.05);
+    tl.fromTo("#s1-l3 span",{opacity:0,filter:"blur(6px)"},{opacity:1,filter:"blur(0px)",duration:0.14,stagger:0.067,ease:"power3.out"},11.9);
+    tl.fromTo("#s1-no1",{opacity:0,y:18,filter:"blur(6px)"},{opacity:1,y:0,filter:"blur(0px)",duration:0.4,ease:"expo.out"},13.95);
+    tl.fromTo("#s1-no2",{opacity:0,y:18,filter:"blur(6px)"},{opacity:1,y:0,filter:"blur(0px)",duration:0.4,ease:"expo.out"},14.85);
+    tl.fromTo("#s1-no3",{opacity:0,y:18,filter:"blur(6px)"},{opacity:1,y:0,filter:"blur(0px)",duration:0.4,ease:"expo.out"},15.9);
+    tl.to(["#s1-l2 span","#s1-l3 span","#s1-nos .no"],{opacity:0,filter:"blur(10px)",duration:0.25,ease:"power2.in"},17.25);
+    tl.to("#s1-field",{opacity:0,scale:0.6,duration:0.7,ease:"power3.in"},17.25);
+
+    window.__timelines["s1"] = tl;
+  </script>
+</template>
