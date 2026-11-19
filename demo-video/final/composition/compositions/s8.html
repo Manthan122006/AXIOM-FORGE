@@ -34,7 +34,14 @@
 .word span { display:inline-block; }
 .tag { position:absolute; left:0; right:0; top:600px; display:flex; justify-content:center; gap:34px; font-size:50px; font-weight:500; }
 .tag span { display:inline-block; }
-.foot { position:absolute; left:0; right:0; text-align:center; font-size:28px; color:#9ba3b1; }
+.rule { position:absolute; left:930px; top:712px; width:60px; height:2px; border-radius:1px; background:#9c9dfb; opacity:0.7; }
+.event { position:absolute; left:0; right:0; top:744px; text-align:center; font-size:28px; font-weight:500; letter-spacing:0.02em; color:#9ba3b1; }
+.event i { display:inline-block; width:5px; height:5px; margin:0 18px; border-radius:3px; background:#6e7686; vertical-align:middle; }
+.credits { position:absolute; left:0; right:0; top:900px; text-align:center; color:#9ba3b1; }
+.credits .lab { font-size:20px; font-weight:600; letter-spacing:0.08em; color:#6e7686; margin-bottom:12px; }
+.credits .row { display:flex; justify-content:center; gap:56px; font-size:26px; }
+.credits b { font-weight:600; color:#e5e7ec; opacity:0.85; }
+.black { position:absolute; inset:0; background:#000; opacity:0; }
 
   </style>
   <div id="root" data-composition-id="s8" data-width="1920" data-height="1080">
@@ -44,10 +51,15 @@
     <div id="s8-b" class="clip say" data-hold data-start="5.55" data-duration="6.4" data-track-index="2" style="top:510px; font-size:56px; color:#9c9dfb"><span>It</span><span>should</span><span>understand,</span><span>justify</span><span>and</span><span>verify</span><span>every</span><span>change.</span></div>
     <div id="s8-halo" class="halo" style="opacity:0"></div>
     <div id="s8-markw" class="markw" style="opacity:0"><svg viewBox="0 0 24 24" fill="none" stroke="#9c9dfb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><path class="tri" d="M12 3 21 20H3Z" pathLength="100"/><path class="bar" d="M7.6 14.5h8.8" pathLength="100"/></svg></div>
-    <div id="s8-word" class="clip word" data-start="13.15" data-duration="6.25" data-track-index="3"><span>A</span><span>X</span><span>I</span><span>O</span><span>M</span><span>&nbsp;</span><span>F</span><span>O</span><span>R</span><span>G</span><span>E</span></div>
-    <div id="s8-tag" class="clip tag" data-start="14.5" data-duration="4.9" data-track-index="4"><span>Understand the code.</span><span>Justify every change.</span><span style="color:#9c9dfb">Verify before delivery.</span></div>
-    <div id="s8-f1" class="clip foot" data-start="15.0" data-duration="4.4" data-track-index="5" style="top:860px">Recorded live in VS Code on 18 Nov 2026 for the TrueFoundry Forge-a-thon, IIT Bombay.</div>
-    <div id="s8-f2" class="clip foot" data-start="15.2" data-duration="4.2" data-track-index="6" data-layout-ignore style="top:990px; font-size:22px">Music: Sascha Ende, ende.app (CC BY 4.0). Sound effects: Kenney (CC0). Voice: Kokoro.</div>
+    <div id="s8-word" class="clip word" data-start="13.15" data-duration="8.25" data-track-index="3"><span>A</span><span>X</span><span>I</span><span>O</span><span>M</span><span>&nbsp;</span><span>F</span><span>O</span><span>R</span><span>G</span><span>E</span></div>
+    <div id="s8-tag" class="clip tag" data-start="14.5" data-duration="6.9" data-track-index="4"><span>Understand the code.</span><span>Justify every change.</span><span style="color:#9c9dfb">Verify before delivery.</span></div>
+    <div id="s8-rule" class="clip rule" data-start="15.5" data-duration="5.9" data-track-index="5"></div>
+    <div id="s8-event" class="clip event" data-start="15.5" data-duration="5.9" data-track-index="6">TrueFoundry Forge-a-thon<i></i>IIT Bombay<i></i>18 November 2026</div>
+    <div id="s8-credits" class="clip credits" data-start="16.1" data-duration="5.3" data-track-index="7">
+      <div class="lab">Audio credits</div>
+      <div class="row"><span><b>Music</b> Sascha Ende, ende.app · CC BY 4.0</span><span><b>Sound effects</b> Kenney · CC0</span><span><b>Voice</b> Kokoro</span></div>
+    </div>
+    <div id="s8-black" class="black"></div>
 
   </div>
   <script>
@@ -66,14 +78,17 @@ tl.fromTo("#s8-t6",{opacity:0,scale:0.86,filter:"blur(8px)"},{opacity:1,scale:1,
     tl.fromTo("#s8-b span",{opacity:0,filter:"blur(6px)"},{opacity:1,filter:"blur(0px)",duration:0.14,stagger:0.07,ease:"power3.out"},5.6);
     tl.to(["#s8-a span","#s8-b span"],{opacity:0,filter:"blur(10px)",duration:0.3,stagger:0.01,ease:"power2.in"},11.55);
     tl.fromTo("#s8-halo",{opacity:0,scale:0.7},{opacity:0.3,scale:1,duration:1.0,ease:"power2.out"},11.8);
-    tl.to("#s8-halo",{opacity:0.397,duration:0.2,ease:"sine.inOut"},12.80);tl.to("#s8-halo",{opacity:0.430,duration:0.2,ease:"sine.inOut"},13.00);tl.to("#s8-halo",{opacity:0.430,duration:0.2,ease:"sine.inOut"},13.20);tl.to("#s8-halo",{opacity:0.406,duration:0.2,ease:"sine.inOut"},13.40);tl.to("#s8-halo",{opacity:0.469,duration:0.2,ease:"sine.inOut"},13.60);tl.to("#s8-halo",{opacity:0.469,duration:0.2,ease:"sine.inOut"},13.80);tl.to("#s8-halo",{opacity:0.415,duration:0.2,ease:"sine.inOut"},14.00);tl.to("#s8-halo",{opacity:0.415,duration:0.2,ease:"sine.inOut"},14.20);tl.to("#s8-halo",{opacity:0.406,duration:0.2,ease:"sine.inOut"},14.40);tl.to("#s8-halo",{opacity:0.421,duration:0.2,ease:"sine.inOut"},14.60);tl.to("#s8-halo",{opacity:0.421,duration:0.2,ease:"sine.inOut"},14.80);tl.to("#s8-halo",{opacity:0.379,duration:0.2,ease:"sine.inOut"},15.00);tl.to("#s8-halo",{opacity:0.379,duration:0.2,ease:"sine.inOut"},15.20);tl.to("#s8-halo",{opacity:0.364,duration:0.2,ease:"sine.inOut"},15.40);tl.to("#s8-halo",{opacity:0.379,duration:0.2,ease:"sine.inOut"},15.60);tl.to("#s8-halo",{opacity:0.379,duration:0.2,ease:"sine.inOut"},15.80);tl.to("#s8-halo",{opacity:0.340,duration:0.2,ease:"sine.inOut"},16.00);tl.to("#s8-halo",{opacity:0.340,duration:0.2,ease:"sine.inOut"},16.20);tl.to("#s8-halo",{opacity:0.361,duration:0.2,ease:"sine.inOut"},16.40);tl.to("#s8-halo",{opacity:0.337,duration:0.2,ease:"sine.inOut"},16.60);tl.to("#s8-halo",{opacity:0.337,duration:0.2,ease:"sine.inOut"},16.80);tl.to("#s8-halo",{opacity:0.343,duration:0.2,ease:"sine.inOut"},17.00);tl.to("#s8-halo",{opacity:0.319,duration:0.2,ease:"sine.inOut"},17.20);tl.to("#s8-halo",{opacity:0.319,duration:0.2,ease:"sine.inOut"},17.40);tl.to("#s8-halo",{opacity:0.277,duration:0.2,ease:"sine.inOut"},17.60);tl.to("#s8-halo",{opacity:0.277,duration:0.2,ease:"sine.inOut"},17.80);tl.to("#s8-halo",{opacity:0.292,duration:0.2,ease:"sine.inOut"},18.00);tl.to("#s8-halo",{opacity:0.286,duration:0.2,ease:"sine.inOut"},18.20);tl.to("#s8-halo",{opacity:0.256,duration:0.2,ease:"sine.inOut"},18.40);tl.to("#s8-halo",{opacity:0.253,duration:0.2,ease:"sine.inOut"},18.60);tl.to("#s8-halo",{opacity:0.253,duration:0.2,ease:"sine.inOut"},18.80);tl.to("#s8-halo",{opacity:0.244,duration:0.2,ease:"sine.inOut"},19.00);
+    tl.to("#s8-halo",{opacity:0.397,duration:0.2,ease:"sine.inOut"},12.80);tl.to("#s8-halo",{opacity:0.430,duration:0.2,ease:"sine.inOut"},13.00);tl.to("#s8-halo",{opacity:0.430,duration:0.2,ease:"sine.inOut"},13.20);tl.to("#s8-halo",{opacity:0.406,duration:0.2,ease:"sine.inOut"},13.40);tl.to("#s8-halo",{opacity:0.469,duration:0.2,ease:"sine.inOut"},13.60);tl.to("#s8-halo",{opacity:0.469,duration:0.2,ease:"sine.inOut"},13.80);tl.to("#s8-halo",{opacity:0.415,duration:0.2,ease:"sine.inOut"},14.00);tl.to("#s8-halo",{opacity:0.415,duration:0.2,ease:"sine.inOut"},14.20);tl.to("#s8-halo",{opacity:0.406,duration:0.2,ease:"sine.inOut"},14.40);tl.to("#s8-halo",{opacity:0.421,duration:0.2,ease:"sine.inOut"},14.60);tl.to("#s8-halo",{opacity:0.421,duration:0.2,ease:"sine.inOut"},14.80);tl.to("#s8-halo",{opacity:0.379,duration:0.2,ease:"sine.inOut"},15.00);tl.to("#s8-halo",{opacity:0.379,duration:0.2,ease:"sine.inOut"},15.20);tl.to("#s8-halo",{opacity:0.364,duration:0.2,ease:"sine.inOut"},15.40);tl.to("#s8-halo",{opacity:0.379,duration:0.2,ease:"sine.inOut"},15.60);tl.to("#s8-halo",{opacity:0.379,duration:0.2,ease:"sine.inOut"},15.80);tl.to("#s8-halo",{opacity:0.340,duration:0.2,ease:"sine.inOut"},16.00);tl.to("#s8-halo",{opacity:0.340,duration:0.2,ease:"sine.inOut"},16.20);tl.to("#s8-halo",{opacity:0.361,duration:0.2,ease:"sine.inOut"},16.40);tl.to("#s8-halo",{opacity:0.337,duration:0.2,ease:"sine.inOut"},16.60);tl.to("#s8-halo",{opacity:0.337,duration:0.2,ease:"sine.inOut"},16.80);tl.to("#s8-halo",{opacity:0.343,duration:0.2,ease:"sine.inOut"},17.00);tl.to("#s8-halo",{opacity:0.319,duration:0.2,ease:"sine.inOut"},17.20);tl.to("#s8-halo",{opacity:0.319,duration:0.2,ease:"sine.inOut"},17.40);tl.to("#s8-halo",{opacity:0.277,duration:0.2,ease:"sine.inOut"},17.60);tl.to("#s8-halo",{opacity:0.277,duration:0.2,ease:"sine.inOut"},17.80);tl.to("#s8-halo",{opacity:0.292,duration:0.2,ease:"sine.inOut"},18.00);tl.to("#s8-halo",{opacity:0.286,duration:0.2,ease:"sine.inOut"},18.20);tl.to("#s8-halo",{opacity:0.256,duration:0.2,ease:"sine.inOut"},18.40);tl.to("#s8-halo",{opacity:0.253,duration:0.2,ease:"sine.inOut"},18.60);tl.to("#s8-halo",{opacity:0.253,duration:0.2,ease:"sine.inOut"},18.80);tl.to("#s8-halo",{opacity:0.244,duration:0.2,ease:"sine.inOut"},19.00);tl.to("#s8-halo",{opacity:0.238,duration:0.2,ease:"sine.inOut"},19.20);tl.to("#s8-halo",{opacity:0.229,duration:0.2,ease:"sine.inOut"},19.40);tl.to("#s8-halo",{opacity:0.229,duration:0.2,ease:"sine.inOut"},19.60);tl.to("#s8-halo",{opacity:0.229,duration:0.2,ease:"sine.inOut"},19.80);tl.to("#s8-halo",{opacity:0.229,duration:0.2,ease:"sine.inOut"},20.00);tl.to("#s8-halo",{opacity:0.229,duration:0.2,ease:"sine.inOut"},20.20);tl.to("#s8-halo",{opacity:0.229,duration:0.2,ease:"sine.inOut"},20.40);tl.to("#s8-halo",{opacity:0.229,duration:0.2,ease:"sine.inOut"},20.60);
     tl.fromTo("#s8-markw",{opacity:0},{opacity:1,duration:0.2},11.95);
     tl.fromTo("#s8-markw .tri",{strokeDashoffset:100},{strokeDashoffset:0,duration:1.1,ease:"power2.inOut"},11.95);
     tl.fromTo("#s8-markw .bar",{strokeDashoffset:100},{strokeDashoffset:0,duration:0.4,ease:"power3.out"},12.8);
     // beat-locked: wordmark lands with the bell on the 193.8 s music cue (scene 13.2)
     tl.fromTo("#s8-word span",{opacity:0,filter:"blur(6px)"},{opacity:1,filter:"blur(0px)",duration:0.2,stagger:0.05,ease:"power3.out"},13.2);
-    tl.fromTo("#s8-tag span",{opacity:0,filter:"blur(6px)"},{opacity:1,filter:"blur(0px)",duration:0.18,stagger:0.45,ease:"power3.out"},14.55);
-    tl.fromTo(["#s8-f1","#s8-f2"],{opacity:0},{opacity:1,duration:0.5,stagger:0.2,ease:"power2.out"},15.05);
+    tl.fromTo("#s8-tag span",{opacity:0,filter:"blur(6px)"},{opacity:1,filter:"blur(0px)",duration:0.18,stagger:0.3,ease:"power3.out"},14.55);
+    tl.fromTo("#s8-rule",{scaleX:0},{scaleX:1,duration:0.6,ease:"expo.out"},15.55);
+    tl.fromTo("#s8-event",{opacity:0,y:8},{opacity:1,y:0,duration:0.6,ease:"power2.out"},15.6);
+    tl.fromTo("#s8-credits",{opacity:0},{opacity:1,duration:0.8,ease:"power2.out"},16.15);
+    tl.to("#s8-black",{opacity:1,duration:0.6,ease:"power2.inOut"},20.75);
 
     window.__timelines["s8"] = tl;
   </script>

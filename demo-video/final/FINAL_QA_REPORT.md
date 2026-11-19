@@ -1,5 +1,63 @@
 # Final QA report: AXIOM_FORGE_FINAL_DEMO.mp4
 
+## Pass 2 (19 Nov 2026): opening frame and end credits
+
+Checked on the rendered file.
+
+| Check | Original (`archive/AXIOM_FORGE_FINAL_DEMO_v1.mp4`) | Final |
+|---|---|---|
+| Duration | 200.0 s (6000 frames) | **202.0 s** (6060 frames; container 202.1 s) |
+| Resolution / aspect | 1920×1080, 16:9 | 1920×1080, 16:9 |
+| Frame rate | 30 fps | 30 fps |
+| Video codec | H.264 High, yuv420p, CRF 16 | same settings |
+| Audio | AAC 48 kHz stereo, −15.1 LUFS, −1.3 dBTP | AAC 48 kHz stereo, **−15.1 LUFS, −1.4 dBTP** |
+| Full decode | clean | **clean** (no errors) |
+| Black frames | none | only the intended fade at the end (last ~0.2 s at video black, luma 16) |
+
+### Opening reviewed
+Frame 0 now shows only the mark, "AXIOM FORGE" and the tagline. The reveal (0:18–0:32) was checked frame by frame and contains no disclaimer, as before.
+
+### Ending reviewed
+Frames checked every second from 3:12 to the end. The mark, wordmark, tagline, rule, event line and audio credits are fully visible, with no clipping or overlap; the credits are legible at 1080p (26 px). The slate ends in a clean fade to black. The Hyperframes `check` gate passed, with 41/41 text elements meeting WCAG AA contrast. One accepted warning: the credit text is below the 28 px phone-reading floor, deliberately, as secondary information.
+
+### Audio credits retained accurately
+- Music: Sascha Ende, ende.app (CC BY 4.0)
+- Sound effects: Kenney (CC0)
+- Voice: Kokoro
+
+These are the same credits and licences as the previous version; nothing added or removed.
+
+### Transitions reviewed
+The cut from Proof of Change into the screens montage at 3:00.6 was checked frame by frame (3:00.2–3:01.6). Montage → closing statement → slate → fade to black all behave as intended.
+
+### Main demo footage preserved: measured
+| Span | PSNR, final vs original | Meaning |
+|---|---|---|
+| 0:30–3:00.57 | **infinite** (every decoded frame bit-identical) | untouched |
+| 0:00.03–0:30 | 65.4 dB average (min 56.6) | visually identical; only the encoder's first group of frames shifts because frame 0 changed |
+| frame 0 | 32.2 dB | intentionally changed (new opening frame) |
+| 3:13–3:20 | 31.5 dB | intentionally changed (new slate) |
+
+### Audio synchronisation: measured
+Compared sample by sample with the original:
+- **Offset:** 0 ms in every segment, so there's no drift.
+- **Level:** within ±0.01 dB in every 2-second window up to 3:00.
+- **Waveform:** not bit-identical. The residual is 23–51 dB below the signal, because the renderer re-mixes and re-encodes the soundtrack on every render.
+- **Ending (3:13–3:20):** the level is +0.15 dB, which is expected there because the slate content changed; the cause was not investigated further.
+
+I did not listen to the result; this was measured, not heard.
+
+### No unrelated scenes changed
+Changed sources: `tools/build_final.py`:
+- the end-slate markup and styles in `s8()`;
+- the root duration (200 → 202 s);
+- the music bed's clip length (pinned to its own 200 s).
+
+No other scene's code changed. The PSNR results above confirm the picture is unchanged up to 3:00.57.
+
+---
+
+## Pass 1 (18 Nov 2026)
 Checked on 18 Nov 2026 against the rendered file, not just the composition.
 
 ## File

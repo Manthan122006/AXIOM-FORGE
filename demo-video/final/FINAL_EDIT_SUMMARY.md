@@ -1,5 +1,34 @@
 # Final edit summary
 
+## Pass 2 (19 Nov 2026): opening frame and end credits only
+
+**Input inspected:** `~/Downloads/AXIOM_FORGE_DEMO.mp4`, byte-identical (SHA-1 `bbd62411…`) to the pass-1 output, so it was edited from its own source composition (`demo-video/final/composition/`, built by `demo-video/tools/build_final.py`), not reconstructed from pixels.
+**Output:** `demo-video/final/AXIOM_FORGE_FINAL_DEMO.mp4` (3:22.0). **Previous version kept:** `demo-video/final/archive/AXIOM_FORGE_FINAL_DEMO_v1.mp4` (and the identical copy in Downloads).
+
+### What the inspection found
+| Section | Where | What was there |
+|---|---|---|
+| Opening branding frame | frame 0 (the baked-in poster every player shows before play) | a copy of the old end card, including "Recorded live in VS Code on 18 Nov 2026 for the TrueFoundry Forge-a-thon, IIT Bombay." and the sentence-style audio credit |
+| Opening reveal | 0:18.0–0:32.0 | mark, "AXIOM Forge", subline, tagline: **no disclaimer**; left unchanged |
+| Ending | 3:00.6–3:20.0 | tiles montage (3:00.6–3:03.5), closing statement (3:04–3:12), brand slate (3:12.6–3:20) with the disclaimer and the cramped credit sentence |
+| Transitions | into the ending at 3:00.6 | cut from Proof of Change into the screens montage; unchanged |
+
+### What changed (exactly)
+1. **Frame 0 (opening):** replaced by a clean brand frame: the AXIOM mark, "AXIOM FORGE" and "Understand the code. Justify every change. Verify before delivery." No disclaimer, no date, no credits. It is taken from the new end slate at 3:16.0, before any secondary text appears.
+2. **End slate (from 3:15.5):** the two footer sentences were removed and replaced by:
+   - a short violet rule under the tagline;
+   - a subtle event line: **TrueFoundry Forge-a-thon · IIT Bombay · 18 November 2026** (28 px, muted, fades in at 3:16.2);
+   - a separate **Audio credits** block at the bottom (fades in at 3:16.75): **Music** Sascha Ende, ende.app · CC BY 4.0 · **Sound effects** Kenney · CC0 · **Voice** Kokoro (26 px, with a 20 px label).
+3. **Tagline phrases** on the slate arrive 0.3 s apart instead of 0.45 s, so the secondary information follows sooner.
+4. **The slate holds 2.0 s longer**, so the credits stay readable for about 5 s, then **fades cleanly to black** (3:21.35–3:22.0). Total duration 3:20.0 → **3:22.0**.
+
+Unchanged: everything before 3:13 (mark, wordmark and closing statement timing included), all footage, narration, music, sound effects and their timing (the bell and the spoken "Axiom Forge" stay on the 3:13.8–3:13.9 cue), colours and fonts. The closing statement ("AI should not just write code. It should understand, justify and verify every change.") was kept as it was.
+
+Attribution is unchanged in substance: the same three credits and licences as before (from `.claude/skills/brag/assets/music/README.md` and the Brag audio reference). No URLs or licence terms were added or changed.
+
+---
+
+## Pass 1 (18 Nov 2026)
 **Output:** `demo-video/final/AXIOM_FORGE_FINAL_DEMO.mp4` (3:20, same length, resolution and structure as the first cut).
 **Original kept untouched:** `demo-video/AXIOM_FORGE_COMPETITION_DEMO.mp4` and `demo-video/composition/` are unchanged; the refinement lives in `demo-video/final/composition/`, built by `demo-video/tools/build_final.py` (a fork of `build_composition.py`).
 

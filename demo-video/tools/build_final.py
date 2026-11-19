@@ -26,9 +26,9 @@ PALETTE = {
 # ---------------------------------------------------------------- film timeline (root seconds)
 SCENES = [  # id, start, duration
     ("s1", 0.0, 18.0), ("s2", 18.0, 14.0), ("s3", 32.0, 30.0), ("s4", 62.0, 26.0),
-    ("s5", 88.0, 34.6), ("s6", 122.6, 30.0), ("s7", 152.6, 28.0), ("s8", 180.6, 19.4),
+    ("s5", 88.0, 34.6), ("s6", 122.6, 30.0), ("s7", 152.6, 28.0), ("s8", 180.6, 21.4),
 ]
-TOTAL = 200.0
+TOTAL = 202.0  # final: end slate held 2 s longer so the credits can be read
 START = {sid: st for sid, st, _ in SCENES}
 
 VO = {  # id -> root start (durations measured from the wav files)
@@ -416,7 +416,14 @@ def s8():
 .word span {{ display:inline-block; }}
 .tag {{ position:absolute; left:0; right:0; top:600px; display:flex; justify-content:center; gap:34px; font-size:50px; font-weight:500; }}
 .tag span {{ display:inline-block; }}
-.foot {{ position:absolute; left:0; right:0; text-align:center; font-size:28px; color:{PALETTE['muted']}; }}
+.rule {{ position:absolute; left:930px; top:712px; width:60px; height:2px; border-radius:1px; background:{PALETTE['act']}; opacity:0.7; }}
+.event {{ position:absolute; left:0; right:0; top:744px; text-align:center; font-size:28px; font-weight:500; letter-spacing:0.02em; color:{PALETTE['muted']}; }}
+.event i {{ display:inline-block; width:5px; height:5px; margin:0 18px; border-radius:3px; background:{PALETTE['faint']}; vertical-align:middle; }}
+.credits {{ position:absolute; left:0; right:0; top:900px; text-align:center; color:{PALETTE['muted']}; }}
+.credits .lab {{ font-size:20px; font-weight:600; letter-spacing:0.08em; color:{PALETTE['faint']}; margin-bottom:12px; }}
+.credits .row {{ display:flex; justify-content:center; gap:56px; font-size:26px; }}
+.credits b {{ font-weight:600; color:{PALETTE['fg']}; opacity:0.85; }}
+.black {{ position:absolute; inset:0; background:#000; opacity:0; }}
 """
     def words(txt):
         return "".join(f"<span>{esc(w)}</span>" for w in txt.split())
@@ -427,10 +434,15 @@ def s8():
     <div id="s8-b" class="clip say" data-hold data-start="5.55" data-duration="6.4" data-track-index="2" style="top:510px; font-size:56px; color:{PALETTE['act']}">{words("It should understand, justify and verify every change.")}</div>
     <div id="s8-halo" class="halo" style="opacity:0"></div>
     <div id="s8-markw" class="markw" style="opacity:0">{MARK_SVG.format(c=PALETTE['act'])}</div>
-    <div id="s8-word" class="clip word" data-start="13.15" data-duration="6.25" data-track-index="3">{letters}</div>
-    <div id="s8-tag" class="clip tag" data-start="14.5" data-duration="4.9" data-track-index="4"><span>Understand the code.</span><span>Justify every change.</span><span style="color:{PALETTE['act']}">Verify before delivery.</span></div>
-    <div id="s8-f1" class="clip foot" data-start="15.0" data-duration="4.4" data-track-index="5" style="top:860px">Recorded live in VS Code on 18 Nov 2026 for the TrueFoundry Forge-a-thon, IIT Bombay.</div>
-    <div id="s8-f2" class="clip foot" data-start="15.2" data-duration="4.2" data-track-index="6" data-layout-ignore style="top:990px; font-size:22px">Music: Sascha Ende, ende.app (CC BY 4.0). Sound effects: Kenney (CC0). Voice: Kokoro.</div>
+    <div id="s8-word" class="clip word" data-start="13.15" data-duration="8.25" data-track-index="3">{letters}</div>
+    <div id="s8-tag" class="clip tag" data-start="14.5" data-duration="6.9" data-track-index="4"><span>Understand the code.</span><span>Justify every change.</span><span style="color:{PALETTE['act']}">Verify before delivery.</span></div>
+    <div id="s8-rule" class="clip rule" data-start="15.5" data-duration="5.9" data-track-index="5"></div>
+    <div id="s8-event" class="clip event" data-start="15.5" data-duration="5.9" data-track-index="6">TrueFoundry Forge-a-thon<i></i>IIT Bombay<i></i>18 November 2026</div>
+    <div id="s8-credits" class="clip credits" data-start="16.1" data-duration="5.3" data-track-index="7">
+      <div class="lab">Audio credits</div>
+      <div class="row"><span><b>Music</b> Sascha Ende, ende.app · CC BY 4.0</span><span><b>Sound effects</b> Kenney · CC0</span><span><b>Voice</b> Kokoro</span></div>
+    </div>
+    <div id="s8-black" class="black"></div>
 """
     tile_js = []
     for i in range(7):
@@ -443,16 +455,19 @@ def s8():
     tl.fromTo("#s8-b span",{{opacity:0,filter:"blur(6px)"}},{{opacity:1,filter:"blur(0px)",duration:0.14,stagger:0.07,ease:"power3.out"}},5.6);
     tl.to(["#s8-a span","#s8-b span"],{{opacity:0,filter:"blur(10px)",duration:0.3,stagger:0.01,ease:"power2.in"}},11.55);
     tl.fromTo("#s8-halo",{{opacity:0,scale:0.7}},{{opacity:0.3,scale:1,duration:1.0,ease:"power2.out"}},11.8);
-    {halo_js("#s8-halo", 12.8, 19.2, 0.22, 0.3, 180.6)}
+    {halo_js("#s8-halo", 12.8, 20.8, 0.22, 0.3, 180.6)}
     tl.fromTo("#s8-markw",{{opacity:0}},{{opacity:1,duration:0.2}},11.95);
     tl.fromTo("#s8-markw .tri",{{strokeDashoffset:100}},{{strokeDashoffset:0,duration:1.1,ease:"power2.inOut"}},11.95);
     tl.fromTo("#s8-markw .bar",{{strokeDashoffset:100}},{{strokeDashoffset:0,duration:0.4,ease:"power3.out"}},12.8);
     // beat-locked: wordmark lands with the bell on the 193.8 s music cue (scene 13.2)
     tl.fromTo("#s8-word span",{{opacity:0,filter:"blur(6px)"}},{{opacity:1,filter:"blur(0px)",duration:0.2,stagger:0.05,ease:"power3.out"}},13.2);
-    tl.fromTo("#s8-tag span",{{opacity:0,filter:"blur(6px)"}},{{opacity:1,filter:"blur(0px)",duration:0.18,stagger:0.45,ease:"power3.out"}},14.55);
-    tl.fromTo(["#s8-f1","#s8-f2"],{{opacity:0}},{{opacity:1,duration:0.5,stagger:0.2,ease:"power2.out"}},15.05);
+    tl.fromTo("#s8-tag span",{{opacity:0,filter:"blur(6px)"}},{{opacity:1,filter:"blur(0px)",duration:0.18,stagger:0.3,ease:"power3.out"}},14.55);
+    tl.fromTo("#s8-rule",{{scaleX:0}},{{scaleX:1,duration:0.6,ease:"expo.out"}},15.55);
+    tl.fromTo("#s8-event",{{opacity:0,y:8}},{{opacity:1,y:0,duration:0.6,ease:"power2.out"}},15.6);
+    tl.fromTo("#s8-credits",{{opacity:0}},{{opacity:1,duration:0.8,ease:"power2.out"}},16.15);
+    tl.to("#s8-black",{{opacity:1,duration:0.6,ease:"power2.inOut"}},20.75);
 """
-    return scene_file("s8", 19.4, css, body, js)
+    return scene_file("s8", 21.4, css, body, js)
 
 
 # ---------------------------------------------------------------- chrome overlay: chapter + trace (S3..S7)
@@ -560,7 +575,7 @@ def root():
     hosts.append(f'<div id="chrome" data-composition-id="chrome" data-composition-src="compositions/chrome.html" data-start="{START["s3"]}" '
                  f'data-duration="{START["s8"] - START["s3"]:.1f}" data-track-index="2" data-track-kind="graphics" data-width="{W}" data-height="{H}" style="z-index:3"></div>')
     lane = esc(duck_lane())
-    audio = [f'<audio id="bed" class="clip" data-start="0" data-duration="{TOTAL}" data-track-index="10" data-volume="1" '
+    audio = [f'<audio id="bed" class="clip" data-start="0" data-duration="200" data-track-index="10" data-volume="1" '
              f'data-automation="{lane}" src="assets/music/bed.wav"></audio>']
     for k, t in sorted(VO.items(), key=lambda kv: kv[1]):
         audio.append(f'<audio id="vo-{k}" class="clip" data-start="{t}" data-duration="{VO_DUR[k]}" data-track-index="11" data-volume="1" src="assets/vo/{k}.wav"></audio>')
