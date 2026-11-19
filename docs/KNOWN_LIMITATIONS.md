@@ -1,4 +1,6 @@
-# Known Limitations (honest list, kept current)
+# Known limitations
+
+_Reviewed 19 Nov 2026. Current test results are in [VALIDATION.md](VALIDATION.md)._
 
 ## Found in live runs (18 Nov)
 - **Groq `gpt-oss-20b` can't finish a tool-using turn** (TrueForge echoes `reasoning_content`, Groq rejects it with HTTP 400; classified `bad_config`). **Groq `qwen-3-8-27b` works but is unreliable on the free tier**: 7,000 input tokens/minute (~2 agent requests per minute) and occasional malformed tool calls (`tool_use_failed`, now retried as `model_output`). With the compact inline profile (~1.1k tokens per request) Task C ran clean 3 of 3 times, 60 s apart; back-to-back runs within one minute can still hit the limit, and agent-mode (Task B) turns on this backup would exceed it.
@@ -9,7 +11,7 @@
 - Pacing holds every tool result, including parallel calls of one step, so it is slower than strictly needed; it is off by default.
 
 ## Not yet verified
-- Task B end to end on agent output; inline ⌘I UI and agent sidebar with a live model; same-file merging triggered by a real model. Tool calls, approval, deny, cancel, argument matching and fallback ARE verified live (`MODEL_KEY_CHECKLIST.md`, live results).
+- Task B end to end on agent output (best live attempt: 4/5 checks); inline edit started from the ⌘I prompt with a live model (the inline path ran live in the Task C test); same-file merging triggered by a real model. **Verified live (18 Nov):** tool calls, approval, deny, cancel, argument matching, ModelShield fallback, and an agent-mode run in the workspace UI (the demo recording).
 - **Extension-host responsiveness (A3).** Phase 3 profiled it (`PERFORMANCE.md`): the largest stalls in the VS Code test instance (1.5–2.4 s) are VS Code's own work (self time ≥ 85% VS Code). AXIOM's avoidable repeated work was fixed (MCP server pooling, patch-only webview posts, dirty-row timeline sync, lazy index rebuild). That test instance runs identical code 60–200× slower than plain Node, for reasons not established, so its absolute numbers are an upper bound. Not yet measured in a normal F5 session or during a real model stream: use `axiomForge.perfLog` + **Show Performance Report**.
 - The negative SSRF case (TrueForge *without* `OUTBOUND_URL_ALLOWED_HOSTS` refusing our MCP server) was read in source but not re-run.
 
@@ -27,10 +29,13 @@
 - **Symbol extraction is regex-based** (Python `def`/`class`, click `@command("name")`, basic TS/JS). No language server; nested functions and dynamic registration aren't modelled.
 - **Token budget is estimated** as characters ÷ 4, not a real tokenizer; the budget is a guide, not a guarantee.
 - **ModelShield runs in the extension**, because TrueForge 0.185 has no automatic model fallback ("planned" in its docs). Fallback starts a fresh TrueForge session on the backup with the original request; earlier-turn reasoning isn't carried over. It never replays after an approved write/command ran (`side_effects`), so the user decides.
-- **Approval matching** relies on the model's tool arguments being passed unchanged by TrueForge to the MCP tool (we normalise both sides through the same zod schema). If TrueForge transformed arguments, the MCP tool would refuse safely (no write) and the run would need a retry. Unverified until runtime.
+- **Approval matching** relies on the model's tool arguments being passed unchanged by TrueForge to the MCP tool (we normalise both sides through the same zod schema). If TrueForge transformed arguments, the MCP tool would refuse safely (no write) and the run would need a retry. Matching was verified live with TrueForge 0.185.1 (18 Nov).
 - `run_command` allows `python -c ...` after explicit approval, which is effectively arbitrary code in the workspace venv. It's gated by a modal approval, has a timeout and no shell, but it isn't sandboxed.
 - New-file proposals are created via `WorkspaceEdit.createFile`; undo deletes the file.
 - Single workspace folder only (the first folder).
+- **Platforms and versions:** tested on macOS only. Integration tests run on VS Code 1.125.1; the declared 1.100 floor is checked by the type checker (`@types/vscode` 1.100.0), not by running it.
+- One VS Code integration test ("Open Workspace" opens one tab) failed once in five runs on 19 Nov; the cause is not proven.
+- The Activity view's "Files touched" column says "change proposed" for files that were later applied (wording only).
 
 ## Fixture notes
 - Flask 3.1.3 tests need `pytest==8.4.2` (from Flask's own `uv.lock`); newer pytest removed `_pytest.monkeypatch.notset`. `scripts/setup-flask-fixture.sh` pins it.

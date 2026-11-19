@@ -1,7 +1,7 @@
 # Run AXIOM Forge in VS Code
 
 ## What you need (once)
-- **VS Code** 1.125 or newer.
+- **VS Code** 1.100 or newer (Code → About Visual Studio Code).
 - **Node.js** 22.14 or newer (`node -v`).
 - **Python 3** and **git**, only for the Flask demo repository.
 - Model keys go **into TrueForge**, never into this folder.
@@ -53,12 +53,14 @@ A second window, the **Extension Development Host**, opens. That window is the p
 
    Use the names exactly as TrueForge lists them.
 4. On free model tiers, set `axiomForge.pacing.minSecondsBetweenSteps` to `16` to avoid hitting rate limits.
-5. Go to **Task**, type a request, and press Run. Then follow it through Context, Activity, Review (accept or reject the edits), Models and Proof.
+5. The first time, run ⌘⇧P → **AXIOM Forge: Register MCP Server and Agent in TrueForge** and pick the primary model. If you skip this, the first run offers **Register now**.
+6. Go to **Task**, type a request, and press Run. Then follow it through Context, Activity, Review (accept or reject the edits), Models and Proof.
 
 ## If it doesn't work
 | What you see | What to do |
 |---|---|
 | F5 asks "Select debugger" or nothing happens | You opened the wrong folder. Open the folder containing `package.json` (step 1). |
+| The dev window opens but has no AXIOM Forge icon | Your VS Code is older than 1.100 and silently skips the extension. Update VS Code. |
 | npm warns `allow-scripts … esbuild, fsevents` | Harmless: the build still works. |
 | `Cannot find module` / build error | Run `npm ci && npm run build` again. |
 | Overview shows TrueForge **offline** | The step 3 terminal isn't running, or something else holds port 8790. |

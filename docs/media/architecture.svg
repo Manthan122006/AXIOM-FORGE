@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" width="1000" height="560" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+  <title id="t">AXIOM Forge architecture</title>
+  <desc id="d">The AXIOM Forge extension runs inside VS Code: webview, controller, context engine, ModelShield, SafeChange, Proof of Change and an MCP server on 127.0.0.1. The controller talks to a local TrueForge server over HTTP and SSE; TrueForge runs the agent loop, calls the MCP tools and calls the model providers. Accepted hunks and approved commands act on the workspace.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8B7CF6"/></marker>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6E6A7C"/></marker>
+    <style>
+      .box{fill:#17151F;stroke:#2E2A3B;stroke-width:1.2}
+      .key{fill:#1C1830;stroke:#8B7CF6;stroke-width:1.4}
+      .h{fill:#ECEAF3;font-size:15px;font-weight:600}
+      .s{fill:#9C98AC;font-size:12px}
+      .l{fill:#B9B0FA;font-size:12px}
+      .cap{fill:#7E7A8F;font-size:12px;letter-spacing:.3px}
+      .line{stroke:#8B7CF6;stroke-width:1.6;fill:none}
+      .thin{stroke:#6E6A7C;stroke-width:1.3;fill:none}
+    </style>
+  </defs>
+  <rect width="1000" height="560" rx="14" fill="#0F0E14"/>
+
+  <!-- VS Code / extension host -->
+  <rect x="28" y="40" width="574" height="476" rx="12" fill="none" stroke="#3A3550" stroke-dasharray="5 5"/>
+  <text x="46" y="66" class="cap">VS CODE · AXIOM FORGE EXTENSION HOST</text>
+
+  <rect x="48" y="84" width="534" height="52" rx="8" class="box"/>
+  <text x="66" y="107" class="h">Webview</text>
+  <text x="66" y="125" class="s">Overview · Task · Context · Activity · Review · Models · Proof</text>
+
+  <rect x="48" y="176" width="166" height="62" rx="8" class="box"/>
+  <text x="62" y="201" class="h">Context engine</text>
+  <text x="62" y="220" class="s">ranking · Context Receipt</text>
+
+  <rect x="232" y="176" width="166" height="62" rx="8" class="box"/>
+  <text x="246" y="201" class="h">ModelShield</text>
+  <text x="246" y="220" class="s">classify · retry · fallback</text>
+
+  <rect x="416" y="176" width="166" height="62" rx="8" class="key"/>
+  <text x="430" y="201" class="h">Controller</text>
+  <text x="430" y="220" class="s">runs · approvals · state</text>
+
+  <rect x="48" y="290" width="166" height="62" rx="8" class="box"/>
+  <text x="62" y="315" class="h">SafeChange</text>
+  <text x="62" y="334" class="s">stage · review · apply · undo</text>
+
+  <rect x="232" y="290" width="166" height="62" rx="8" class="box"/>
+  <text x="246" y="315" class="h">Proof of Change</text>
+  <text x="246" y="334" class="s">exit code · tests · stale flag</text>
+
+  <rect x="416" y="290" width="166" height="62" rx="8" class="key"/>
+  <text x="430" y="315" class="h">MCP server</text>
+  <text x="430" y="334" class="s">127.0.0.1:7811 · 7 tools</text>
+
+  <rect x="48" y="430" width="534" height="62" rx="8" class="box"/>
+  <text x="66" y="456" class="h">Workspace</text>
+  <text x="66" y="476" class="s">the repository's files on disk</text>
+
+  <!-- internal arrows -->
+  <path d="M499 176V140" class="thin" marker-end="url(#g)" marker-start="url(#g)"/>
+  <path d="M131 352V426" class="thin" marker-end="url(#g)"/>
+  <text x="140" y="394" class="s">writes accepted hunks</text>
+  <path d="M315 352V426" class="thin" marker-end="url(#g)"/>
+  <text x="324" y="394" class="s">runs approved commands</text>
+  <path d="M499 352V426" class="thin" marker-end="url(#g)"/>
+  <text x="508" y="394" class="s">reads</text>
+
+  <!-- TrueForge -->
+  <rect x="664" y="150" width="308" height="118" rx="10" class="key"/>
+  <text x="684" y="180" class="h">TrueForge 0.185.1</text>
+  <text x="684" y="201" class="s">local server on :8790</text>
+  <text x="684" y="226" class="s">agent loop · sessions · approval pauses</text>
+  <text x="684" y="246" class="s">holds the model keys</text>
+
+  <rect x="664" y="380" width="308" height="80" rx="10" class="box"/>
+  <text x="684" y="410" class="h">Model providers</text>
+  <text x="684" y="432" class="s">primary and backup, configured in TrueForge</text>
+
+  <!-- external arrows -->
+  <path d="M582 200H660" class="line" marker-end="url(#a)" marker-start="url(#a)"/>
+  <text x="604" y="190" class="l">SDK</text>
+  <text x="590" y="220" class="l">HTTP+SSE</text>
+  <path d="M664 252C630 262 615 300 586 314" class="line" marker-end="url(#a)"/>
+  <text x="606" y="290" class="l">tool calls</text>
+  <path d="M818 268V376" class="line" marker-end="url(#a)"/>
+  <text x="828" y="326" class="l">model calls</text>
+
+  <text x="664" y="500" class="cap">propose_edit and run_command need TrueForge approval</text>
+  <text x="664" y="518" class="cap">and a single-use AXIOM grant for that exact call.</text>
+</svg>

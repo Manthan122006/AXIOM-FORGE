@@ -4,7 +4,7 @@ Prereqs: TrueForge running (`OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]' npx -y @
 
 | # | Step | Command / action | Pass when | Record |
 |---|---|---|---|---|
-| 0 | Preflight (no keys needed) | `npx tsx scripts/preflight.ts` (after keys: add `--primary <name> --backup <name>`) | no FAIL rows; after keys, no BLOCKED rows | paste the table into `TRUEFORGE_INTEGRATION_STATUS.md` |
+| 0 | Preflight (no keys needed) | `npx tsx scripts/preflight.ts` (after keys: add `--primary <name> --backup <name>`) | no FAIL rows; after keys, no BLOCKED rows | paste the table into `historical/TRUEFORGE_INTEGRATION_STATUS.md` |
 | 1 | Provider config in TrueForge | http://localhost:8790 → Settings → Models: add **Google Gemini** (primary) and **custom OpenAI-compatible** `https://api.groq.com/openai/v1` (backup) | both listed | screenshot of Settings with keys hidden |
 | 2 | Exact model names | `curl -s http://localhost:8790/api/v1/models` | both models appear; copy their exact `name` | names into `axiomForge.models.primary/backup` |
 | 3 | Gemini connectivity (through TrueForge) | TrueForge chat UI: new chat on the Gemini model, ask "reply OK" | reply streams | — |

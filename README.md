@@ -1,87 +1,190 @@
-# AXIOM Forge
+<h1 align="center">AXIOM Forge</h1>
 
-**Understand the code. Justify every change. Verify before delivery.**
+<p align="center"><b>Understand the code. Justify every change. Verify before delivery.</b></p>
 
-AXIOM Forge is a VS Code extension whose coding agent runs on [TrueForge](https://github.com/truefoundry/trueforge). It works out which files matter in a repository bigger than the model's context window, shows *why* it chose them (the **Context Receipt**), proposes multi-file changes that you review **hunk by hunk** before anything touches disk, verifies the result by actually running commands, and falls back to a second model when the first one fails.
+<p align="center">
+AXIOM Forge is a VS Code extension that runs a coding agent through <a href="https://github.com/truefoundry/trueforge">TrueForge</a>. It picks the files that matter in a large repository and says why it picked them. Every hunk and every command waits for your approval, and the test run that checks the result is recorded with its exit code.
+</p>
 
-Built for the TrueFoundry Forge-a-thon (Techfest 2026–27, IIT Bombay) by Team AXIOM.
+<p align="center">
+  <a href="#see-axiom-forge-in-action">Demo</a> ·
+  <a href="#getting-started">Getting started</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="docs/VALIDATION.md">Validation</a> ·
+  <a href="docs/README.md">Docs</a>
+</p>
 
-> **Starting point:** from scratch. No upstream editor project was forked.
+## See AXIOM Forge in action
 
-## How it fits together
+<a href="docs/media/axiom-forge-demo.mp4"><img src="docs/media/demo-poster.jpg" alt="AXIOM Forge demo video (3:22). Click to open." width="100%"></a>
 
-```
-VS Code extension ──@truefoundry/trueforge-sdk (HTTP+SSE)──▶ TrueForge (local, SQLite)
-   │  sidebar webview, native diff + per-hunk CodeLens            │ agent loop, model calls, approvals,
-   │  SafeChange (stage → review → apply → undo)                  │ subagents, deferred tools, compaction
-   │  Proof of Change, ModelShield (retry/backoff/fallback)       │
-   └── MCP server on 127.0.0.1 (inside the extension host) ◀──────┘ tool calls
-       read_file · search_workspace · find_symbol · related_files · assemble_context · propose_edit* · run_command*
-       * approval-gated in TrueForge AND single-use-granted in AXIOM Forge
-```
+**[Watch the demo (3 min 22 s, MP4)](docs/media/axiom-forge-demo.mp4)**. It was recorded live in VS Code on `pallets/flask` 3.1.3 on 18 Nov 2026 and shows one real task from context selection to a passing test run. It also shows a model failure being handled: the primary was given an invalid key on purpose, and the run continued on the backup.
 
-Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · design: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) · status: [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md).
+## The problem
 
-## Requirements
+When an agent changes a repository that is larger than its context window, the developer usually can't see:
 
-- macOS (tested), Node **≥ 22.14** (tested 24.18.0), VS Code **≥ 1.125**, Python 3.10+ (for the Flask tasks), git.
-- A model provider configured **in TrueForge** (free tiers work). AXIOM Forge never calls a provider directly.
+- which files the model actually read, and which it never saw;
+- why each change was made, at the level of individual hunks;
+- what ran on their machine, and whether anything checked the result.
 
-## Setup from a clean clone
+So the choice comes down to accepting a large diff on trust or redoing the work. AXIOM Forge makes each of those steps visible, and keeps every write and command under the developer's control.
 
-```bash
-git clone <this repo> axiom-forge && cd axiom-forge && npm ci && npm run build
-```
+## Core capabilities
 
-1. **Start TrueForge locally** (pinned; the allowlist lets TrueForge reach our MCP server on loopback only):
+- **Repository context.** Ranks the files with BM25, path and identifier matches, the import graph and test/doc pairing, within a 24k-token budget.
+- **Context Receipt.** Shows the files sent to the model, the reason each one was included, and the candidates left out.
+- **Inline edit.** Select code, press <kbd>⌘I</kbd> / <kbd>Ctrl+I</kbd> and describe the change; the diff opens in the editor with Accept/Reject on each hunk.
+- **Agent mode.** Describe a task without naming files. The agent reads, searches and proposes changes across several files.
+- **SafeChange.** Nothing is written until you accept hunks and apply them. A change set is applied all together or rolled back, and Undo checks the file before restoring it.
+- **ModelShield.** When a provider fails, it retries what can be retried and otherwise moves to a backup model in a fresh session. It never replays a step that already changed files.
+- **Proof of Change.** Approved test commands run without a shell, and their exit code, test counts and output are stored. A proof is marked stale once a later change is applied.
+
+## Screenshots
+
+From the live recording on Flask (18 Nov 2026). The data in them is real.
+
+| | |
+|---|---|
+| ![Context Receipt: 8 of 216 files sent, with reasons](docs/media/context.jpg) | ![Review: one hunk waiting for a decision](docs/media/review.jpg) |
+| **Context Receipt.** 8 of 216 files sent (23.4k of 24k tokens), and how they relate. | **Review.** Each hunk is accepted or rejected before anything is written. |
+| ![Models: the run moved to the backup model after the primary failed](docs/media/models.jpg) | ![Proof: pytest, 58 passed, exit code 0](docs/media/proof.jpg) |
+| **ModelShield.** The primary failed with a bad key, so the run continued on the backup. | **Proof of Change.** `pytest tests/test_cli.py`: 58 passed, exit code 0. |
+
+## Architecture
+
+<p align="center"><img src="docs/media/architecture.svg" alt="Architecture: the AXIOM Forge extension inside VS Code (webview, controller, context engine, ModelShield, SafeChange, Proof of Change, MCP server on 127.0.0.1:7811) talks to a local TrueForge server over HTTP and SSE; TrueForge runs the agent loop, calls the MCP tools and the model providers; accepted hunks and approved commands act on the workspace." width="100%"></p>
+
+- **TrueForge** (local, port 8790) runs the agent loop, makes every model call and holds the provider keys. AXIOM Forge never calls a model provider itself.
+- **The extension** creates TrueForge sessions with `@truefoundry/trueforge-sdk`, streams their events into the UI, and answers approval pauses.
+- **The MCP server** runs inside the extension host on `127.0.0.1` and gives the agent seven tools: `read_file`, `search_workspace`, `find_symbol`, `related_files`, `assemble_context`, `propose_edit` and `run_command`. The last two need TrueForge approval **and** a single-use AXIOM grant for that exact call.
+
+Full design, tool contracts and the approval sequence: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## How it works
+
+1. **Task.** You describe a change in the workspace view, or select code and press ⌘I.
+2. **Context.** The context engine ranks the repository and assembles a budgeted context. The Context Receipt records what was sent and why.
+3. **Agent.** The controller starts a TrueForge session. The agent reads and searches through the MCP tools, and its steps stream into the Task and Activity views.
+4. **Proposal.** When the agent calls `propose_edit`, SafeChange stages the diff against the current file contents, and the turn pauses.
+5. **Review.** You accept or reject each hunk. Rejecting everything sends the agent a reason instead of a write.
+6. **Apply.** The accepted hunks across all files are written together. If one write fails, the files already written are restored.
+7. **Verify.** If the agent asks to run a test command, you approve that exact command. The result becomes a Proof entry, and it goes stale if a later change is applied.
+
+If the model fails at any point, ModelShield decides whether to retry, switch to the backup or stop. The Models view shows that routing history.
+
+## Getting started
+
+**Prerequisites:**
+
+- macOS (the only platform tested);
+- Node.js 22.14 or newer;
+- VS Code 1.100 or newer;
+- Python 3.10+ and git, for the Flask sample repository;
+- at least one model provider you can add to TrueForge (free tiers work, with limits).
+
+**Steps:**
+
+1. **Install and build:**
+   ```bash
+   git clone https://github.com/Manthan122006/AXIOM-FORGE.git
+   ```
+   ```bash
+   cd AXIOM-FORGE && npm run setup
+   ```
+   This installs dependencies, builds the extension and the webview, and downloads Flask 3.1.3 into `fixtures/flask` with its own virtualenv.
+2. **Start TrueForge** in a second terminal, and leave it running:
    ```bash
    OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]' npx -y @truefoundry/trueforge@0.185.1
    ```
-2. **Add models** at http://localhost:8790 → Settings → Models (e.g. Google Gemini as primary, Groq as a custom OpenAI-compatible provider as backup). See [config/models.example.json](config/models.example.json). Keys stay in TrueForge.
-3. **Get the Flask task repository** (pallets/flask 3.1.3, commit 22d92470, with a venv):
-   ```bash
-   npm run fixture:flask
-   ```
-4. **Run the extension:** open this folder in VS Code and press **F5** ("Run AXIOM Forge (Flask fixture)"). It opens `fixtures/flask` with the extension loaded; the MCP server starts on `127.0.0.1:7811` and registers itself in TrueForge.
-5. **Load the agent definition** ([agents/axiom-agent.json](agents/axiom-agent.json) for agent mode; inline edits use the compact [agents/axiom-agent-inline.json](agents/axiom-agent-inline.json), sent with each session): Command Palette → **AXIOM Forge: Register MCP Server and Agent in TrueForge**, pick the primary model. Optionally set `axiomForge.models.primary` / `axiomForge.models.backup` in settings for automatic fallback.
-   Headless alternative: `npx tsx scripts/setup-trueforge.ts --model <name>`.
-6. **Check the wiring** (no keys needed; never calls a provider): `npx tsx scripts/preflight.ts [--primary <name> --backup <name>]`. It checks the agent definition, TrueForge reachability, configured models, that TrueForge lists the 7 MCP tools, and that a TrueForge outage is classified differently from a provider failure. Model-dependent steps are listed as UNVERIFIED until you run [docs/MODEL_KEY_CHECKLIST.md](docs/MODEL_KEY_CHECKLIST.md).
+   The allowlist lets TrueForge reach the extension's MCP server on loopback only.
+3. **Configure models.** Open http://localhost:8790 → Settings → Models and add a primary and, optionally, a backup (for example Google Gemini and Groq as a custom OpenAI-compatible provider). Keys stay in TrueForge. See [config/models.example.json](config/models.example.json).
+4. **Launch.** Open the cloned folder in VS Code and press **F5** with *Run AXIOM Forge (Flask fixture)*. If you skipped Python, use *Run AXIOM Forge (on its own source, no Flask needed)*. A second window, the Extension Development Host, opens.
+5. **Register.** In that window, run Command Palette → **AXIOM Forge: Register MCP Server and Agent in TrueForge**, then pick the primary model. For fallback, set `axiomForge.models.backup` in Settings. On free tiers, also set `axiomForge.pacing.minSecondsBetweenSteps` (for example 16 on Gemini).
+6. **Preflight.** `npx tsx scripts/preflight.ts --primary <model> --backup <model>` checks the agent definitions, TrueForge, the model names and the MCP tool listing. It makes no model calls.
+7. **Try it.** Open AXIOM Forge from the activity bar and run a task.
 
-## Using it
+A detailed walkthrough and a troubleshooting table are in [RUN_IN_VSCODE.md](RUN_IN_VSCODE.md).
 
-- **Inline edit:** select code, press **⌘I** (Ctrl+I), describe the change. The diff opens in the editor with Accept/Reject on each hunk.
-- **Agent mode:** describe a change in the AXIOM Forge sidebar; you don't need to name files. Type `@` to mention a file or symbol.
-- **Review:** accept/reject each hunk (sidebar or CodeLens in the diff), then **Apply**. **Undo change** reverts an applied file.
-  - Several edits the agent makes to the **same file** in one step are merged into **one** diff; overlapping edits are refused, never silently overwritten.
-  - Everything you approve in one review is applied **together**: all files are checked first, and if one can't be written the others are restored (not crash-atomic; see limitations).
-- **Stop run** cancels the TrueForge turn; anything not yet applied is discarded.
-- **Free-tier model keys:** set `axiomForge.pacing.minSecondsBetweenSteps` (e.g. 16 for Gemini free tier) so agent-mode runs stay under per-minute quotas. Inline edits use a compact agent definition and don't need it.
-- **Performance:** set `axiomForge.perfLog: true`, then run **AXIOM Forge: Show Performance Report** for per-operation timings. Stalls over 250 ms are logged with the AXIOM work that ran during them ([docs/PERFORMANCE.md](docs/PERFORMANCE.md)).
+## Testing and verification
 
-## Tests
+| Command | What it checks | Needs a model? |
+|---|---|---|
+| `npm run check` | typecheck, lint, unit tests, production build | no |
+| `npm run test:vscode` | the extension inside a real VS Code: MCP, approvals, SafeChange apply/undo/rollback, diff and CodeLens, failure handling. If VS Code isn't in `~/Applications`, set `VSCODE_EXECUTABLE` | no (2 opt-in live tests do) |
+| `npx tsx scripts/eval-retrieval.ts` | context ranking on 33 Flask tasks, including 8 never used for tuning | no |
+| `bash scripts/tasks/verify-task-{a,b,c}.sh` | checks the Flask fixture after an agent run (Tasks A, B, C) | the run that precedes it does |
+| `bash scripts/check-publish.sh` | no keys, private data or local files tracked, in files or history | no |
 
-```bash
-npm run check          # typecheck + lint + unit tests + build
-npm run test:vscode    # runs the extension inside your installed VS Code (no download)
-bash scripts/tasks/verify-task-a.sh   # official Task A check against fixtures/flask
-bash scripts/tasks/verify-task-b.sh   # Task B: pytest, flask --help, masked JSON, >=3 files
-bash scripts/tasks/verify-task-c.sh   # Task C: git status clean
-bash scripts/tasks/reset-fixture.sh   # restore fixtures/flask to pristine 3.1.3
-npx tsx scripts/eval-retrieval.ts     # 33-task retrieval benchmark (see docs/RETRIEVAL_EVAL.md)
-bash scripts/check-publish.sh         # before every push: no keys, private data or local files in files or history
-```
+**Latest results (19 Nov 2026):**
 
-## Security notes
+- `npm run check`: 219/219 unit tests.
+- `npm run test:vscode`: 13 passing, 2 pending (the opt-in live tests).
+- Retrieval: 25 of 33 tasks have every expected file in the top 5, and 5 of 8 fresh tasks do.
+- Live runs with real models (18 Nov) verified approve, deny and cancel, a real 429 falling back to the backup, and Task A.
+- **Task B doesn't pass yet** (best: 4 of 5 checks).
 
-- The MCP server binds to `127.0.0.1` only and rejects browser `Origin`s and foreign `Host` headers.
-- File access is jailed to the workspace (traversal, symlink escape, `.env`, keys and `.git` are refused).
-- `propose_edit` and `run_command` need TrueForge approval **and** a single-use AXIOM Forge grant for that exact call; commands run without a shell from an allowlist with a timeout; output is secret-scrubbed.
-- No API keys in this repository. `OUTBOUND_URL_ALLOWED_HOSTS` is narrowed to `127.0.0.1` for local development only.
+Details and evidence: [docs/VALIDATION.md](docs/VALIDATION.md).
+
+## Security
+
+- **Network:** the MCP server binds to `127.0.0.1` only, and refuses requests with a browser `Origin` or a foreign `Host` header.
+- **Files:** tool access is limited to the open workspace folder. Path traversal, symlinks pointing outside it, `.env` files, key files and `.git` are refused.
+- **Approvals:** writes and commands each need two approvals: TrueForge's approval pause and a single-use AXIOM grant that matches the exact call.
+- **Commands:**
+  - only an allowlist of programs can run: `python`, `pytest`, `flask`, `node`, read-only `git`, `npm test`/`run`, and `npx vitest`/`tsc`/`eslint`;
+  - there's no shell, so pipes, redirects and `$` are refused;
+  - every command has a timeout, and secrets are scrubbed from its output.
+- **What it doesn't do:** commands aren't sandboxed. An approved `python -c …` can do whatever the workspace's Python can. This is a local development tool and it hasn't had an independent security review.
 
 ## Known limitations
 
-See [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md).
+- Task B, the hardest Flask task, doesn't pass end to end yet.
+- Retrieval is lexical and structural (no embeddings, no language server), and the token budget is an estimate.
+- The backup model starts a fresh session, without the failed turn's reasoning.
+- Applying a change set is all-or-nothing with rollback, but not crash-atomic.
+- Free-tier quotas slow long agent runs down or make them fail.
+- Tested on macOS with VS Code 1.125 only.
 
-## License & attribution
+Full list: [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md).
 
-MIT ([LICENSE](LICENSE)). Built on TrueForge (MIT, TrueFoundry), the Model Context Protocol TypeScript SDK (MIT), jsdiff (BSD-3-Clause), zod (MIT), React (MIT). Developed with Claude Code as an AI coding assistant.
+## Technology
+
+| Runtime | Role |
+|---|---|
+| VS Code extension API (`^1.100.0`), TypeScript | extension host, native diff, per-hunk CodeLens |
+| React 19 | the webview (sidebar and full-size workspace tab) |
+| TrueForge 0.185.1 + `@truefoundry/trueforge-sdk` | agent loop, model calls, sessions, approvals |
+| `@modelcontextprotocol/sdk` | the MCP server (Streamable HTTP) |
+| `diff` (jsdiff), `zod` | hunks and merging; validating tool arguments |
+
+**Development tools:** esbuild and Vite (builds), Vitest (unit tests), Mocha with `@vscode/test-electron` (VS Code tests), ESLint and Prettier.
+
+## Team
+
+Team AXIOM, for the TrueFoundry Forge-a-thon (Techfest 2026–27, IIT Bombay).
+
+| Member | Area |
+|---|---|
+| Manthan Chandulal Gajra | architecture, TrueForge integration, final integration |
+| Vivan Jain | webview UI, design system, motion |
+| Toheed Inamdar | MCP server, workspace safety, SafeChange |
+| Kunjal | context engine, retrieval quality, QA |
+
+These areas are as assigned in [the team plan](docs/historical/TEAM_ASSIGNMENTS.md).
+
+**Development note:** the code was written with Claude Code as an AI coding assistant, in sessions on Manthan's machine, so every commit on `main` carries his name.
+
+## License and acknowledgments
+
+MIT, see [LICENSE](LICENSE).
+
+AXIOM Forge builds on:
+
+- TrueForge (MIT, TrueFoundry);
+- the Model Context Protocol TypeScript SDK (MIT);
+- jsdiff (BSD-3-Clause);
+- zod (MIT);
+- React (MIT).
+
+The demo video uses music by Sascha Ende (CC BY 4.0), sound effects by Kenney (CC0) and a Kokoro voice. The sample repository is [pallets/flask](https://github.com/pallets/flask) (BSD-3-Clause).

@@ -2,7 +2,7 @@
 
 Status: **✅ live** = verified with real models through TrueForge · **✅ VS Code** = verified in real VS Code without a model · **⏳** = not yet verified. "Model?" = whether it spends Gemini/Groq quota.
 
-Before starting: `FIRST_PRODUCT_DEMO.md` (TrueForge running, `bash scripts/demo.sh`, AXIOM Forge view open). After every feature that changes files: `bash scripts/tasks/reset-fixture.sh`.
+Before starting: `historical/FIRST_PRODUCT_DEMO.md` (TrueForge running, `bash scripts/demo.sh`, AXIOM Forge view open). After every feature that changes files: `bash scripts/tasks/reset-fixture.sh`.
 
 ## A. Product overview (no model)
 | Element | Where | What it shows |

@@ -10,20 +10,9 @@ config/models.local.json
 .DS_Store
 coverage/
 
-# demo video: large media stays local (sources are reproducible from footage/cuts.tsv + tools/)
-demo-video/footage/raw/
-demo-video/composition/assets/footage/
-demo-video/composition/assets/music/*.wav
-demo-video/composition/assets/music/*.mp3
-demo-video/composition/assets/music/bed-audio.json
-demo-video/composition/.hyperframes/
-demo-video/*.mp4
-demo-video/*.log
-demo-video/final/*.mp4
-demo-video/final/*.log
-demo-video/final/composition/assets/footage/
-demo-video/final/composition/assets/music/*.wav
-demo-video/final/composition/assets/music/*.mp3
-demo-video/final/composition/assets/music/bed-audio.json
-demo-video/final/composition/.hyperframes/
-demo-video/final/archive/
+# demo video production workspace (sources, footage, voice-over, renders) stays local;
+# the public poster and screenshots live in docs/media/
+demo-video/
+
+# VS Code test downloads and profiles
+.vscode-test/

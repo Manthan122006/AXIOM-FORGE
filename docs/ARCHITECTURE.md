@@ -1,6 +1,6 @@
 # AXIOM Forge — Architecture
 
-> Status: **design, verified against TrueForge 0.185.1 server / `@truefoundry/trueforge-sdk` 0.185.0 source and docs on 2026-11-17.** Nothing below is implemented yet; see `TASK_BOARD.md` for status.
+> Status: **implemented.** Written as the design on 17 Nov 2026 (verified against the TrueForge 0.185.1 server and `@truefoundry/trueforge-sdk` 0.185.0 source and docs) and corrected on 19 Nov 2026 to match the code. Current test results: [VALIDATION.md](VALIDATION.md).
 
 ## 1. The one-paragraph version
 
@@ -39,9 +39,9 @@ User ─▶ VS Code extension ──SDK (HTTP + SSE)──▶ TrueForge (local, 
 | Extension shell | `src/extension/` | Manthan | activation, commands, keybindings (`cmd+i` / `ctrl+i`), status bar, webview host |
 | TrueForge client | `src/trueforge/` | Manthan | session/turn lifecycle, SSE reducer, approvals bridge, cancel, ModelShield |
 | MCP server | `src/mcp/` | Toheed | Streamable-HTTP server on 127.0.0.1, tool schemas (zod), path jail, command allowlist |
-| Context engine | `src/context/` | Kunjal | index, ripgrep search, symbol index, Python import graph, test/doc pairing, ranking, budget, Context Receipt |
+| Context engine | `src/context/` | Kunjal | index, literal/regex search, BM25, symbol index, Python import graph, test/doc pairing, ranking, budget, Context Receipt |
 | SafeChange | `src/safety/` | Toheed (+Manthan) | staging, hunking (`diff` lib), conflict check, per-hunk apply via `WorkspaceEdit`, undo journal |
-| Proof of Change | `src/verification/` | Toheed | run approved commands, exit codes, staleness |
+| Proof of Change | `src/verification/`, `src/extension/controller.ts` | Toheed | run approved commands, exit codes, staleness |
 | Webview | `webview/` (React + Vite) | Vivan | all panels; consumes `AxiomState` only |
 | Contracts | `src/shared/contracts.ts` | everyone, Manthan merges | the only shapes crossing module boundaries |
 
@@ -50,14 +50,14 @@ User ─▶ VS Code extension ──SDK (HTTP + SSE)──▶ TrueForge (local, 
 | Tool | Annotation | Approval | Notes |
 |---|---|---|---|
 | `read_file(path, startLine?, endLine?)` | readOnly | no | jailed to workspace; refuses `.env*`, keys, >256 KB without range |
-| `search_workspace(query, glob?, maxResults?)` | readOnly | no | ripgrep (`@vscode/ripgrep`), respects `.gitignore` |
+| `search_workspace(query, glob?, regex?, max_results?)` | readOnly | no | case-insensitive literal or regex search over the indexed workspace text files |
 | `find_symbol(name)` | readOnly | no | definitions + references from the symbol index |
 | `related_files(path)` | readOnly | no | imports, importers, paired tests, paired docs, with reasons |
 | `assemble_context(task, mentions?)` | readOnly | no | runs the ranked retrieval, returns a budgeted bundle **and emits the Context Receipt** to the UI |
 | `propose_edit(path, edits[] \| new_content, rationale)` | write | **yes, by name** | validated + staged *before* the approval pause; on allow, applies only accepted hunks |
-| `run_command(command, cwd?)` | destructive | **yes, by name** | allowlisted binaries (`pytest`, `python`, `flask`, `git status/diff`), timeout, output capped & secret-scrubbed |
+| `run_command(command, cwd?)` | destructive | **yes, by name** | allowlist: `python`/`python3`, `pytest`, `flask`, `node`, read-only `git` (`status`, `diff`, `log`, `show`, `ls-files`), `npm test`/`npm run`, `npx vitest`/`tsc`/`eslint`; no shell operators; timeout; output capped & secret-scrubbed |
 
-Deferred loading stays on for the read tools; `assemble_context` and `propose_edit` go in `preload_tools` so the model always sees them.
+Deferred loading stays on for the other tools; `assemble_context`, `read_file`, `propose_edit` and `run_command` are in `preload_tools` (`agents/axiom-agent.json`) so the model always sees them.
 
 ## 5. SafeChange: how approval drives the diff
 
@@ -83,13 +83,13 @@ TrueForge has no built-in fallback, so the extension orchestrates it **through T
 
 1. Turn ends `turn.done{state.status:"error"}` (or the stream throws / times out with no event for N s).
 2. Classify `state.message` / HTTP error → `auth | unreachable | rate_limit | server | timeout | bad_config | cancelled | tool_error`.
-3. Transient (`rate_limit`, `server`, `timeout`, `unreachable`) → retry the same turn on the primary up to 2× with backoff (1 s, 3 s, jitter). `auth`/`bad_config` → no retry.
-4. Still failing and a backup is configured → create a **new TrueForge session** with the same agent manifest but `model.name = backup`, replay the original user message plus the safe context (receipt + mentions). Pending proposals from the failed turn are **discarded, never replayed**; nothing was written because writes only happen inside approved calls.
+3. Transient (`rate_limit`, `server`, `timeout`, `unreachable`) → retry on the primary up to 2× with exponential backoff (1 s base, 6 s cap, jitter); a provider's own retry hint is honoured when it is 30 s or less, and a longer one goes straight to fallback. `auth`/`bad_config` → no retry.
+4. Still failing and a backup is configured → create a **new TrueForge session** with the same agent manifest but `model.name = backup`, send the same prompt. Pending proposals from the failed turn are **discarded, never replayed**; nothing was written because writes only happen inside approved calls.
 5. UI shows each step truthfully (primary failed → retrying 1/2 → switched to `groq/...`).
 
 Backup selection is data (`axiomForge.models.primary/backup` settings → TrueForge model names), so the organisers can swap models without code changes.
 
-## 7. Context strategy (summary — full detail in Kunjal's packet)
+## 7. Context strategy (summary; benchmark in [RETRIEVAL_EVAL.md](RETRIEVAL_EVAL.md))
 
 Hybrid, local, explainable (`src/context/assemble.ts`). Signals: explicit `@file`/`@symbol` and the editor selection (hard includes); **BM25** keyword relevance; file- and folder-name matches (stemmed, counted once per name part); definitions of **code identifiers** named in the task (strong) or of plain words (weak); one-hop Python imports; test/doc pairing **in both directions**, scaled by the evidence of the file it comes from. Score → rank → **budget**: default 24k tokens (≈ chars/4), per-file cap 6k (3k for tests/docs); over-cap files go in as outline + focused line windows. The Context Receipt lists included files with reasons, excluded candidates with reasons, and the budget used. Measured on a 33-task Flask benchmark with an ablation (`RETRIEVAL_EVAL.md`). The model also runs a **repo-scout subagent** (agent definition), whose `thread.created` shows in the TrueForge session.
 
