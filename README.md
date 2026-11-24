@@ -14,11 +14,7 @@ AXIOM Forge is a VS Code extension that runs a coding agent through <a href="htt
   <a href="docs/README.md">Docs</a>
 </p>
 
-## See AXIOM Forge in action
 
-<a href="https://github.com/Manthan122006/AXIOM-FORGE/raw/main/docs/media/axiom-forge-demo.mp4"><img src="docs/media/demo-poster.jpg" alt="AXIOM Forge demo video (3:22). Click to download." width="100%"></a>
-
-**[Download the demo video (3 min 22 s, MP4, 36 MB)](https://github.com/Manthan122006/AXIOM-FORGE/raw/main/docs/media/axiom-forge-demo.mp4)**. GitHub serves it as a download rather than playing it in the page. It was recorded live in VS Code on `pallets/flask` 3.1.3 on 18 Nov 2026 and shows one real task from context selection to a passing test run. It also shows a model failure being handled: the primary was given an invalid key on purpose, and the run continued on the backup.
 
 ## The problem
 
